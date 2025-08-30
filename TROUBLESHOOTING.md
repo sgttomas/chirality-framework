@@ -1,7 +1,7 @@
 # Troubleshooting Guide - Chirality Framework
 **Status Last Updated**: August 24, 2025 at 11:19h
 **Note**: Always ask user for current date/time when updating status - AI doesn't have real-time access
-References to "CF14" are for the Chirality Framework version 14.
+
 
 ## Common Issues and Solutions
 
@@ -16,9 +16,9 @@ ERROR: Could not find a version that satisfies the requirement...
 **Solutions**:
 ```bash
 # Create fresh virtual environment
-python -m venv cf14-env
-source cf14-env/bin/activate  # Linux/Mac
-# or cf14-env\Scripts\activate  # Windows
+python -m venv chirality-env
+source chirality-env/bin/activate  # Linux/Mac
+# or chirality-env\Scripts\activate  # Windows
 
 # Update pip and setuptools
 pip install --upgrade pip setuptools
@@ -27,8 +27,8 @@ pip install --upgrade pip setuptools
 pip install openai==1.3.0 neo4j==5.14.0
 
 # Alternative: Use conda environment
-conda create -n cf14 python=3.9
-conda activate cf14
+conda create -n chirality-env python=3.9
+conda activate chirality-env
 pip install -e .
 ```
 
@@ -198,4 +198,4 @@ Include:
 
 ---
 
-*Troubleshooting guide for CF14.3.0.0 - Updated August 24, 2025*
+*Troubleshooting guide - Updated August 24, 2025*

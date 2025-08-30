@@ -1,8 +1,8 @@
-# The Chirality Framework (CF14) Canonical Algorithm
+# The Chirality Framework Canonical Algorithm
 
 ## 1. Overview & Philosophy: The "Semantic Calculator"
 
-The Chirality Framework is implemented as a fixed algorithm, not a flexible platform. Its purpose is to function as a "semantic calculator," taking canonical, unchanging inputs (Matrices A and B) and executing a deterministic sequence of operations to produce a series of insightful, structured outputs (Matrices C, F, D, etc.).
+The Chirality Framework is implemented as a fixed algorithm, not a flexible platform. Its purpose is to function as a "semantic calculator," taking canonical, unchanging inputs (Matrices A and B) and executing a procedurally rigorous methodology with fixed ontological structure to produce a series of insightful, structured outputs (Matrices C, F, D, etc.).
 
 The core design principles are:
 - **Simplicity Over Abstraction:** The code is a direct translation of the algorithm.

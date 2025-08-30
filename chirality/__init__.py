@@ -1,11 +1,18 @@
 """
-Chirality Framework - CF14 Semantic Calculator.
+Chirality Framework - Semantic Calculator
 
 A fixed, canonical "semantic calculator" for structured problem-solving.
 Not a framework but a precise algorithm with a 3-stage interpretation pipeline.
 """
 
-__version__ = "15.0.0"
+# Read version from VERSION.md (single source of truth)
+from pathlib import Path
+try:
+    version_path = Path(__file__).parent.parent / "VERSION.md"
+    with open(version_path, "r") as f:
+        __version__ = f.readline().split("—")[0].strip()
+except Exception:
+    __version__ = "0.0.0"  # Fallback version
 __author__ = "Chirality Framework Team"
 
 from .core.types import Cell, Matrix, Operation
@@ -21,7 +28,7 @@ from .core.operations import (
     synthesize_matrix_D
 )
 from .core.matrices import MATRIX_A, MATRIX_B, MATRIX_J
-from .core.validate import CF14ValidationError, validate_matrix, validate_cell
+from .core.validate import FrameworkValidationError, validate_matrix, validate_cell
 from .core.tracer import JSONLTracer
 
 __all__ = [
@@ -46,7 +53,7 @@ __all__ = [
     "compute_matrix_F",
     "synthesize_matrix_D",
     # Validation
-    "CF14ValidationError",
+    "FrameworkValidationError",
     "validate_matrix",
     "validate_cell",
     # Tracing

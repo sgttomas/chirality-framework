@@ -1,5 +1,5 @@
 """
-Mock implementations for testing the CF14 semantic calculator.
+Mock implementations for testing the Chirality Framework semantic calculator.
 
 Provides deterministic, predictable resolvers that don't require LLM calls,
 enabling fast, offline testing of the 3-stage pipeline.

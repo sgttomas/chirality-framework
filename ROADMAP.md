@@ -73,7 +73,8 @@ This plan captures the remaining work to move from a robust prototype to a produ
 - **Provenance Warnings**: Ensure any model/output validation issues are recorded in `warnings` and optionally highlighted in CLI.
 
 ### 3) Configuration & Resilience
-- **Centralized Config**: Extract model, timeouts, retry counts, token limits, and tracer/export flags into a single config module.
+- ✅ **Centralized Config**: Extract model, timeouts, retry counts, token limits, and tracer/export flags into a single config module.
+  - **DONE (Partial):** Version number has been centralized into `VERSION.md` and is read dynamically by the CLI. This removes hardcoded versions from the codebase.
   - Load from env vars with sane defaults; allow CLI overrides.
 - **Documentation of Defaults**: Update README/API docs to list default knobs and recommended production settings.
 - **Backoff & Limits**: Make retry/backoff configurable; add guards for oversized prompts/results.

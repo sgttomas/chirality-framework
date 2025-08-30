@@ -1,5 +1,5 @@
 """
-Core CF14 semantic calculator modules.
+Core Chirality Framework semantic calculator modules.
 """
 
 from .types import Cell, Matrix, Operation
@@ -15,7 +15,7 @@ from .operations import (
     synthesize_matrix_D
 )
 from .matrices import MATRIX_A, MATRIX_B, MATRIX_J
-from .validate import CF14ValidationError
+from .validate import FrameworkValidationError
 from .tracer import JSONLTracer
 
 __all__ = [
@@ -30,7 +30,7 @@ __all__ = [
     # Canonical matrices
     "MATRIX_A", "MATRIX_B", "MATRIX_J",
     # Validation
-    "CF14ValidationError",
+    "FrameworkValidationError",
     # Tracing
     "JSONLTracer",
 ]

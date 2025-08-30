@@ -1,6 +1,6 @@
-# API Reference - Chirality Framework v15.0.0
+# API Reference - Chirality Framework
 
-**Comprehensive reference for the CF14 Semantic Calculator API**
+**Comprehensive reference for the Chirality Framework Semantic Calculator API**
 
 ## Table of Contents
 
@@ -23,14 +23,14 @@
 
 ### Basic Installation
 ```bash
-pip install chirality-framework==15.0.0
+pip install chirality-framework==[version]
 ```
 
 ### With Optional Dependencies
 ```bash
-pip install chirality-framework[all]==15.0.0    # OpenAI + Neo4j
-pip install chirality-framework[openai]==15.0.0 # Just OpenAI
-pip install chirality-framework[neo4j]==15.0.0  # Just Neo4j
+pip install chirality-framework[all]==[version]    # OpenAI + Neo4j
+pip install chirality-framework[openai]==[version] # Just OpenAI
+pip install chirality-framework[neo4j]==[version]  # Just Neo4j
 ```
 
 ### Environment Variables
@@ -118,7 +118,7 @@ from chirality import SemanticContext
 @dataclass
 class SemanticContext:
     # Valley position
-    station_context: str            # "Requirements", "Objectives", etc.
+    station_context: str            # "Problem Requirements", "Solution Objectives", etc.
     valley_summary: str             # Full valley navigation context
     
     # Ontological coordinates  
@@ -213,7 +213,7 @@ def compute_cell_C(
 **Example:**
 ```python
 resolver = CellResolver(api_key="sk-...")
-valley = "Problem Statement → [Requirements] → Objectives"
+valley = "Problem Statement → [Problem Requirements] → Solution Objectives"
 
 cell = compute_cell_C(0, 0, MATRIX_A, MATRIX_B, resolver, valley)
 print(f"C[0,0]: {cell.value}")
@@ -417,8 +417,8 @@ from chirality import SemanticContext
 
 # Create context for Stage 2 resolution
 context = SemanticContext(
-    station_context="Requirements",
-    valley_summary="Problem Statement → [Requirements] → Objectives",
+    station_context="Problem Requirements",
+    valley_summary="Problem Statement → [Problem Requirements] → Solution Objectives",
     row_label="Normative",
     col_label="Necessity (vs Contingency)",
     operation_type="*",
@@ -519,7 +519,7 @@ with Neo4jWorkingMemoryExporter() as exporter:
 ### Validation Functions
 
 ```python
-from chirality import validate_matrix, validate_cell, CF14ValidationError
+from chirality import validate_matrix, validate_cell, FrameworkValidationError
 
 def validate_matrix(matrix: Matrix) -> List[str]:
     """Validate matrix structure and return list of errors."""
@@ -527,8 +527,8 @@ def validate_matrix(matrix: Matrix) -> List[str]:
 def validate_cell(cell: Cell) -> List[str]:
     """Validate cell structure and return list of errors."""
     
-class CF14ValidationError(ValueError):
-    """Raised when CF14 validation rules are violated."""
+class FrameworkValidationError(ValueError):
+    """Raised when Chirality Framework validation rules are violated."""
 ```
 
 **Example:**
@@ -606,11 +606,11 @@ Shows:
 
 ```python
 # Import errors
-from chirality import CF14ValidationError
+from chirality import FrameworkValidationError
 
 try:
     cell = compute_cell_C(0, 0, A, B, resolver, valley)
-except CF14ValidationError as e:
+except FrameworkValidationError as e:
     print(f"Validation error: {e}")
 except ValueError as e:
     print(f"Configuration error: {e}")  
@@ -652,7 +652,7 @@ from chirality import (
 
 # Test with echo resolver (fast, deterministic)
 echo_resolver = EchoResolver()
-valley = "Problem Statement → [Requirements] → Objectives → Solution"
+valley = "Problem Statement → [Problem Requirements] → Solution Objectives"
 
 cell = compute_cell_C(0, 0, MATRIX_A, MATRIX_B, echo_resolver, valley)
 print(f"Echo result: {cell.value}")
@@ -680,7 +680,7 @@ resolver = CellResolver(
     seed=42
 )
 
-valley = "Problem Statement → [Requirements] → Objectives → Solution Objectives"
+valley = "Problem Statement → [Problem Requirements] → Solution Objectives"
 
 # Full pipeline with tracing and Neo4j export
 with JSONLTracer(thread_id="production-run") as tracer:
@@ -726,8 +726,8 @@ from chirality import SemanticContext, CellResolver
 
 # Create custom semantic context
 context = SemanticContext(
-    station_context="Custom Requirements",
-    valley_summary="Custom Valley: Problem → [Custom] → Solution", 
+    station_context="Custom Problem Requirements",
+    valley_summary="Custom Valley: Problem → [Custom Problem Requirements] → Solution", 
     row_label="Performance",
     col_label="Reliability",
     operation_type="*",
@@ -881,7 +881,7 @@ from chirality import *
 
 # Setup
 resolver = CellResolver()
-valley = "Problem Statement → [Requirements] → Objectives"
+valley = "Problem Statement → [Problem Requirements] → Solution Objectives"
 
 # Interactive cell computation
 def explore_cell(row, col):
@@ -904,40 +904,6 @@ explore_cell(0, 0)  # Normative × Necessity
 explore_cell(1, 2)  # Operative × Completeness
 explore_cell(2, 3)  # Evaluative × Consistency
 ```
-
----
-
-## Migration from Previous Versions
-
-### From v14.x Framework Architecture
-
-The v15.0.0 semantic calculator is a **complete rewrite**. Key changes:
-
-**Old (v14.x):**
-```python
-# Old framework approach - extensible, complex
-from chirality import S1Runner, S2Runner, S3Runner, OpenAIResolver
-from chirality.core.serialize import load_matrix
-
-s1 = S1Runner(OpenAIResolver())
-results = s1.run({"A": matrix_a, "B": matrix_b})
-```
-
-**New (v15.0.0):**
-```python
-# New semantic calculator - direct, simple  
-from chirality import compute_matrix_C, CellResolver, MATRIX_A, MATRIX_B
-
-resolver = CellResolver()
-C = compute_matrix_C(MATRIX_A, MATRIX_B, resolver, valley_summary)
-```
-
-**Migration Steps:**
-1. **Replace S1/S2/S3 runners** with direct `compute_*` functions
-2. **Replace OpenAIResolver** with `CellResolver` 
-3. **Use canonical matrices** (`MATRIX_A`, `MATRIX_B`, `MATRIX_J`) instead of JSON files
-4. **Update import paths** - all core functions now in `chirality` top-level
-5. **Replace matrix serialization** with direct matrix objects
 
 ---
 
@@ -999,11 +965,11 @@ custom_matrix = Matrix(...)  # Loses ontological foundation
 
 ### 2. Validate Inputs Before Operations
 ```python
-from chirality import validate_matrix, CF14ValidationError
+from chirality import validate_matrix, FrameworkValidationError
 
 errors = validate_matrix(MATRIX_A)
 if errors:
-    raise CF14ValidationError(f"Invalid matrix: {errors}")
+    raise FrameworkValidationError(f"Invalid matrix: {errors}")
 ```
 
 ### 3. Use Appropriate Resolvers  
@@ -1040,7 +1006,7 @@ with JSONLTracer() as tracer:
 
 ## Version Compatibility
 
-**Current Version:** 15.0.0
+**Current Version:** See VERSION.md
 
 **Python Compatibility:** 3.9, 3.10, 3.11, 3.12, 3.13
 
@@ -1051,18 +1017,18 @@ with JSONLTracer() as tracer:
 **Installation Matrix:**
 ```bash
 # Minimal (echo resolver only)
-pip install chirality-framework==15.0.0
+pip install chirality-framework==[version]
 
 # With OpenAI support  
-pip install chirality-framework[openai]==15.0.0
+pip install chirality-framework[openai]==[version]
 
 # With Neo4j working memory
-pip install chirality-framework[neo4j]==15.0.0
+pip install chirality-framework[neo4j]==[version]
 
 # Full installation
-pip install chirality-framework[all]==15.0.0
+pip install chirality-framework[all]==[version]
 ```
 
 ---
 
-This comprehensive API reference covers all public interfaces, usage patterns, and best practices for the CF14 Semantic Calculator. The API is designed for both interactive exploration and production integration, with complete observability and robust error handling throughout.
+This comprehensive API reference covers all public interfaces, usage patterns, and best practices for the Chirality Framework Semantic Calculator. The API is designed for both interactive exploration and production integration, with complete observability and robust error handling throughout.

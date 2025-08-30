@@ -1,5 +1,5 @@
 """
-SemanticContext for CF14 three-stage interpretation pipeline.
+SemanticContext for Chirality Framework three-stage interpretation pipeline.
 
 This dataclass carries all the valley context, ontological coordinates,
 and operation details needed for fragment-based prompt composition.
@@ -15,7 +15,7 @@ class SemanticContext:
     Complete context for semantic operations in the three-stage pipeline.
     
     Carries all the information needed for fragment-based prompt composition
-    AND tracing. This is the single, canonical context object used throughout CF14.
+    AND tracing. This is the single, canonical context object used throughout the framework.
     
     Includes:
     - Valley position and station context
@@ -37,12 +37,12 @@ class SemanticContext:
     operation_type: str           # "*", "⊙", "synthesize", "interpret"
     terms: Dict[str, Any]         # The actual content to process
     
-    # Cell coordinates for tracing (optional - only set when tracing is enabled)
-    matrix: Optional[str] = None  # "C", "F", "D" - target matrix being computed
-    i: Optional[int] = None       # Row index in target matrix
-    j: Optional[int] = None       # Column index in target matrix
+    # Cell coordinates for tracing
+    matrix: str  # "C", "F", "D" - target matrix being computed
+    i: int       # Row index in target matrix
+    j: int       # Column index in target matrix
     
-    # Optional guidance fragments (you control these)
+    # Optional guidance fragments (rarely used, but available for customization)
     operation_instructions: Optional[str] = None    # Custom operation guidance
     system_frame: Optional[str] = None              # Custom system prompt override
     

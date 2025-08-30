@@ -1,24 +1,30 @@
 """
-Fixed canonical matrices for CF14 semantic calculator.
+Fixed canonical matrices for Chirality Framework semantic calculator.
 
 These matrices are constants - they represent the fixed ontological structure
 of the Chirality Framework. They are not dynamic or configurable.
 
 This embodies the "semantic calculator" philosophy: we have specific,
-unchanging inputs that produce predictable outputs through deterministic
-semantic operations.
+unchanging inputs that undergo constrained stochastic processing through
+a fixed ontological structure with reproducible methodology.
 """
 
+from datetime import datetime, timezone
 from .types import Matrix, Cell
 
 
 def _create_cell(row: int, col: int, value: str) -> Cell:
-    """Helper to create a cell with minimal provenance."""
+    """Helper to create a canonical matrix cell with proper provenance."""
     return Cell(
         row=row,
         col=col,
         value=value,
-        provenance={"source": "canonical_matrix"}
+        provenance={
+            "operation": "canonical_definition",
+            "sources": [],  # No source matrices for canonical definitions
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "coordinates": f"({row}, {col})"
+        }
     )
 
 
@@ -57,16 +63,19 @@ MATRIX_B = Matrix(
     ])
 )
 
-# Fixed canonical Matrix J (3x4) - Truncated B without "Wisdom" row
+# Fixed canonical Matrix J (3x4) - First 3 rows of Matrix B (truncated without "Wisdom" row)
+# J is a proper subset of B, used for verification operations where "Wisdom" level is excluded
+# to maintain grounding in observable/verifiable criteria rather than abstract principles
 MATRIX_J = Matrix(
     name="J",
     station="Verification",
-    row_labels=["Data", "Information", "Knowledge"],  # No "Wisdom" row
+    row_labels=["Data", "Information", "Knowledge"],  # No "Wisdom" row - intentionally truncated
     col_labels=["Necessity (vs Contingency)", "Sufficiency", "Completeness", "Consistency"],
     cells=_create_matrix_cells([
-        ["Necessary", "Sufficient", "Complete", "Probability"],
-        ["Contingent", "Insufficient", "Incomplete", "Possibility"],
-        ["Fundamental", "Appropriate", "Holistic", "Feasibility"]
+        ["Necessary vs Contingent", "Sufficient", "Complete", "Consistent"],  # From B[0]
+        ["Relevant", "Actionable", "Contextual", "Congruent"],                # From B[1]
+        ["Fundamental", "Effective", "Systematic", "Coherent"]                # From B[2]
+        # B[3] "Wisdom" row intentionally excluded for verification grounding
     ])
 )
 
@@ -113,11 +122,13 @@ def validate_canonical_matrices():
     assert len(MATRIX_J.row_labels) == 3, f"Matrix J should have 3 row labels"
     assert len(MATRIX_J.col_labels) == 4, f"Matrix J should have 4 column labels"
     
-    # Ensure J is properly truncated B (first 3 rows)
+    # Ensure J is properly truncated B (first 3 rows with same values)
+    # This validates that J is a true subset of B, not a different matrix
     for i in range(3):
         for j in range(4):
             assert MATRIX_B.cells[i][j].value == MATRIX_J.cells[i][j].value, \
-                f"Matrix J cell [{i}][{j}] should match Matrix B"
+                f"Matrix J cell [{i}][{j}] should match Matrix B cell [{i}][{j}]: " \
+                f"B='{MATRIX_B.cells[i][j].value}' vs J='{MATRIX_J.cells[i][j].value}'"
 
 
 if __name__ == "__main__":

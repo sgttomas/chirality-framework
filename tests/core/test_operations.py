@@ -1,5 +1,5 @@
 """
-Tests for the CF14 3-stage semantic pipeline operations.
+Tests for the Chirality Framework 3-stage semantic pipeline operations.
 
 Tests each stage independently and the complete pipeline end-to-end,
 using mock resolvers to ensure fast, deterministic, offline testing.

@@ -1,12 +1,12 @@
-# Prompt Engineering Guide for CF14 Semantic Calculator
+# Prompt Engineering Guide for Chirality Framework Semantic Calculator
 
-**Version: 15.0.0** | **Updated: August 2025**
+**Version: See VERSION.md** | **Updated: August 2025**
 
 This guide provides practical methodology for refining the prompts that drive the Three-Stage Interpretation Pipeline. Since semantic quality directly determines the value of the calculator's output, prompt engineering is critical for optimal performance.
 
 ## Overview: The Prompt Architecture
 
-The CF14 semantic calculator uses **fragment composition** rather than static templates. The `CellResolver.assemble_prompt()` method dynamically builds prompts from configurable fragments, allowing for systematic refinement and testing.
+The Chirality Framework semantic calculator uses **fragment composition** rather than static templates. The `CellResolver.assemble_prompt()` method dynamically builds prompts from configurable fragments, allowing for systematic refinement and testing.
 
 ### Core Prompt Components
 
@@ -112,7 +112,7 @@ Test key cells that represent different semantic challenges:
 - **Ontological Integration**: Row and column perspectives clearly applied
 - **Actionable Insight**: Result provides guidance, not just description
 - **Complete Integration**: All Stage 2 concepts meaningfully incorporated
-- **Stakeholder Clarity**: Understandable to someone unfamiliar with CF14
+- **Stakeholder Clarity**: Understandable to someone unfamiliar with the Chirality Framework
 
 ### 4. **Iterative Refinement Process**
 

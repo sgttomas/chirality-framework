@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CLI for CF14 Semantic Calculator.
+CLI for Chirality Framework Semantic Calculator
 
 Provides direct access to the 3-stage pipeline for debugging and observability.
 Focus on the compute-cell command which shows the complete transformation
@@ -13,6 +13,17 @@ import sys
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
+
+def _get_version():
+    """Reads the version from the VERSION.md file."""
+    try:
+        # Path to VERSION.md at the project root, relative to this file
+        version_path = Path(__file__).parent.parent / "VERSION.md"
+        with open(version_path, "r") as f:
+            # First line should be like "15.0.1 — ..."
+            return f.readline().split("—")[0].strip()
+    except Exception:
+        return "0.0.0" # Fallback version
 
 # Load environment variables from .env file in project root
 load_dotenv(override=True)
@@ -43,19 +54,19 @@ DIM_STYLE = {"dim": True}
 
 
 @click.group()
-@click.version_option(version="15.0.0", prog_name="Chirality Framework")
+@click.version_option(version=_get_version(), prog_name="Chirality Framework")
 def cli():
     """
-    Chirality Framework - CF14 Semantic Calculator
-    
-    A fixed, canonical algorithm for structured problem-solving through
-    a 3-stage semantic interpretation pipeline:
-    
+    Chirality Framework - Semantic Calculator
+
+    A procedurally-rigorous methodology for structured problem-solving
+    through a 3-stage semantic interpretation pipeline:
+
     \b
     Stage 1 (Combinatorial): Mechanical k-product generation
     Stage 2 (Semantic): LLM resolution of word pairs
     Stage 3 (Lensing): Ontological interpretation through coordinates
-    
+
     Use 'compute-cell' to debug individual cells through the pipeline.
     """
     pass
@@ -83,7 +94,7 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
                 resolver: str, api_key: Optional[str], trace: bool, neo4j_export: bool, problem: str):
     """
     Compute a single cell through the 3-stage pipeline.
-    
+
     \b
     Examples:
         chirality compute-cell C --i 0 --j 0 -v
@@ -106,15 +117,7 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
             resolver_obj = CellResolver(api_key=api_key)
             click.echo(click.style("Using OpenAI resolver", **INFO_STYLE))
         else:
-            class EchoResolverAdapter:
-                def resolve_semantic_pair(self, pair: str, context: SemanticContext) -> str:
-                    if " * " in pair:
-                        left, right = pair.split(" * ", 1)
-                        return f"{right} {left}"
-                    return f"Resolved({pair})"
-                def apply_ontological_lens(self, content: str, context: SemanticContext) -> str:
-                    return f"By applying {context.row_label} lens through {context.col_label} coordinates: {content}"
-            resolver_obj = EchoResolverAdapter()
+            resolver_obj = EchoResolver()
             click.echo(click.style("Using Echo resolver (deterministic mock)", **INFO_STYLE))
         
         # Setup tracer and exporter
@@ -128,7 +131,7 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
 
         # Get canonical matrices and context
         A, B, J = MATRIX_A, MATRIX_B, MATRIX_J
-        valley_summary = "Problem Statement -> [Requirements] -> Objectives -> Solution Objectives"
+        valley_summary = "Problem Statement -> [Problem Requirements] -> Solution Objectives"
         
         click.echo()
         click.echo(click.style(f"Computing {matrix}[{row},{col}]", **STAGE_STYLE))
@@ -156,7 +159,7 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
                 click.echo(f"  Pair: {pair}")
 
                 ctx1 = SemanticContext(
-                    station_context="Objectives",
+                    station_context="Solution Objectives",
                     valley_summary=valley_summary,
                     row_label=J.row_labels[row],
                     col_label=J.col_labels[col],
@@ -175,7 +178,7 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
                 click.echo(click.style("STAGE 3: Ontological Lensing", **STAGE_STYLE))
                 click.echo(click.style("-" * 40, **DIM_STYLE))
                 ctx2 = SemanticContext(
-                    station_context="Objectives",
+                    station_context="Solution Objectives",
                     valley_summary=valley_summary,
                     row_label=J.row_labels[row],
                     col_label=J.col_labels[col],
@@ -208,7 +211,7 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
                 click.echo(click.style("STAGE 2: Ontological Lensing", **STAGE_STYLE))
                 click.echo(click.style("-" * 40, **DIM_STYLE))
                 ctx = SemanticContext(
-                    station_context="Objectives",
+                    station_context="Solution Objectives",
                     valley_summary=valley_summary,
                     row_label=A.row_labels[row],
                     col_label=A.col_labels[col],
@@ -264,7 +267,7 @@ def _show_c_computation_verbose(row: int, col: int, A: Matrix, B: Matrix,
     resolved = []
     for k, product in enumerate(raw_products):
         context = SemanticContext(
-            station_context="Requirements",
+            station_context="Problem Requirements",
             valley_summary=valley_summary,
             row_label=A.row_labels[row],
             col_label=B.col_labels[col],
@@ -289,7 +292,7 @@ def _show_c_computation_verbose(row: int, col: int, A: Matrix, B: Matrix,
     click.echo(f"  Col lens: {B.col_labels[col]}")
     
     context = SemanticContext(
-        station_context="Requirements",
+        station_context="Problem Requirements",
         valley_summary=valley_summary,
         row_label=A.row_labels[row],
         col_label=B.col_labels[col],
@@ -335,12 +338,12 @@ def _show_provenance(provenance: dict, indent: int = 2):
 @cli.command()
 def info():
     """
-    Display information about the CF14 semantic calculator.
+    Display information about the Chirality Framework semantic calculator.
     """
-    click.echo(click.style("Chirality Framework - CF14 Semantic Calculator", **STAGE_STYLE))
+    click.echo(click.style("Chirality Framework - Semantic Calculator", **STAGE_STYLE))
     click.echo(click.style("=" * 50, **DIM_STYLE))
     click.echo()
-    click.echo("Version: 15.0.0")
+    click.echo(f"Version: {_get_version()}")
     click.echo("Algorithm: 3-stage semantic interpretation pipeline")
     click.echo()
     click.echo(click.style("Canonical Matrices:", **INFO_STYLE))
@@ -361,18 +364,18 @@ def info():
     click.echo(f"    Columns:{' ' if MATRIX_J.col_labels else ''}{', '.join(MATRIX_J.col_labels)}")
     click.echo()
     click.echo(click.style("Result Matrices:", **INFO_STYLE))
-    click.echo("  C = A * B: Requirements (3×4)")
-    click.echo("  F = J ⊙ C: Objectives (3×4)")
+    click.echo("  C = A * B: Problem Requirements (3×4)")
+    click.echo("  F = J ⊙ C: Solution Objectives (3×4)")
     click.echo("  D = synthesis(A, F): Solution Objectives (3×4)")
     # Explicit axes for derived matrices (without computing them)
     # F axes mirror J's rows × J's columns
     click.echo("    F Axes:")
-    click.echo(f"      Station: Objectives")
+    click.echo(f"      Station: Solution Objectives")
     click.echo(f"      Rows:   {', '.join(MATRIX_J.row_labels)}")
     click.echo(f"      Columns:{' ' if MATRIX_J.col_labels else ''}{', '.join(MATRIX_J.col_labels)}")
     # D axes mirror A's rows × A's columns (station is Objectives)
     click.echo("    D Axes:")
-    click.echo(f"      Station: Objectives")
+    click.echo(f"      Station: Solution Objectives")
     click.echo(f"      Rows:   {', '.join(MATRIX_A.row_labels)}")
     click.echo(f"      Columns:{' ' if MATRIX_A.col_labels else ''}{', '.join(MATRIX_A.col_labels)}")
     click.echo()

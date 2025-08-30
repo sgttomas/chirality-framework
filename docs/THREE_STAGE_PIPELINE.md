@@ -1,6 +1,6 @@
-# The Three-Stage Interpretation Pipeline: The "Secret Sauce" of CF14
+# The Three-Stage Interpretation Pipeline: The "Secret Sauce"
 
-**Version: 15.0.0** | **Updated: August 2025**
+**Version: See VERSION.md** | **Updated: August 2025**
 
 This document provides the definitive explanation of the Three-Stage Interpretation Pipeline—the core algorithm that transforms mechanical combinations into meaningful semantic insights. This pipeline is the "secret sauce" that makes the Chirality Framework a powerful semantic calculator rather than just a matrix manipulation tool.
 
@@ -12,7 +12,7 @@ The three-stage pipeline is necessary for **semantic integrity**. Each stage bui
 2. **Stage 2 (Semantic Resolution)**: Transforms raw pairs into coherent concepts  
 3. **Stage 3 (Ontological Lensing)**: Applies deep contextual interpretation
 
-This progression ensures that meaning emerges naturally from structure while preserving the ontological coherence that makes CF14 results actionable and insightful.
+This progression ensures that meaning emerges naturally from structure while preserving the ontological coherence that makes the results actionable and insightful.
 
 ## Detailed Stage Breakdown
 
@@ -66,7 +66,7 @@ Feedback * Best Practices → Optimal Reference Points
 - **Combined concepts**: "Essential Values, Conditional Actions, Foundational Benchmarks, Optimal Reference Points"
 - **Row lens**: "Normative" (establishing standards)
 - **Column lens**: "Necessity" (identifying requirements)
-- **Station context**: "Requirements"
+- **Station context**: "Problem Requirements"
 
 **Example Output**:
 ```
@@ -85,8 +85,8 @@ Feedback * Best Practices → Optimal Reference Points
 - **Cell coordinates**: C[0,0] 
 - **Row ontology**: "Normative" (establishing standards)
 - **Column ontology**: "Necessity" (vs Contingency)
-- **Station**: "Requirements"
-- **Valley position**: "Problem Statement → [Requirements] → Objectives"
+- **Station**: "Problem Requirements"
+- **Valley position**: "Problem Statement → [Problem Requirements] → Solution Objectives"
 
 ### Stage-by-Stage Transformation
 
@@ -124,7 +124,7 @@ Output: "By establishing normative standards and focusing on necessity requireme
 
 ### 2. **Ontological Coherence**
 - Row/column coordinates provide consistent interpretive framework
-- Every result anchored in CF14's meta-ontology
+- Every result anchored in the framework's meta-ontology
 - Prevents semantic drift across operations
 
 ### 3. **Full Observability**
@@ -186,11 +186,10 @@ The three-stage pipeline operates within the broader context of the "semantic va
 
 ### Valley Stations
 - **Problem Statement**: Initial framing and axioms (Matrix A)
-- **Requirements**: Structured analysis (Matrix C = A * B)
-- **Objectives**: Interpreted goals (Matrix F = J ⊙ C)  
-- **Solution Objectives**: Synthesized outcomes (Matrix D = synthesis(A, F))
+- **Problem Requirements**: Structured analysis (Matrix C = A * B)
+- **Solution Objectives**: Interpreted goals (Matrix F = J ⊙ C) and synthesized outcomes (Matrix D = synthesis(A, F))
 
 ### Valley Navigation
 Each computation carries forward the "valley summary" that tracks the current position in the problem-solving journey, ensuring that every semantic operation understands its place in the larger transformative process.
 
-This context-awareness is what elevates the CF14 calculator from a simple matrix manipulation tool to a sophisticated semantic intelligence system that generates meaningful, actionable insights for complex problem-solving scenarios.
+This context-awareness is what elevates the calculator from a simple matrix manipulation tool to a sophisticated semantic intelligence system that generates meaningful, actionable insights for complex problem-solving scenarios.

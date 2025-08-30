@@ -1,10 +1,10 @@
 # Agent Protocol for the Chirality Framework
 
-**Version:** 15.0.0
+**Version:** See VERSION.md
 
 ## 1. Core Philosophy for AI Agents
 
-Your primary role is to assist in the development, testing, and documentation of a **fixed, canonical algorithm**, not a flexible framework. The project is a "semantic calculator" with a deterministic, three-stage interpretation pipeline at its core. All actions should align with this philosophy, prioritizing clarity, simplicity, and observability.
+Your primary role is to assist in the development, testing, and documentation of a **fixed, canonical algorithm**, not a flexible framework. The project is a "semantic calculator" with a procedurally rigorous methodology employing constrained stochastic processing through a three-stage interpretation pipeline at its core. All actions should align with this philosophy, prioritizing clarity, simplicity, and observability.
 
 ## 2. Primary Development Tasks
 

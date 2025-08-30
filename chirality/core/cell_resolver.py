@@ -1,5 +1,5 @@
 """
-Consolidated OpenAI interface for CF14 semantic operations.
+Consolidated OpenAI interface for Chirality Framework semantic operations.
 
 This is the ONLY file in the codebase that imports OpenAI.
 All semantic operations (multiplication, addition, interpretation) 
@@ -42,7 +42,7 @@ def escape_for_prompt(s: str) -> str:
 
 class CellResolver:
     """
-    Consolidated OpenAI interface for all CF14 semantic operations.
+    Consolidated OpenAI interface for all Chirality Framework semantic operations.
     
     This is the centralized resolver that handles all LLM calls with:
     - Robust retry logic with exponential backoff
@@ -279,7 +279,7 @@ class CellResolver:
         return text[start:end+1]
 
     def _validate_obj(self, obj: Dict[str, Any]) -> None:
-        """Validate that object conforms to expected CF14 schema."""
+        """Validate that object conforms to expected framework schema."""
         if not isinstance(obj, dict):
             raise ValueError("Output must be a JSON object")
         

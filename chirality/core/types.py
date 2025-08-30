@@ -1,5 +1,5 @@
 """
-Simplified types for CF14 semantic calculator.
+Simplified types for Chirality Framework semantic calculator.
 
 Contains only the essential data structures: Cell, Matrix, Operation.
 All abstractions removed - this is a fixed algorithm, not a flexible framework.
@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 @dataclass
 class Cell:
     """
-    Fundamental semantic unit in CF14 semantic calculator.
+    Fundamental semantic unit in Chirality Framework semantic calculator.
     
     Stores the result of the 3-stage interpretation pipeline:
     - Stage 1 (Combinatorial): k-products generated mechanically
@@ -34,7 +34,7 @@ class Cell:
 @dataclass
 class Matrix:
     """
-    2D semantic matrix for CF14 semantic calculator.
+    2D semantic matrix for Chirality Framework semantic calculator.
     
     Contains cells arranged in a fixed ontological structure where:
     - row_labels define the row ontological axis
@@ -69,7 +69,7 @@ class Matrix:
 @dataclass
 class Operation:
     """
-    Minimal operation record for CF14 semantic calculator.
+    Minimal operation record for Chirality Framework semantic calculator.
     
     Simple logging-only record of semantic operations.
     No complex abstractions - just tracks what happened.

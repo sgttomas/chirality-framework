@@ -1,5 +1,15 @@
 # Changelog
 
+## [15.0.2] - 2025-08-29
+
+### Changed
+- Refactored versioning to use `VERSION.md` as a single source of truth, removing hardcoded versions from the CLI and documentation.
+- Updated core concept description from "deterministic" to "procedurally-rigorous methodology on a stochastic process" to more accurately reflect the architecture.
+
+### Fixed
+- Removed all outdated "CF14" version identifiers from current documentation and code for consistency.
+- Renamed `CF14ValidationError` to `FrameworkValidationError` to align with the current project branding.
+
 ## [15.0.1] - 2025-08-29
 
 ### Fixed
@@ -31,7 +41,7 @@
 - All import paths have been updated due to the new structure.
 
 
-All notable changes to the Chirality Framework will be documented in this file.  References "CF14" 
+All notable changes to the Chirality Framework will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -180,4 +190,3 @@ Repository boundaries align with functional responsibilities
 ### Changed
 - Moved from conceptual framework to working code
 - Implemented basic validation system
-

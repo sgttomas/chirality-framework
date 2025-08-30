@@ -130,16 +130,16 @@ class JSONLTracer:
     
     def trace_stage(self, 
                     stage_type: str, 
-                    cell_context,  # CellContext type
-                    result,        # SemanticResult type
+                    cell_context,  # SemanticContext type
+                    result,        # Result object with text, terms_used, warnings
                     extras: Dict[str, Any] = None) -> None:
         """
         Trace a semantic stage event.
         
         Args:
             stage_type: Type of stage (e.g., "product:k=0", "sum", "interpret", "final")
-            cell_context: Context object with matrix, i, j, labels, pattern, inputs
-            result: Semantic result with text, terms_used, warnings, metadata
+            cell_context: SemanticContext object with matrix, i, j, row_label, col_label, etc.
+            result: Result object with text, terms_used, warnings attributes
             extras: Optional additional context (station, valley_summary, products, etc.)
         """
         with self._lock:
@@ -223,11 +223,11 @@ class JSONLTracer:
             products=extras.get("products"),
             thread_id=self.thread_id,
             run_id=self.run_id,
-            station=extras.get("station", ""),
-            valley_summary=extras.get("valley_summary", ""),
-            pattern=getattr(cell_context, 'pattern', ''),
+            station=extras["station"],
+            valley_summary=extras["valley_summary"],
+            pattern=cell_context.operation_type,
             stage_plan=extras.get("stage_plan", []),
-            inputs=getattr(cell_context, 'inputs', {}),
+            inputs=cell_context.terms,
             model_id=result.metadata.get("model_id", "") if hasattr(result, 'metadata') else "",
             latency_ms=result.metadata.get("latency_ms", 0) if hasattr(result, 'metadata') else 0,
             prompt_hash=extras.get("prompt_hash", ""),

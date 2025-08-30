@@ -1,15 +1,15 @@
 """
-Validation rules for CF14 semantic structures.
+Validation rules for Chirality Framework v15.0.1 semantic structures.
 
-Enforces dimensional constraints, modality alignment, and operation sequencing.
+Enforces dimensional constraints and operation sequencing.
 """
 
 from typing import List, Dict, Any, Optional
 from .types import Cell, Matrix
 
 
-class CF14ValidationError(ValueError):
-    """Raised when CF14 validation rules are violated."""
+class FrameworkValidationError(ValueError):
+    """Raised when framework validation rules are violated."""
     pass
 
 
@@ -23,16 +23,16 @@ def ensure_dims(A: Matrix, B: Matrix, op: str) -> None:
         op: Operation type
     
     Raises:
-        CF14ValidationError: If dimensions incompatible
+        FrameworkValidationError: If dimensions incompatible
     """
     if op == "*":
         if A.shape[1] != B.shape[0]:
-            raise CF14ValidationError(
+            raise FrameworkValidationError(
                 f"Matrix multiplication requires A.cols == B.rows, got {A.shape} × {B.shape}"
             )
     elif op in ["+", "⊙"]:
         if A.shape != B.shape:
-            raise CF14ValidationError(
+            raise FrameworkValidationError(
                 f"Operation {op} requires same dimensions, got {A.shape} vs {B.shape}"
             )
 
@@ -47,17 +47,17 @@ def ensure_same_rows_cols(A: Matrix, B: Matrix, op: str) -> None:
         op: Operation type
     
     Raises:
-        CF14ValidationError: If dimensions don't match
+        FrameworkValidationError: If dimensions don't match
     """
     if A.shape != B.shape:
-        raise CF14ValidationError(
+        raise FrameworkValidationError(
             f"Operation {op} requires identical dimensions, got {A.shape} vs {B.shape}"
         )
 
 
 def validate_cell(cell: Cell) -> List[str]:
     """
-    Validate a cell structure for the simplified CF14 types.
+    Validate a cell structure for the framework's simplified types.
 
     Checks only fields that actually exist on Cell:
     - row/col are non-negative integers
@@ -85,7 +85,7 @@ def validate_cell(cell: Cell) -> List[str]:
 
 def validate_matrix(matrix: Matrix) -> List[str]:
     """
-    Validate a matrix structure for the simplified CF14 types.
+    Validate a matrix structure for the framework's simplified types.
 
     Checks presence and coherence of:
     - name (str), station (str)
@@ -125,28 +125,37 @@ def validate_matrix(matrix: Matrix) -> List[str]:
     if isinstance(matrix.col_labels, list) and len(matrix.col_labels) != cols:
         errors.append("col_labels length does not match number of columns")
 
+    # Validate cells in 2D structure
     cell_positions = set()
-    for cell in matrix.cells:
-        # Validate individual cell
-        cell_errors = validate_cell(cell)
-        errors.extend([f"Cell {cell.id}: {e}" for e in cell_errors])
-        
-        # Check bounds
-        if cell.row >= rows or cell.col >= cols:
-            errors.append(f"Cell {cell.id} out of bounds: ({cell.row}, {cell.col})")
-        
-        # Check duplicates
-        pos = (cell.row, cell.col)
-        if pos in cell_positions:
-            errors.append(f"Duplicate cell at position {pos}")
-        cell_positions.add(pos)
+    for i, row in enumerate(matrix.cells):
+        if not isinstance(row, list):
+            errors.append(f"Row {i} is not a list")
+            continue
+        for j, cell in enumerate(row):
+            # Validate individual cell
+            cell_errors = validate_cell(cell)
+            errors.extend([f"Cell ({i},{j}): {e}" for e in cell_errors])
+            
+            # Check that cell position matches its array indices
+            if cell.row != i or cell.col != j:
+                errors.append(f"Cell at [{i}][{j}] has mismatched position: ({cell.row}, {cell.col})")
+            
+            # Check bounds (redundant but thorough)
+            if cell.row >= rows or cell.col >= cols:
+                errors.append(f"Cell ({i},{j}) out of bounds: ({cell.row}, {cell.col})")
+            
+            # Check duplicates
+            pos = (cell.row, cell.col)
+            if pos in cell_positions:
+                errors.append(f"Duplicate cell at position {pos}")
+            cell_positions.add(pos)
     
     return errors
 
 
 def validate_operation_sequence(operations: List[str]) -> List[str]:
     """
-    Validate CF14 operation sequence rules.
+    Validate operation sequence rules.
     
     Rules:
     - Multiply before add
@@ -171,28 +180,10 @@ def validate_operation_sequence(operations: List[str]) -> List[str]:
             first_add_idx = i
     
     if first_add_idx < last_multiply_idx:
-        errors.append("Addition operation before multiplication (violates CF14 sequence)")
+        errors.append("Addition operation before multiplication (violates framework sequence)")
     
     return errors
 
-
-def validate_modality_alignment(matrix_a: Matrix, matrix_b: Matrix) -> List[str]:
-    """
-    Validate modality alignment between matrices.
-    
-    Args:
-        matrix_a: First matrix
-        matrix_b: Second matrix
-    
-    Returns:
-        List of validation errors
-    """
-    errors = []
-    
-    # Note: Modality alignment removed - simplified architecture
-    # All semantic validation now handled by the 3-stage pipeline
-    
-    return errors
 
 
 def validate_matrix_dimensions(matrix_a: Matrix, matrix_b: Matrix, operation: str) -> List[str]:
@@ -232,6 +223,8 @@ def validate_provenance(cell: Cell) -> List[str]:
     """
     Validate provenance tracking for a cell.
     
+    Validates strictly against the canonical provenance schema.
+    
     Args:
         cell: Cell to validate
     
@@ -244,16 +237,36 @@ def validate_provenance(cell: Cell) -> List[str]:
         errors.append("Cell missing provenance")
         return errors
     
-    # Check required provenance fields
+    # Check required provenance fields (canonical schema)
     if "operation" not in cell.provenance:
         errors.append("Provenance missing operation type")
     
     if "sources" not in cell.provenance:
-        errors.append("Provenance missing sources")
+        errors.append("Provenance missing sources list")
     elif not isinstance(cell.provenance["sources"], list):
         errors.append("Provenance sources must be a list")
     
     if "timestamp" not in cell.provenance:
         errors.append("Provenance missing timestamp")
+    
+    # Validate operation-specific fields if operation is known
+    operation = cell.provenance.get("operation")
+    if operation == "compute_C":
+        if "stage_1_products" not in cell.provenance:
+            errors.append("compute_C provenance missing stage_1_products")
+        if "stage_2_resolved" not in cell.provenance:
+            errors.append("compute_C provenance missing stage_2_resolved")
+        if "stage_3_lensed" not in cell.provenance:
+            errors.append("compute_C provenance missing stage_3_lensed")
+    elif operation == "compute_F":
+        if "stage_1_element_wise" not in cell.provenance:
+            errors.append("compute_F provenance missing stage_1_element_wise")
+        if "stage_2_resolved" not in cell.provenance:
+            errors.append("compute_F provenance missing stage_2_resolved")
+    elif operation == "synthesize_D":
+        if "stage_1_synthesis" not in cell.provenance:
+            errors.append("synthesize_D provenance missing stage_1_synthesis")
+        if "problem" not in cell.provenance:
+            errors.append("synthesize_D provenance missing problem statement")
     
     return errors

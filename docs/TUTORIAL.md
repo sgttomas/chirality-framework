@@ -11,7 +11,7 @@ The process begins with two fixed inputs, defined in `chirality/core/matrices.py
 *   **`MATRIX_A` (Problem Statement):** Defines the perspectives (Normative, Operative, Evaluative) and functions (Guiding, Applying, etc.) of the problem space.
 *   **`MATRIX_B` (Decision Basis):** Defines the levels of knowledge (Data, Information, etc.) and logical attributes (Necessity, Sufficiency, etc.).
 
-## Step 2: Computing Matrix C (Requirements)
+## Step 2: Computing Matrix C (Problem Requirements)
 
 The first operation is `C = A * B`. This generates the core requirements. Let's trace the creation of a single cell, **C(0,0)**, which is at the intersection of the "Normative" row and the "Necessity (vs Contingency)" column.
 
@@ -50,9 +50,9 @@ Finally, the resolved concepts are combined and interpreted through the powerful
 
 This process is repeated for all 12 cells, resulting in the complete **Matrix C**.
 
-## Step 3: Computing Matrices F and D (Objectives)
+## Step 3: Computing Matrices F and D (Solution Objectives)
 
-The process continues in the "Objectives" station:
+The process continues in the "Solution Objectives" station:
 
 1.  **Matrix F is computed** using an element-wise multiplication: `F = J ⊙ C`. Each cell `F(i,j)` is the semantic resolution of the terms from `J(i,j)` and `C(i,j)`, which is then passed through the Lensing stage.
 2.  **Matrix D is synthesized** using the formula `D = A + F`. Each cell `D(i,j)` is created by mechanically combining the terms from `A(i,j)` and `F(i,j)` into a sentence, which is then passed through the Lensing stage to generate a final, actionable objective.

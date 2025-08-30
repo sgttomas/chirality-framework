@@ -1,5 +1,5 @@
 """
-CF14 Three-Stage Cell Pipeline Implementation.
+Three-Stage Cell Pipeline Implementation for Chirality Framework v15.0.1
 
 This is the "secret sauce" - the core algorithm that transforms
 structural combinations into meaningful semantic insights through
@@ -9,8 +9,9 @@ Stage 1 (Combinatorial): Mechanical generation of k-products
 Stage 2 (Semantic): LLM resolution of word pairs into concepts  
 Stage 3 (Lensing): Ontological interpretation through row/column coordinates
 
-This embodies the "semantic calculator" philosophy: fixed algorithms
-that produce predictable, meaningful outputs from canonical inputs.
+This embodies the "semantic calculator" philosophy: procedurally rigorous
+methodology with fixed ontological structure that produces meaningful outputs 
+through constrained stochastic processing of canonical inputs.
 """
 
 from typing import List, Optional
@@ -19,6 +20,7 @@ from .types import Cell, Matrix
 from .context import SemanticContext
 from .cell_resolver import CellResolver
 from .tracer import JSONLTracer
+from .provenance_schema import create_provenance
 from ..exporters.working_memory_exporter import Neo4jWorkingMemoryExporter
 
 
@@ -64,7 +66,7 @@ def compute_cell_C(i: int, j: int, A: Matrix, B: Matrix, resolver: CellResolver,
     # Trace Stage 1 (combinatorial - no LLM call, just mechanical result)
     if tracer:
         stage1_context = SemanticContext(
-            station_context="Requirements",
+            station_context="Problem Requirements",
             valley_summary=valley_summary,
             row_label=A.row_labels[i],
             col_label=B.col_labels[j],
@@ -80,7 +82,7 @@ def compute_cell_C(i: int, j: int, A: Matrix, B: Matrix, resolver: CellResolver,
             terms_used=[f"k={k}" for k in range(len(raw_products))],
             warnings=[]
         ), {
-            "station": "Requirements", 
+            "station": "Problem Requirements", 
             "valley_summary": valley_summary,
             "products": raw_products
         })
@@ -90,7 +92,7 @@ def compute_cell_C(i: int, j: int, A: Matrix, B: Matrix, resolver: CellResolver,
     for k, product_pair in enumerate(raw_products):
         # Create SemanticContext object for this resolution
         context_for_stage2 = SemanticContext(
-            station_context="Requirements",
+            station_context="Problem Requirements",
             valley_summary=valley_summary,
             row_label=A.row_labels[i],
             col_label=B.col_labels[j],
@@ -110,7 +112,7 @@ def compute_cell_C(i: int, j: int, A: Matrix, B: Matrix, resolver: CellResolver,
                 terms_used=product_pair.split(" * "),
                 warnings=[]
             ), {
-                "station": "Requirements", 
+                "station": "Problem Requirements", 
                 "valley_summary": valley_summary,
                 "products": [product_pair]
             })
@@ -119,7 +121,7 @@ def compute_cell_C(i: int, j: int, A: Matrix, B: Matrix, resolver: CellResolver,
     combined_concepts = ", ".join(resolved_concepts)
     # Create SemanticContext object for lensing
     context_for_stage3 = SemanticContext(
-        station_context="Requirements",
+        station_context="Problem Requirements",
         valley_summary=valley_summary,
         row_label=A.row_labels[i],
         col_label=B.col_labels[j],
@@ -138,7 +140,7 @@ def compute_cell_C(i: int, j: int, A: Matrix, B: Matrix, resolver: CellResolver,
             terms_used=resolved_concepts,
             warnings=[]
         ), {
-            "station": "Requirements", 
+            "station": "Problem Requirements", 
             "valley_summary": valley_summary,
             "stage_plan": ["combinatorial", "semantic", "lensing"]
         })
@@ -147,14 +149,17 @@ def compute_cell_C(i: int, j: int, A: Matrix, B: Matrix, resolver: CellResolver,
         row=i,
         col=j,
         value=final_meaning,
-        provenance={
-            "stage_1_products": raw_products,
-            "stage_2_resolved": resolved_concepts,
-            "stage_3_lensed": final_meaning,
-            "operation": "compute_C",
-            "coordinates": f"({A.row_labels[i]}, {B.col_labels[j]})",
-            "traced": tracer is not None
-        }
+        provenance=create_provenance(
+            operation="compute_C",
+            coordinates=f"({A.row_labels[i]}, {B.col_labels[j]})",
+            stage_data={
+                "stage_1_products": raw_products,
+                "stage_2_resolved": resolved_concepts,
+                "stage_3_lensed": final_meaning,
+            },
+            sources=["A", "B"],
+            traced=tracer is not None
+        )
     )
     
     # Export to Neo4j if exporter is provided
@@ -190,7 +195,7 @@ def compute_cell_F(i: int, j: int, J: Matrix, C: Matrix, resolver: CellResolver,
     element_pair = f"{j_cell.value} * {c_cell.value}"
     
     context_for_stage1 = SemanticContext(
-        station_context="Objectives", 
+        station_context="Solution Objectives", 
         valley_summary=valley_summary,
         row_label=J.row_labels[i], 
         col_label=J.col_labels[j],
@@ -209,14 +214,14 @@ def compute_cell_F(i: int, j: int, J: Matrix, C: Matrix, resolver: CellResolver,
             terms_used=element_pair.split(" * "),
             warnings=[]
         ), {
-            "station": "Objectives", 
+            "station": "Solution Objectives", 
             "valley_summary": valley_summary,
             "products": [element_pair]
         })
 
-    # Stage 2: Apply lens for Objectives station  
+    # Stage 2: Apply lens for Solution Objectives station  
     context_for_stage2 = SemanticContext(
-        station_context="Objectives", 
+        station_context="Solution Objectives", 
         valley_summary=valley_summary,
         row_label=J.row_labels[i], 
         col_label=J.col_labels[j],
@@ -235,7 +240,7 @@ def compute_cell_F(i: int, j: int, J: Matrix, C: Matrix, resolver: CellResolver,
             terms_used=[resolved_concept],
             warnings=[]
         ), {
-            "station": "Objectives", 
+            "station": "Solution Objectives", 
             "valley_summary": valley_summary,
             "stage_plan": ["element-wise", "lensing"]
         })
@@ -244,14 +249,17 @@ def compute_cell_F(i: int, j: int, J: Matrix, C: Matrix, resolver: CellResolver,
         row=i,
         col=j,
         value=final_meaning,
-        provenance={
-            "stage_1_element_wise": element_pair,
-            "stage_2_resolved": resolved_concept,
-            "stage_3_lensed": final_meaning,
-            "operation": "compute_F",
-            "coordinates": f"({J.row_labels[i]}, {J.col_labels[j]})",
-            "traced": tracer is not None
-        }
+        provenance=create_provenance(
+            operation="compute_F",
+            coordinates=f"({J.row_labels[i]}, {J.col_labels[j]})",
+            stage_data={
+                "stage_1_element_wise": element_pair,
+                "stage_2_resolved": resolved_concept,
+                "stage_3_lensed": final_meaning,
+            },
+            sources=["J", "C"],
+            traced=tracer is not None
+        )
     )
     
     # Export to Neo4j if exporter is provided
@@ -290,7 +298,7 @@ def synthesize_cell_D(i: int, j: int, A: Matrix, F: Matrix, problem: str, resolv
     # Trace Stage 1 (synthesis formula application)
     if tracer:
         stage1_context = SemanticContext(
-            station_context="Objectives",
+            station_context="Solution Objectives",
             valley_summary=valley_summary,
             row_label=A.row_labels[i],
             col_label=A.col_labels[j],
@@ -305,14 +313,14 @@ def synthesize_cell_D(i: int, j: int, A: Matrix, F: Matrix, problem: str, resolv
             terms_used=[a_cell.value, f_cell.value, problem],
             warnings=[]
         ), {
-            "station": "Objectives", 
+            "station": "Solution Objectives", 
             "valley_summary": valley_summary,
             "products": [synthesis_statement]
         })
 
-    # Stage 2: Apply lens for Objectives station  
+    # Stage 2: Apply lens for Solution Objectives station  
     context_for_stage2 = SemanticContext(
-        station_context="Objectives", 
+        station_context="Solution Objectives", 
         valley_summary=valley_summary,
         row_label=A.row_labels[i], 
         col_label=A.col_labels[j],  # Note: using A's column labels for D
@@ -331,7 +339,7 @@ def synthesize_cell_D(i: int, j: int, A: Matrix, F: Matrix, problem: str, resolv
             terms_used=[synthesis_statement],
             warnings=[]
         ), {
-            "station": "Objectives", 
+            "station": "Solution Objectives", 
             "valley_summary": valley_summary,
             "stage_plan": ["synthesis", "lensing"]
         })
@@ -340,14 +348,17 @@ def synthesize_cell_D(i: int, j: int, A: Matrix, F: Matrix, problem: str, resolv
         row=i,
         col=j,
         value=final_meaning,
-        provenance={
-            "stage_1_synthesis": synthesis_statement,
-            "stage_2_lensed": final_meaning,
-            "operation": "synthesize_D",
-            "problem": problem,
-            "coordinates": f"({A.row_labels[i]}, {A.col_labels[j]})",
-            "traced": tracer is not None
-        }
+        provenance=create_provenance(
+            operation="synthesize_D",
+            coordinates=f"({A.row_labels[i]}, {A.col_labels[j]})",
+            stage_data={
+                "stage_1_synthesis": synthesis_statement,
+                "stage_2_lensed": final_meaning,
+            },
+            sources=["A", "F"],
+            traced=tracer is not None,
+            problem=problem  # Extra field specific to D synthesis
+        )
     )
 
     # Export to Neo4j if exporter is provided
@@ -375,7 +386,7 @@ def compute_matrix_C(A: Matrix, B: Matrix, resolver: CellResolver, valley_summar
 
     return Matrix(
         name="C",
-        station="Requirements",
+        station="Problem Requirements",
         row_labels=A.row_labels,
         col_labels=B.col_labels,
         cells=cells
@@ -394,7 +405,7 @@ def compute_matrix_F(J: Matrix, C: Matrix, resolver: CellResolver, valley_summar
 
     return Matrix(
         name="F",
-        station="Objectives",
+        station="Solution Objectives",
         row_labels=J.row_labels,
         col_labels=J.col_labels,
         cells=cells
@@ -413,7 +424,7 @@ def synthesize_matrix_D(A: Matrix, F: Matrix, problem: str, resolver: CellResolv
 
     return Matrix(
         name="D",
-        station="Objectives",
+        station="Solution Objectives",
         row_labels=A.row_labels,  # D uses A's row labels
         col_labels=A.col_labels,  # D uses A's col labels
         cells=cells
