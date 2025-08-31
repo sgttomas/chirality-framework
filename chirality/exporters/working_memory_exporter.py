@@ -274,17 +274,17 @@ class Neo4jWorkingMemoryExporter:
         """
         payload = {}
         
-            if kind == "Construct":
+        if kind == "Construct":
                 # Strict: stage_data is a dict with text/texts
                 text = stage_data.get("text")
                 texts = stage_data.get("texts")
 
-            if matrix == "C" and isinstance(texts, list):
-                payload["products"] = texts
-            elif matrix == "F" and isinstance(text, str):
-                payload["element_pair"] = text
-            elif matrix == "D" and isinstance(text, str):
-                payload["construction_formula"] = text
+                if matrix == "C" and isinstance(texts, list):
+                    payload["products"] = texts
+                elif matrix == "F" and isinstance(text, str):
+                    payload["element_pair"] = text
+                elif matrix == "D" and isinstance(text, str):
+                    payload["construction_formula"] = text
         
         return payload
 
