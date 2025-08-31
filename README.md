@@ -1,5 +1,12 @@
 # Chirality Framework: A Semantic Calculator
 
+[![PyPI](https://img.shields.io/pypi/v/chirality-framework.svg)](https://pypi.org/project/chirality-framework/)
+[![Python versions](https://img.shields.io/pypi/pyversions/chirality-framework.svg)](https://pypi.org/project/chirality-framework/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Publish](https://github.com/sgttomas/chirality-framework/actions/workflows/python-publish.yml/badge.svg)](https://github.com/sgttomas/chirality-framework/actions/workflows/python-publish.yml)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/tag/sgttomas/chirality-framework?sort=semver&label=release)](https://github.com/sgttomas/chirality-framework/tags)
+
 **Version: See VERSION.md** | **Status: Refactored to Canonical Algorithm**
 
 The Chirality Framework is a direct, simple, and observable implementation of a fixed, canonical algorithm for structured problem-solving. It is not a general-purpose framework but a "semantic calculator" designed to execute a specific sequence of semantic transformations.

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chirality-framework"
-version = "16.0.1"
-description = "Chirality Framework Semantic Calculator - Fixed canonical algorithm for structured problem-solving"
+version = "16.0.0"
+description = "Chirality Framework Semantic Calculator — Universal 5-stage pipeline with run-scoped Neo4j export"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
@@ -35,7 +35,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-openai = ["openai>=1.0.0"]
+openai = ["openai>=1.42.0"]
 neo4j = ["neo4j>=5.0.0"]
 dev = [
     "pytest>=7.0.0",
@@ -44,7 +44,7 @@ dev = [
     "mypy>=1.0.0"
 ]
 all = [
-    "openai>=1.0.0",
+    "openai>=1.42.0",
     "neo4j>=5.0.0"
 ]
 
