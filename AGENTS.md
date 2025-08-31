@@ -1,44 +1,38 @@
-# Agent Protocol for the Chirality Framework
+# Repository Guidelines
 
-**Version:** See VERSION.md
+## Project Structure & Module Organization
+- Source: `chirality/` (core code), `chirality/core/*` (algorithm, resolvers, tracer, exporter).
+- CLI: `chirality/cli.py` (`compute-cell`, `info`).
+- Tests: `tests/` (unit tests, mocks); Docs: `docs/`.
+- Versioning: `VERSION.md`; packaging: `pyproject.toml`.
 
-## 1. Core Philosophy for AI Agents
+## Build, Test, and Development Commands
+- Build distributions: `python -m pip install -U build && python -m build`.
+- Run tests: `pytest -v`.
+- Compute a cell: `python3 -m chirality.cli compute-cell C --i 0 --j 0 --verbose`.
+- Tracing: add `--trace` to write JSONL to `traces/`.
+- Neo4j export: add `--neo4j-export` (CLI auto‑generates a run_id).
 
-Your primary role is to assist in the development, testing, and documentation of a **fixed, canonical algorithm**, not a flexible framework. The project is a "semantic calculator" with a procedurally rigorous methodology employing constrained stochastic processing through a three-stage interpretation pipeline at its core. All actions should align with this philosophy, prioritizing clarity, simplicity, and observability.
+## Coding Style & Naming Conventions
+- Python 3.9+; format with Black. Type‑check with mypy (strict in `pyproject.toml`).
+- Naming: use `compute_cell_*`, `compute_matrix_*`; avoid deprecated `synthesize_*`.
+- Provenance (dict per stage): `stage_1_construct`, `stage_2_semantic`, `stage_3_column_lensed`, `stage_4_row_lensed`, `stage_5_final_synthesis`.
 
-## 2. Primary Development Tasks
+## Testing Guidelines
+- Framework: `pytest`; use `tests/mocks.py` (no live LLM calls).
+- Assert on universal provenance fields and final values. Put new tests in `tests/core/`.
 
-Your work will focus on the core components of the semantic calculator.
+## Commit & Pull Request Guidelines
+- Conventional Commits examples:
+  - `feat(exporter): add run‑scoped stages`
+  - `fix(cli): print run_id when exporting`
+- PRs optional for solo work; include a short summary and breaking notes if used.
 
-### Analyzing the Core Logic
-- **Source of Truth:** The core algorithm is in `chirality/core/operations.py`. When analyzing the logic, focus on the `compute_cell_*` functions and their implementation of the 3-stage pipeline (Combinatorial -> Semantic Resolution -> Lensing).
-- **Prompting Engine:** The `chirality/core/cell_resolver.py` is the sole interface to the LLM. Prompt construction is centralized in `chirality/core/prompts.py` via explicit builders (e.g., `build_stage2_prompt`, `build_column_lensing_prompt`, `build_row_lensing_prompt`, `build_final_lensing_prompt`).
-- **Canonical Data:** The fixed input matrices are defined as constants in `chirality/core/matrices.py`.
+## Security & Configuration Tips
+- Secrets: never commit keys; use `.env` or OIDC (Trusted Publishing).
+- Neo4j: set `NEO4J_URI/USER/PASSWORD`; exporter creates constraints/indexes automatically.
 
-### Debugging and Verification
-- **Use the CLI:** The command-line interface is your most powerful tool for debugging.
-  ```bash
-  # Verify the output of a single cell
-  python3 -m chirality.cli compute-cell C --i 0 --j 0
-
-  # See the full 3-stage pipeline for a cell
-  python3 -m chirality.cli compute-cell C --i 0 --j 0 --verbose
-  ```
-- **Use the Tracer:** For detailed, machine-readable logs, run commands with the `--trace` flag. The output will be in the `traces/` directory.
-
-### Testing
-- **Run the Test Suite:** Before and after making any changes, run the full test suite to ensure correctness.
-  ```bash
-  # Run all offline unit tests from the project root
-  pytest
-  ```
-- **Writing New Tests:** New tests should be added to `tests/core/test_operations.py`. Use the `MockCellResolver` from `tests/mocks.py` to test algorithmic logic without making live LLM calls.
-
-## 3. Documentation Tasks
-
-When asked to update documentation, your primary focus should be on these two files:
-
-- **`README.md`**: The high-level introduction to the "semantic calculator."
-- **`docs/ALGORITHM.md`**: The definitive technical reference for the 3-stage pipeline and canonical matrices.
-
-Ensure all documentation accurately reflects the current, simplified architecture.
+## Architecture Overview (Quick)
+- Algorithm: 3 stages with universal lensing (Column → Row → Final).
+- D matrix: mechanical sentence (semantic addition) + universal lensing.
+- Exporter: writes Matrix/Cell/Stage and Run nodes; filter queries by `(:Run {id})` when analyzing.
