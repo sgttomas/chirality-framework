@@ -39,7 +39,7 @@ The most valuable contributions will be those that improve the core algorithm, i
 The core logic lives in `chirality/core/`.
 
 *   **`operations.py`**: This is the heart of the calculator. It contains the `compute_cell_*` functions that implement the **Three-Stage Interpretation Pipeline**. If you are refining the algorithm, this is the primary file you will work in.
-*   **`cell_resolver.py`**: This class is the sole interface to the LLM. Its `assemble_prompt` method is responsible for the dynamic, fragment-based prompt construction. Refinements to the prompting strategy happen here.
+*   **`cell_resolver.py`**: This class is the sole interface to the LLM. Prompt construction is handled by builders in `chirality/core/prompts.py` (e.g., `build_stage2_prompt`, `build_column_lensing_prompt`, `build_row_lensing_prompt`, `build_final_lensing_prompt`). Refinements to the prompting strategy happen there.
 *   **`matrices.py`**: This file contains the canonical, fixed matrices (A, B, J). These should only be changed if the underlying Normative Specification of the Chirality Framework is updated.
 
 ### Testing Contributions

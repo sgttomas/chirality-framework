@@ -16,10 +16,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from chirality.core.operations import (
     compute_cell_C,
     compute_cell_F,
-    synthesize_cell_D,
+    compute_cell_D,
     compute_matrix_C,
     compute_matrix_F,
-    synthesize_matrix_D
+    compute_matrix_D
 )
 from chirality.core.context import SemanticContext
 from tests.mocks import (
@@ -49,8 +49,9 @@ class TestStage1Combinatorial:
             "Feedback * Best Practices"
         ]
         
-        assert "stage_1_products" in cell.provenance
-        assert cell.provenance["stage_1_products"] == expected_products
+        assert "stage_1_construct" in cell.provenance
+        stage_1_data = cell.provenance["stage_1_construct"]
+        assert stage_1_data["texts"] == expected_products
     
     def test_no_llm_calls_for_combinatorial(self):
         """Verify Stage 1 generates products mechanically without resolver calls."""
@@ -70,7 +71,8 @@ class TestStage1Combinatorial:
             "Outcomes * Guidelines"
         ]
         
-        assert cell.provenance["stage_1_products"] == expected_products
+        stage_1_data = cell.provenance["stage_1_construct"]
+        assert stage_1_data["texts"] == expected_products
     
     def test_k_products_for_different_cells(self):
         """Test k-product generation for various cell positions."""
@@ -87,7 +89,8 @@ class TestStage1Combinatorial:
             "Learning * Methods"
         ]
         
-        assert cell.provenance["stage_1_products"] == expected_products
+        stage_1_data = cell.provenance["stage_1_construct"]
+        assert stage_1_data["texts"] == expected_products
 
 
 class TestStage2SemanticResolution:
@@ -109,7 +112,7 @@ class TestStage2SemanticResolution:
         )
         
         result = resolver.resolve_semantic_pair("Values * Necessary", context)
-        assert result == "Essential Values"
+        assert result.text == "Essential Values"
     
     def test_all_pairs_resolved(self):
         """Test that all k-products get resolved in Stage 2."""
@@ -126,8 +129,9 @@ class TestStage2SemanticResolution:
             "Optimal Reference Points"
         ]
         
-        assert "stage_2_resolved" in cell.provenance
-        assert cell.provenance["stage_2_resolved"] == expected_resolved
+        assert "stage_2_semantic" in cell.provenance
+        stage_2_data = cell.provenance["stage_2_semantic"]
+        assert stage_2_data["texts"] == expected_resolved
     
     def test_unknown_pair_handling(self):
         """Test resolution of pairs not in predefined patterns."""
@@ -145,7 +149,7 @@ class TestStage2SemanticResolution:
         )
         
         result = resolver.resolve_semantic_pair("Unknown * Concept", context)
-        assert result == "Concept Unknown"  # Descriptive style reverses order
+        assert result.text == "Concept Unknown"  # Descriptive style reverses order
 
 
 class TestStage3OntologicalLensing:
@@ -166,14 +170,15 @@ class TestStage3OntologicalLensing:
             j=0
         )
         
-        result = resolver.apply_ontological_lens(
-            "Essential Values, Conditional Actions",
-            context
-        )
+        # Use universal lensing steps
+        col_res = resolver.apply_column_lens("Essential Values, Conditional Actions", context)
+        row_res = resolver.apply_row_lens("Essential Values, Conditional Actions", context)
+        final_res = resolver.synthesize_lensed_perspectives(col_res.text, row_res.text, context)
         
         # Verify interpretation includes row/column context
-        assert "Normative" in result or "establishing standards" in result
-        assert "Determinacy" in result or "defining clear boundaries" in result
+        assert "COL[Determinacy]" in col_res.text or "Determinacy" in col_res.text
+        assert "ROW[Normative]" in row_res.text or "Normative" in row_res.text
+        assert "SYN[" in final_res.text
     
     def test_complete_lensing_in_pipeline(self):
         """Test Stage 3 produces final interpreted meaning."""
@@ -183,8 +188,8 @@ class TestStage3OntologicalLensing:
         cell = compute_cell_C(0, 0, A, B, resolver, "Test valley")
         
         # Check final lensed result
-        assert "stage_3_lensed" in cell.provenance
-        assert cell.value == cell.provenance["stage_3_lensed"]
+        assert "stage_5_final_synthesis" in cell.provenance
+        assert cell.value == cell.provenance["stage_5_final_synthesis"]["text"]
         
         # Final value should include interpretation
         assert "interpret" in cell.value.lower() or "establishing" in cell.value.lower()
@@ -200,10 +205,12 @@ class TestCompletePipeline:
         
         cell = compute_cell_C(0, 0, A, B, resolver, "Test valley")
         
-        # Verify all stages in provenance
-        assert "stage_1_products" in cell.provenance
-        assert "stage_2_resolved" in cell.provenance
-        assert "stage_3_lensed" in cell.provenance
+        # Verify all stages in provenance (universal schema)
+        assert "stage_1_construct" in cell.provenance
+        assert "stage_2_semantic" in cell.provenance
+        assert "stage_3_column_lensed" in cell.provenance
+        assert "stage_4_row_lensed" in cell.provenance
+        assert "stage_5_final_synthesis" in cell.provenance
         assert "operation" in cell.provenance
         assert cell.provenance["operation"] == "compute_C"
     
@@ -225,8 +232,8 @@ class TestCompletePipeline:
         semantic_events = tracer.find_events_by_stage("product:k=")
         assert len(semantic_events) == 4  # 4 k-products for matrix multiplication
         
-        final_events = tracer.find_events_by_stage("final")
-        assert len(final_events) == 1
+        lensing_events = tracer.find_events_by_stage("lensing:")
+        assert len(lensing_events) == 3  # column, row, final
     
     def test_coordinates_preserved(self):
         """Test that ontological coordinates are preserved throughout."""
@@ -252,15 +259,20 @@ class TestCompletePipeline:
         
         # Test compute_cell_F (element-wise)
         cell_f = compute_cell_F(0, 0, J, C, resolver, "Test valley")
-        assert "stage_1_element_wise" in cell_f.provenance
-        assert "stage_2_resolved" in cell_f.provenance
-        assert "stage_3_lensed" in cell_f.provenance
+        assert "stage_1_construct" in cell_f.provenance
+        assert "stage_2_semantic" in cell_f.provenance
+        assert "stage_3_column_lensed" in cell_f.provenance
+        assert "stage_4_row_lensed" in cell_f.provenance
+        assert "stage_5_final_synthesis" in cell_f.provenance
         
-        # Test synthesize_cell_D (synthesis)
-        cell_d = synthesize_cell_D(0, 0, A, C, "test problem", resolver, "Test valley")
-        assert "stage_1_synthesis" in cell_d.provenance
-        assert "stage_2_lensed" in cell_d.provenance
-        assert "problem" in cell_d.provenance
+        # Test compute_cell_D (synthesis)
+        cell_d = compute_cell_D(0, 0, A, C, resolver, "Test valley")
+        assert "stage_1_construct" in cell_d.provenance
+        assert "stage_2_semantic" in cell_d.provenance
+        assert "stage_3_column_lensed" in cell_d.provenance
+        assert "stage_4_row_lensed" in cell_d.provenance
+        assert "stage_5_final_synthesis" in cell_d.provenance
+        assert cell_d.provenance["operation"] == "compute_D"
 
 
 class TestMatrixOperations:
@@ -297,19 +309,20 @@ class TestMatrixOperations:
         assert matrix_F.station == "Objectives"
         assert matrix_F.cells[0][0].provenance["operation"] == "compute_F"
     
-    def test_synthesize_matrix_D(self):
-        """Test full matrix D synthesis."""
+    def test_compute_matrix_D(self):
+        """Test full matrix D computation."""
         A, F = create_test_matrices()
         resolver = MockCellResolver()
         
-        matrix_D = synthesize_matrix_D(A, F, "generating knowledge", resolver, "Test valley")
+        matrix_D = compute_matrix_D(A, F, resolver, "Test valley")
         
         assert matrix_D.name == "D"
         assert matrix_D.station == "Objectives"
         
         # Check synthesis formula was applied
         cell = matrix_D.cells[0][0]
-        assert "generating knowledge" in cell.provenance["stage_1_synthesis"]
+        stage_2_data = cell.provenance["stage_2_semantic"]
+        assert "applied to frame the problem" in stage_2_data["text"]
 
 
 class TestResolverCallCounts:
@@ -331,8 +344,10 @@ class TestResolverCallCounts:
         # Should call resolve_semantic_pair once per k-product (4 times)
         assert counts["resolve_semantic_pair"] == 4
         
-        # Should call apply_ontological_lens once for final interpretation
-        assert counts["apply_ontological_lens"] == 1
+        # Should call universal lensing methods once each
+        assert counts["apply_column_lens"] == 1
+        assert counts["apply_row_lens"] == 1
+        assert counts["synthesize_lensed_perspectives"] == 1
     
     def test_matrix_computation_call_counts(self):
         """Test call counts for full matrix computation."""
@@ -347,8 +362,10 @@ class TestResolverCallCounts:
         # 3x4 matrix, 4 k-products each = 12*4 = 48 semantic resolutions
         assert counts["resolve_semantic_pair"] == 48
         
-        # 3x4 matrix = 12 lens applications
-        assert counts["apply_ontological_lens"] == 12
+        # 3x4 matrix = 12 cells, each with 3 lensing steps = 36 total lensing calls
+        assert counts["apply_column_lens"] == 12
+        assert counts["apply_row_lens"] == 12
+        assert counts["synthesize_lensed_perspectives"] == 12
 
 
 if __name__ == "__main__":

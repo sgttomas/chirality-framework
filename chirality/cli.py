@@ -8,6 +8,9 @@ from mechanical k-products through semantic resolution to ontological lensing.
 """
 
 import click
+import os
+import uuid
+from datetime import datetime, timezone
 import json
 import sys
 from pathlib import Path
@@ -32,13 +35,14 @@ load_dotenv(override=True)
 from .core.types import Cell, Matrix
 from .core.context import SemanticContext
 from .core.matrices import MATRIX_A, MATRIX_B, MATRIX_J
+from .core.constants import CANONICAL_PROBLEM
 from .core.operations import (
     compute_cell_C,
     compute_cell_F,
-    synthesize_cell_D,
+    compute_cell_D,
     compute_matrix_C,
     compute_matrix_F,
-    synthesize_matrix_D
+    compute_matrix_D
 )
 from .core.cell_resolver import CellResolver
 from .core.resolvers import EchoResolver
@@ -88,10 +92,8 @@ def cli():
               help='Enable JSONL tracing to traces/ directory')
 @click.option('--neo4j-export/--no-neo4j-export', default=False,
               help='Enable writing output to Neo4j.')
-@click.option('--problem', default="generating reliable knowledge",
-              help='Problem statement for D matrix synthesis')
 def compute_cell(matrix: str, row: int, col: int, verbose: bool, 
-                resolver: str, api_key: Optional[str], trace: bool, neo4j_export: bool, problem: str):
+                resolver: str, api_key: Optional[str], trace: bool, neo4j_export: bool):
     """
     Compute a single cell through the 3-stage pipeline.
 
@@ -99,7 +101,7 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
     Examples:
         chirality compute-cell C --i 0 --j 0 -v
         chirality compute-cell F --i 1 --j 2 --verbose
-        chirality compute-cell D --i 2 --j 1 --problem "creating value"
+        chirality compute-cell D --i 2 --j 1
     """
     resolver_obj = None
     tracer_obj = None
@@ -125,9 +127,18 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
         if trace:
             click.echo(click.style("Tracing enabled -> traces/", **INFO_STYLE))
         
-        exporter_obj = Neo4jWorkingMemoryExporter() if neo4j_export else None
+        exporter_obj = None
         if neo4j_export:
-            click.echo(click.style("Neo4j export enabled", **INFO_STYLE))
+            # Generate a unique run/session id for this CLI invocation
+            run_id = f"cli-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
+            run_tag = "cli"
+            run_user = os.getenv("USER") or os.getenv("USERNAME")
+            exporter_obj = Neo4jWorkingMemoryExporter(
+                run_id=run_id,
+                run_tag=run_tag,
+                run_user=run_user,
+            )
+            click.echo(click.style(f"Neo4j export enabled (run_id={run_id})", **INFO_STYLE))
 
         # Get canonical matrices and context
         A, B, J = MATRIX_A, MATRIX_B, MATRIX_J
@@ -169,10 +180,10 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
                     i=row,
                     j=col,
                 )
-                resolved = resolver_obj.resolve_semantic_pair(pair, ctx1)
+                resolved_result = resolver_obj.resolve_semantic_pair(pair, ctx1)
                 click.echo(click.style("STAGE 2: Semantic Resolution", **STAGE_STYLE))
                 click.echo(click.style("-" * 40, **DIM_STYLE))
-                click.echo(f"  {pair} → {click.style(resolved, fg='green')}")
+                click.echo(f"  {pair} → {click.style(resolved_result.text, fg='green')}")
 
                 click.echo()
                 click.echo(click.style("STAGE 3: Ontological Lensing", **STAGE_STYLE))
@@ -183,13 +194,24 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
                     row_label=J.row_labels[row],
                     col_label=J.col_labels[col],
                     operation_type="interpret",
-                    terms={"content": resolved},
+                    terms={"content": resolved_result.text, "problem": CANONICAL_PROBLEM},
                     matrix="F",
                     i=row,
                     j=col,
                 )
-                lensed = resolver_obj.apply_ontological_lens(resolved, ctx2)
-                click.echo(f"  {lensed}")
+                
+                # Show the universal 3-step lensing process
+                click.echo("  Step 1 - Column Lens:")
+                col_result = resolver_obj.apply_column_lens(resolved_result.text, ctx2)
+                click.echo(f"    {col_result.text}")
+                
+                click.echo("  Step 2 - Row Lens:")
+                row_result = resolver_obj.apply_row_lens(resolved_result.text, ctx2)
+                click.echo(f"    {row_result.text}")
+                
+                click.echo("  Step 3 - Final Synthesis:")
+                final_result = resolver_obj.synthesize_lensed_perspectives(col_result.text, row_result.text, ctx2)
+                click.echo(f"    {final_result.text}")
 
             cell = compute_cell_F(row, col, J, C, resolver_obj, valley_summary, tracer_obj, exporter_obj)
             _show_cell_result(cell, J.row_labels[row], J.col_labels[col])
@@ -200,15 +222,20 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
             if verbose:
                 # Minimal staged view for D: synthesis formula → lens
                 click.echo()
-                click.echo(click.style("STAGE 1: Synthesis (A + F)", **STAGE_STYLE))
+                click.echo(click.style("STAGE 1: Mechanical Formation", **STAGE_STYLE))
                 click.echo(click.style("-" * 40, **DIM_STYLE))
                 a_cell = A.get_cell(row, col)
                 f_cell = F.get_cell(row, col)
-                synthesis = f"{a_cell.value} applied to frame the problem of {problem} and {f_cell.value} to resolve the problem"
+                synthesis = f"{a_cell.value} applied to frame the problem; {f_cell.value} to resolve the problem."
                 click.echo(f"  {synthesis}")
 
                 click.echo()
-                click.echo(click.style("STAGE 2: Ontological Lensing", **STAGE_STYLE))
+                click.echo(click.style("STAGE 2: Semantic Operation (Mechanical +)", **STAGE_STYLE))
+                click.echo(click.style("-" * 40, **DIM_STYLE))
+                click.echo(f"  A[{row},{col}] + F[{row},{col}] → {synthesis}")
+
+                click.echo()
+                click.echo(click.style("STAGE 3: Ontological Lensing", **STAGE_STYLE))
                 click.echo(click.style("-" * 40, **DIM_STYLE))
                 ctx = SemanticContext(
                     station_context="Solution Objectives",
@@ -216,15 +243,26 @@ def compute_cell(matrix: str, row: int, col: int, verbose: bool,
                     row_label=A.row_labels[row],
                     col_label=A.col_labels[col],
                     operation_type="interpret",
-                    terms={"content": synthesis, "problem": problem},
+                    terms={"content": synthesis, "problem": CANONICAL_PROBLEM},
                     matrix="D",
                     i=row,
                     j=col,
                 )
-                lensed = resolver_obj.apply_ontological_lens(synthesis, ctx)
-                click.echo(f"  {lensed}")
+                
+                # Show the universal 3-step lensing process
+                click.echo("  Step 1 - Column Lens:")
+                col_result = resolver_obj.apply_column_lens(synthesis, ctx)
+                click.echo(f"    {col_result.text}")
+                
+                click.echo("  Step 2 - Row Lens:")
+                row_result = resolver_obj.apply_row_lens(synthesis, ctx)
+                click.echo(f"    {row_result.text}")
+                
+                click.echo("  Step 3 - Final Synthesis:")
+                final_result = resolver_obj.synthesize_lensed_perspectives(col_result.text, row_result.text, ctx)
+                click.echo(f"    {final_result.text}")
 
-            cell = synthesize_cell_D(row, col, A, F, problem, resolver_obj, valley_summary, tracer_obj, exporter_obj)
+            cell = compute_cell_D(row, col, A, F, resolver_obj, valley_summary, tracer_obj, exporter_obj)
             _show_cell_result(cell, A.row_labels[row], A.col_labels[col])
             
     except Exception as e:
@@ -277,19 +315,17 @@ def _show_c_computation_verbose(row: int, col: int, A: Matrix, B: Matrix,
             i=row,
             j=col
         )
-        concept = resolver.resolve_semantic_pair(product, context)
-        resolved.append(concept)
-        click.echo(f"  {product} → {click.style(concept, fg='green')}")
+        concept_result = resolver.resolve_semantic_pair(product, context)
+        resolved.append(concept_result.text)
+        click.echo(f"  {product} → {click.style(concept_result.text, fg='green')}")
     
     click.echo()
     click.echo(click.style("STAGE 3: Ontological Lensing", **STAGE_STYLE))
     click.echo(click.style("-" * 40, **DIM_STYLE))
     
-    # Stage 3: Apply lens
+    # Stage 3: Universal 3-step ontological lensing
     combined = ", ".join(resolved)
     click.echo(f"  Combined: {combined[:80]}...")
-    click.echo(f"  Row lens: {A.row_labels[row]}")
-    click.echo(f"  Col lens: {B.col_labels[col]}")
     
     context = SemanticContext(
         station_context="Problem Requirements",
@@ -297,17 +333,29 @@ def _show_c_computation_verbose(row: int, col: int, A: Matrix, B: Matrix,
         row_label=A.row_labels[row],
         col_label=B.col_labels[col],
         operation_type="interpret",
-        terms={"content": combined},
+        terms={"content": combined, "problem": CANONICAL_PROBLEM},
         matrix="C",
         i=row,
         j=col
     )
-    final = resolver.apply_ontological_lens(combined, context)
+    
+    # Show the universal 3-step lensing process
+    click.echo("  Step 1 - Column Lens:")
+    col_result = resolver.apply_column_lens(combined, context)
+    click.echo(f"    {col_result.text}")
+    
+    click.echo("  Step 2 - Row Lens:")
+    row_result = resolver.apply_row_lens(combined, context)
+    click.echo(f"    {row_result.text}")
+    
+    click.echo("  Step 3 - Final Synthesis:")
+    final_result = resolver.synthesize_lensed_perspectives(col_result.text, row_result.text, context)
+    click.echo(f"    {final_result.text}")
     
     click.echo()
     click.echo(click.style("FINAL RESULT:", **SUCCESS_STYLE))
     click.echo(click.style("-" * 40, **DIM_STYLE))
-    click.echo(f"  {final}")
+    click.echo(f"  {final_result.text}")
 
 
 def _show_cell_result(cell: Cell, row_label: str, col_label: str):

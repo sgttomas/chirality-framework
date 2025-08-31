@@ -16,11 +16,12 @@ through constrained stochastic processing of canonical inputs.
 
 from typing import List, Optional
 from dataclasses import dataclass
-from .types import Cell, Matrix
+from .types import Cell, Matrix, RichResult
 from .context import SemanticContext
 from .cell_resolver import CellResolver
 from .tracer import JSONLTracer
 from .provenance_schema import create_provenance
+from .constants import CANONICAL_PROBLEM
 from ..exporters.working_memory_exporter import Neo4jWorkingMemoryExporter
 
 
@@ -30,6 +31,80 @@ class SimpleResult:
     text: str
     terms_used: List[str] 
     warnings: List[str]
+
+
+def _perform_three_step_lensing(content: str, context: SemanticContext, resolver: CellResolver, tracer: Optional[JSONLTracer] = None) -> tuple[RichResult, RichResult, RichResult]:
+    """
+    Universal 3-step ontological lensing process for ALL matrices.
+    
+    Step 1: Column lens interpretation
+    Step 2: Row lens interpretation  
+    Step 3: Final synthesis of both perspectives
+    
+    Args:
+        content: Content to interpret (resolved concepts for C/F, synthesis statement for D)
+        context: SemanticContext with station, coordinates, and problem
+        resolver: CellResolver with the 3 lensing methods
+        tracer: Optional tracer for observability
+        
+    Returns:
+        Tuple of (column_perspective, row_perspective, final_synthesis)
+    """
+    # Step 1: Column lens
+    column_result = resolver.apply_column_lens(content, context)
+    if tracer:
+        tracer.trace_stage(
+            "lensing:column",
+            context,
+            SimpleResult(
+                text=column_result.text,
+                terms_used=column_result.terms_used,
+                warnings=column_result.warnings
+            ),
+            {
+                "station": context.station_context,
+                "valley_summary": context.valley_summary,
+                "stage_plan": ["column_lens"],
+            },
+        )
+    
+    # Step 2: Row lens  
+    row_result = resolver.apply_row_lens(content, context)
+    if tracer:
+        tracer.trace_stage(
+            "lensing:row",
+            context,
+            SimpleResult(
+                text=row_result.text,
+                terms_used=row_result.terms_used,
+                warnings=row_result.warnings
+            ),
+            {
+                "station": context.station_context,
+                "valley_summary": context.valley_summary,
+                "stage_plan": ["row_lens"],
+            },
+        )
+    
+    # Step 3: Synthesize both perspectives
+    final_result = resolver.synthesize_lensed_perspectives(column_result.text, row_result.text, context)
+    if tracer:
+        tracer.trace_stage(
+            "lensing:final",
+            context,
+            SimpleResult(
+                text=final_result.text,
+                terms_used=final_result.terms_used,
+                warnings=final_result.warnings
+            ),
+            {
+                "station": context.station_context,
+                "valley_summary": context.valley_summary,
+                "stage_plan": ["column_lens", "row_lens", "final_synthesis"],
+            },
+        )
+    
+    return column_result, row_result, final_result
 
 
 def compute_cell_C(i: int, j: int, A: Matrix, B: Matrix, resolver: CellResolver, valley_summary: str, tracer: Optional[JSONLTracer] = None, exporter: Optional['Neo4jWorkingMemoryExporter'] = None) -> Cell:
@@ -102,60 +177,53 @@ def compute_cell_C(i: int, j: int, A: Matrix, B: Matrix, resolver: CellResolver,
             i=i,
             j=j
         )
-        concept = resolver.resolve_semantic_pair(product_pair, context_for_stage2)
-        resolved_concepts.append(concept)
+        concept_result = resolver.resolve_semantic_pair(product_pair, context_for_stage2)
+        resolved_concepts.append(concept_result)
         
         # Trace each individual semantic resolution
         if tracer:
             tracer.trace_stage(f"product:k={k}", context_for_stage2, SimpleResult(
-                text=concept,
-                terms_used=product_pair.split(" * "),
-                warnings=[]
+                text=concept_result.text,
+                terms_used=concept_result.terms_used,
+                warnings=concept_result.warnings
             ), {
                 "station": "Problem Requirements", 
                 "valley_summary": valley_summary,
                 "products": [product_pair]
             })
 
-    # Stage 3: Lensing (deep ontological interpretation)
-    combined_concepts = ", ".join(resolved_concepts)
-    # Create SemanticContext object for lensing
-    context_for_stage3 = SemanticContext(
+    # Stage 3: Universal 3-step ontological lensing
+    combined_concepts = ", ".join([result.text for result in resolved_concepts])
+    lensing_context = SemanticContext(
         station_context="Problem Requirements",
         valley_summary=valley_summary,
         row_label=A.row_labels[i],
         col_label=B.col_labels[j],
         operation_type="interpret",
-        terms={"content": combined_concepts},
+        terms={"content": combined_concepts, "problem": CANONICAL_PROBLEM},
         matrix="C",
         i=i,
         j=j
     )
-    final_meaning = resolver.apply_ontological_lens(combined_concepts, context_for_stage3)
     
-    # Trace Stage 3 (lensing)
-    if tracer:
-        tracer.trace_stage("final", context_for_stage3, SimpleResult(
-            text=final_meaning,
-            terms_used=resolved_concepts,
-            warnings=[]
-        ), {
-            "station": "Problem Requirements", 
-            "valley_summary": valley_summary,
-            "stage_plan": ["combinatorial", "semantic", "lensing"]
-        })
+    # Perform universal 3-step lensing process
+    column_result, row_result, final_result = _perform_three_step_lensing(
+        combined_concepts, lensing_context, resolver, tracer
+    )
 
     cell = Cell(
         row=i,
         col=j,
-        value=final_meaning,
+        value=final_result.text,
         provenance=create_provenance(
             operation="compute_C",
             coordinates=f"({A.row_labels[i]}, {B.col_labels[j]})",
             stage_data={
-                "stage_1_products": raw_products,
-                "stage_2_resolved": resolved_concepts,
-                "stage_3_lensed": final_meaning,
+                "stage_1_construct": {"texts": raw_products, "metadata": {}, "terms_used": [f"k={k}" for k in range(len(raw_products))], "warnings": []},
+                "stage_2_semantic": {"texts": [result.text for result in resolved_concepts], "metadata": [result.metadata for result in resolved_concepts], "terms_used": [result.terms_used for result in resolved_concepts], "warnings": [result.warnings for result in resolved_concepts]},
+                "stage_3_column_lensed": {"text": column_result.text, "metadata": column_result.metadata, "terms_used": column_result.terms_used, "warnings": column_result.warnings},
+                "stage_4_row_lensed": {"text": row_result.text, "metadata": row_result.metadata, "terms_used": row_result.terms_used, "warnings": row_result.warnings},
+                "stage_5_final_synthesis": {"text": final_result.text, "metadata": final_result.metadata, "terms_used": final_result.terms_used, "warnings": final_result.warnings},
             },
             sources=["A", "B"],
             traced=tracer is not None
@@ -164,7 +232,7 @@ def compute_cell_C(i: int, j: int, A: Matrix, B: Matrix, resolver: CellResolver,
     
     # Export to Neo4j if exporter is provided
     if exporter:
-        exporter.export_cell_computation(cell, context_for_stage3)
+        exporter.export_cell_computation(cell, lensing_context)
     
     return cell
 
@@ -205,57 +273,51 @@ def compute_cell_F(i: int, j: int, J: Matrix, C: Matrix, resolver: CellResolver,
         i=i,
         j=j
     )
-    resolved_concept = resolver.resolve_semantic_pair(element_pair, context_for_stage1)
+    resolved_result = resolver.resolve_semantic_pair(element_pair, context_for_stage1)
     
     # Trace Stage 1 (element-wise semantic resolution)
     if tracer:
         tracer.trace_stage("element-wise", context_for_stage1, SimpleResult(
-            text=resolved_concept,
-            terms_used=element_pair.split(" * "),
-            warnings=[]
+            text=resolved_result.text,
+            terms_used=resolved_result.terms_used,
+            warnings=resolved_result.warnings
         ), {
             "station": "Solution Objectives", 
             "valley_summary": valley_summary,
             "products": [element_pair]
         })
 
-    # Stage 2: Apply lens for Solution Objectives station  
-    context_for_stage2 = SemanticContext(
+    # Stage 2: Universal 3-step ontological lensing
+    lensing_context = SemanticContext(
         station_context="Solution Objectives", 
         valley_summary=valley_summary,
         row_label=J.row_labels[i], 
         col_label=J.col_labels[j],
         operation_type="interpret", 
-        terms={"content": resolved_concept},
+        terms={"content": resolved_result.text, "problem": CANONICAL_PROBLEM},
         matrix="F",
         i=i,
         j=j
     )
-    final_meaning = resolver.apply_ontological_lens(resolved_concept, context_for_stage2)
     
-    # Trace Stage 2 (lensing)
-    if tracer:
-        tracer.trace_stage("final", context_for_stage2, SimpleResult(
-            text=final_meaning,
-            terms_used=[resolved_concept],
-            warnings=[]
-        ), {
-            "station": "Solution Objectives", 
-            "valley_summary": valley_summary,
-            "stage_plan": ["element-wise", "lensing"]
-        })
+    # Perform universal 3-step lensing process
+    column_result, row_result, final_result = _perform_three_step_lensing(
+        resolved_result.text, lensing_context, resolver, tracer
+    )
 
     cell = Cell(
         row=i,
         col=j,
-        value=final_meaning,
+        value=final_result.text,
         provenance=create_provenance(
             operation="compute_F",
             coordinates=f"({J.row_labels[i]}, {J.col_labels[j]})",
             stage_data={
-                "stage_1_element_wise": element_pair,
-                "stage_2_resolved": resolved_concept,
-                "stage_3_lensed": final_meaning,
+                "stage_1_construct": {"text": element_pair, "metadata": {}, "terms_used": element_pair.split(" * "), "warnings": []},
+                "stage_2_semantic": {"text": resolved_result.text, "metadata": resolved_result.metadata, "terms_used": resolved_result.terms_used, "warnings": resolved_result.warnings},
+                "stage_3_column_lensed": {"text": column_result.text, "metadata": column_result.metadata, "terms_used": column_result.terms_used, "warnings": column_result.warnings},
+                "stage_4_row_lensed": {"text": row_result.text, "metadata": row_result.metadata, "terms_used": row_result.terms_used, "warnings": row_result.warnings},
+                "stage_5_final_synthesis": {"text": final_result.text, "metadata": final_result.metadata, "terms_used": final_result.terms_used, "warnings": final_result.warnings},
             },
             sources=["J", "C"],
             traced=tracer is not None
@@ -264,25 +326,24 @@ def compute_cell_F(i: int, j: int, J: Matrix, C: Matrix, resolver: CellResolver,
     
     # Export to Neo4j if exporter is provided
     if exporter:
-        exporter.export_cell_computation(cell, context_for_stage2)
+        exporter.export_cell_computation(cell, lensing_context)
     
     return cell
 
 
-def synthesize_cell_D(i: int, j: int, A: Matrix, F: Matrix, problem: str, resolver: CellResolver, valley_summary: str, tracer: Optional[JSONLTracer] = None, exporter: Optional['Neo4jWorkingMemoryExporter'] = None) -> Cell:
+def compute_cell_D(i: int, j: int, A: Matrix, F: Matrix, resolver: CellResolver, valley_summary: str, tracer: Optional[JSONLTracer] = None, exporter: Optional['Neo4jWorkingMemoryExporter'] = None) -> Cell:
     """
-    Synthesis operation using the canonical D formula:
-    D[i,j] = A[i,j] + "applied to frame the problem of {problem} and" + F[i,j] + "to resolve the problem"
+    Compute D[i,j] using the canonical D formula with fixed problem statement.
+    D[i,j] = A[i,j] + "applied to frame the problem;" + F[i,j] + " to resolve the problem."
     
-    Stage 1: Apply synthesis formula mechanically
-    Stage 2: Apply ontological lens for objectives context
+    Stage 1: Apply canonical synthesis formula mechanically
+    Stage 2: Universal 3-step ontological lensing (same as C and F)
     
     Args:
         i: Row index
         j: Column index
         A: Axioms matrix (3x4)
         F: Functions matrix (3x4)
-        problem: Problem statement to synthesize around
         resolver: CellResolver for LLM operations
         valley_summary: Current position in semantic valley
         
@@ -290,12 +351,12 @@ def synthesize_cell_D(i: int, j: int, A: Matrix, F: Matrix, problem: str, resolv
         Cell with synthesized solution objective
     """
 
-    # Stage 1: Apply the canonical synthesis formula
+    # Stage 1: Apply the canonical synthesis formula with fixed problem
     a_cell = A.get_cell(i, j)
     f_cell = F.get_cell(i, j)
-    synthesis_statement = f"{a_cell.value} applied to frame the problem of {problem} and {f_cell.value} to resolve the problem"
+    synthesis_statement = f"{a_cell.value} applied to frame the problem; {f_cell.value} to resolve the problem."
     
-    # Trace Stage 1 (synthesis formula application)
+    # Trace Stage 1 (mechanical synthesis)
     if tracer:
         stage1_context = SemanticContext(
             station_context="Solution Objectives",
@@ -303,14 +364,14 @@ def synthesize_cell_D(i: int, j: int, A: Matrix, F: Matrix, problem: str, resolv
             row_label=A.row_labels[i],
             col_label=A.col_labels[j],
             operation_type="synthesis",
-            terms={"formula": synthesis_statement, "problem": problem},
+            terms={"formula": synthesis_statement, "problem": CANONICAL_PROBLEM},
             matrix="D",
             i=i,
             j=j
         )
-        tracer.trace_stage("synthesis", stage1_context, SimpleResult(
+        tracer.trace_stage("mechanical_synthesis", stage1_context, SimpleResult(
             text=synthesis_statement,
-            terms_used=[a_cell.value, f_cell.value, problem],
+            terms_used=[a_cell.value, f_cell.value, CANONICAL_PROBLEM],
             warnings=[]
         ), {
             "station": "Solution Objectives", 
@@ -318,52 +379,47 @@ def synthesize_cell_D(i: int, j: int, A: Matrix, F: Matrix, problem: str, resolv
             "products": [synthesis_statement]
         })
 
-    # Stage 2: Apply lens for Solution Objectives station  
-    context_for_stage2 = SemanticContext(
+    # Stage 2: Universal 3-step ontological lensing (same as C and F)
+    lensing_context = SemanticContext(
         station_context="Solution Objectives", 
         valley_summary=valley_summary,
         row_label=A.row_labels[i], 
         col_label=A.col_labels[j],  # Note: using A's column labels for D
-        operation_type="interpret", 
-        terms={"content": synthesis_statement, "problem": problem},
+        operation_type="interpret",
+        terms={"content": synthesis_statement, "problem": CANONICAL_PROBLEM},
         matrix="D",
         i=i,
         j=j
     )
-    final_meaning = resolver.apply_ontological_lens(synthesis_statement, context_for_stage2)
     
-    # Trace Stage 2 (lensing)
-    if tracer:
-        tracer.trace_stage("final", context_for_stage2, SimpleResult(
-            text=final_meaning,
-            terms_used=[synthesis_statement],
-            warnings=[]
-        ), {
-            "station": "Solution Objectives", 
-            "valley_summary": valley_summary,
-            "stage_plan": ["synthesis", "lensing"]
-        })
+    # Perform universal 3-step lensing process
+    column_result, row_result, final_result = _perform_three_step_lensing(
+        synthesis_statement, lensing_context, resolver, tracer
+    )
 
     cell = Cell(
         row=i,
         col=j,
-        value=final_meaning,
+        value=final_result.text,
         provenance=create_provenance(
-            operation="synthesize_D",
+            operation="compute_D",
             coordinates=f"({A.row_labels[i]}, {A.col_labels[j]})",
             stage_data={
-                "stage_1_synthesis": synthesis_statement,
-                "stage_2_lensed": final_meaning,
+                "stage_1_construct": {"text": f"A[{i},{j}] + F[{i},{j}]", "metadata": {}, "terms_used": [a_cell.value, f_cell.value], "warnings": []},
+                "stage_2_semantic": {"text": synthesis_statement, "metadata": {}, "terms_used": [a_cell.value, f_cell.value], "warnings": []},
+                "stage_3_column_lensed": {"text": column_result.text, "metadata": column_result.metadata, "terms_used": column_result.terms_used, "warnings": column_result.warnings},
+                "stage_4_row_lensed": {"text": row_result.text, "metadata": row_result.metadata, "terms_used": row_result.terms_used, "warnings": row_result.warnings},
+                "stage_5_final_synthesis": {"text": final_result.text, "metadata": final_result.metadata, "terms_used": final_result.terms_used, "warnings": final_result.warnings},
             },
             sources=["A", "F"],
             traced=tracer is not None,
-            problem=problem  # Extra field specific to D synthesis
+            problem=CANONICAL_PROBLEM
         )
     )
 
     # Export to Neo4j if exporter is provided
     if exporter:
-        exporter.export_cell_computation(cell, context_for_stage2)
+        exporter.export_cell_computation(cell, lensing_context)
 
     return cell
 
@@ -412,13 +468,13 @@ def compute_matrix_F(J: Matrix, C: Matrix, resolver: CellResolver, valley_summar
     )
 
 
-def synthesize_matrix_D(A: Matrix, F: Matrix, problem: str, resolver: CellResolver, valley_summary: str, tracer: Optional[JSONLTracer] = None, exporter: Optional[Neo4jWorkingMemoryExporter] = None) -> Matrix:
-    """Convenience wrapper - loops over synthesize_cell_D"""
+def compute_matrix_D(A: Matrix, F: Matrix, resolver: CellResolver, valley_summary: str, tracer: Optional[JSONLTracer] = None, exporter: Optional[Neo4jWorkingMemoryExporter] = None) -> Matrix:
+    """Convenience wrapper - loops over compute_cell_D with canonical problem"""
     cells = []
     for i in range(3):
         row_cells = []
         for j in range(4):
-            cell = synthesize_cell_D(i, j, A, F, problem, resolver, valley_summary, tracer, exporter)
+            cell = compute_cell_D(i, j, A, F, resolver, valley_summary, tracer, exporter)
             row_cells.append(cell)
         cells.append(row_cells)
 

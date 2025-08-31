@@ -16,7 +16,7 @@ ERROR: Could not find a version that satisfies the requirement...
 **Solutions**:
 ```bash
 # Create fresh virtual environment
-python -m venv chirality-env
+python3 -m venv chirality-env
 source chirality-env/bin/activate  # Linux/Mac
 # or chirality-env\Scripts\activate  # Windows
 
@@ -89,7 +89,7 @@ docker restart neo4j
 
 # Test connection manually
 pip install neo4j
-python -c "
+python3 -c "
 from neo4j import GraphDatabase
 driver = GraphDatabase.driver('bolt://localhost:7687', auth=('neo4j', 'password'))
 driver.verify_connectivity()
@@ -113,7 +113,7 @@ The entire system is designed for observability to handle these cases.
 1.  **Use the `--verbose` flag.** This is the most powerful debugging tool. It shows you the exact output of each stage of the 3-stage pipeline, so you can pinpoint where the error is occurring (e.g., did the error happen during the initial semantic resolution, or during the final ontological lensing?).
     ```bash
     # Run a single cell computation with stage-by-stage output
-    python -m chirality.cli compute-cell C --i 0 --j 0 --verbose
+    python3 -m chirality.cli compute-cell C --i 0 --j 0 --verbose
     ```
 
 2.  **Test with the Echo Resolver.** The `echo` resolver bypasses the LLM entirely and returns deterministic, predictable results. This helps you verify that the pipeline mechanics and context passing are working correctly, isolating the problem to the LLM call itself.
@@ -151,7 +151,7 @@ bash: chirality: command not found
 **Solution**: Use the `--trace` flag. This will generate a detailed JSONL file in the `traces/` directory, containing a line for each stage of the pipeline with its inputs and outputs.
 ```bash
 # This creates a file like traces/<thread_id>/C-20250828-123456.jsonl
-python -m chirality.cli compute-cell C --i 0 --j 0 --trace
+python3 -m chirality.cli compute-cell C --i 0 --j 0 --trace
 ```
 
 #### How to Inspect a Specific Stage
@@ -160,7 +160,7 @@ python -m chirality.cli compute-cell C --i 0 --j 0 --trace
 **Solution**: Use the `--verbose` flag with the `compute-cell` command. It prints the results of each stage sequentially, allowing you to inspect the data as it is transformed.
 ```bash
 # See the output of Stage 1, Stage 2, and Stage 3
-python -m chirality.cli compute-cell C --i 0 --j 0 --verbose
+python3 -m chirality.cli compute-cell C --i 0 --j 0 --verbose
 ```
 
 #### How to Test a Change
@@ -183,8 +183,8 @@ pytest
 
 ### Reporting Problems
 Include:
-- Chirality Framework version (`python -c "import chirality; print(chirality.__version__)"`)
-- Python version (`python --version`)
+- Chirality Framework version (`python3 -c "import chirality; print(chirality.__version__)"`)
+- Python version (`python3 --version`)
 - Operating system
 - Complete error messages
 - Steps to reproduce

@@ -7,6 +7,7 @@ enabling fast, offline testing of the 3-stage pipeline.
 
 from typing import Dict, Any
 from chirality.core.context import SemanticContext
+from chirality.core.types import RichResult
 
 
 class MockCellResolver:
@@ -30,10 +31,12 @@ class MockCellResolver:
         self.pattern_style = pattern_style
         self.call_count = {
             "resolve_semantic_pair": 0,
-            "apply_ontological_lens": 0
+            "apply_column_lens": 0,
+            "apply_row_lens": 0,
+            "synthesize_lensed_perspectives": 0
         }
     
-    def resolve_semantic_pair(self, pair: str, context: SemanticContext) -> str:
+    def resolve_semantic_pair(self, pair: str, context: SemanticContext) -> RichResult:
         """
         Mock semantic resolution for Stage 2.
         
@@ -56,68 +59,71 @@ class MockCellResolver:
         
         # Check for exact match
         if pair in patterns:
-            return patterns[pair]
-        
-        # Generate predictable output for unknown pairs
-        if " * " in pair:
+            text = patterns[pair]
+            terms = [pair]
+        elif " * " in pair:
             left, right = pair.split(" * ", 1)
+            terms = [left, right]
             if self.pattern_style == "minimal":
-                return f"{left[:3]}{right[:3]}"
+                text = f"{left[:3]}{right[:3]}"
             elif self.pattern_style == "mechanical":
-                return f"[{left}×{right}]"
+                text = f"[{left}×{right}]"
             else:  # descriptive
-                return f"{right} {left}"
+                text = f"{right} {left}"
+        else:
+            text = f"Resolved({pair})"
+            terms = [pair]
         
-        return f"Resolved({pair})"
+        return RichResult(
+            text=text,
+            terms_used=terms,
+            warnings=[],
+            metadata={"modelId": "mock_resolver"}
+        )
     
-    def apply_ontological_lens(self, content: str, context: SemanticContext) -> str:
+    def apply_column_lens(self, content: str, context: SemanticContext) -> RichResult:
         """
-        Mock ontological lensing for Stage 3.
-        
-        Applies row/column context to interpret content.
+        Mock column lens - Step 1 of universal lensing.
         """
-        self.call_count["apply_ontological_lens"] += 1
-        
-        # Build interpretation based on ontological coordinates
-        row_interpretations = {
-            "Normative": "establishing standards for",
-            "Operative": "implementing processes for", 
-            "Evaluative": "assessing quality of"
-        }
-        
-        col_interpretations = {
-            "Determinacy": "defining clear boundaries",
-            "Sufficiency": "ensuring completeness",
-            "Necessity": "identifying requirements",
-            "Contingency": "managing dependencies",
-            "Possibility": "exploring potential",
-            "Challenge": "addressing difficulties",
-            "Comparison": "evaluating alternatives",
-            "Paradigm": "shifting perspectives"
-        }
-        
-        # Get row/col modifiers
-        row_modifier = row_interpretations.get(
-            context.row_label, 
-            f"applying {context.row_label}"
+        self.call_count["apply_column_lens"] += 1
+        return RichResult(
+            text=f"COL[{context.col_label}]: {content}",
+            terms_used=[content],
+            warnings=[],
+            metadata={"modelId": "mock_resolver"}
         )
-        col_modifier = col_interpretations.get(
-            context.col_label,
-            f"through {context.col_label}"
+    
+    def apply_row_lens(self, content: str, context: SemanticContext) -> RichResult:
+        """
+        Mock row lens - Step 2 of universal lensing.
+        """
+        self.call_count["apply_row_lens"] += 1
+        return RichResult(
+            text=f"ROW[{context.row_label}]: {content}",
+            terms_used=[content],
+            warnings=[],
+            metadata={"modelId": "mock_resolver"}
         )
-        
-        if self.pattern_style == "minimal":
-            return f"{content} ({context.row_label[:3]}/{context.col_label[:3]})"
-        elif self.pattern_style == "mechanical":
-            return f"[{context.row_label}|{context.col_label}]:{content}"
-        else:  # descriptive
-            return f"By {row_modifier} and {col_modifier}, we interpret: {content}"
+    
+    def synthesize_lensed_perspectives(self, column_perspective: str, row_perspective: str, context: SemanticContext) -> RichResult:
+        """
+        Mock final synthesis - Step 3 of universal lensing.
+        """
+        self.call_count["synthesize_lensed_perspectives"] += 1
+        return RichResult(
+            text=f"SYN[{column_perspective} | {row_perspective}]",
+            terms_used=[column_perspective, row_perspective],
+            warnings=[],
+            metadata={"modelId": "mock_resolver"}
+        )
     
     def reset_call_counts(self):
         """Reset call counters for fresh test."""
         self.call_count = {
             "resolve_semantic_pair": 0,
-            "apply_ontological_lens": 0
+            "apply_column_lens": 0,
+            "apply_row_lens": 0,
+            "synthesize_lensed_perspectives": 0
         }
     
     def get_call_counts(self) -> Dict[str, int]:
@@ -179,7 +185,7 @@ class MockTracer:
         Returns:
             True if combinatorial, semantic, and lensing stages all present
         """
-        expected_stages = {"combinatorial", "product:k=", "final"}
+        expected_stages = {"combinatorial", "product:k=", "lensing:"}
         for stage in expected_stages:
             if not any(stage in s for s in self.stages_traced):
                 return False

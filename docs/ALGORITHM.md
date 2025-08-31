@@ -34,10 +34,12 @@ An LLM resolves each raw word pair from Stage 1 into a single, concise concept. 
 *   **Output:** A resolved concept (e.g., `"Guiding Imperatives"`).
 
 ### Stage 3: Ontological Lensing (Deep Interpretation)
-The resolved concepts from Stage 2 are combined and then interpreted by an LLM through the powerful contextual lens of the cell's ontological coordinates (its row and column labels). The normative specification clarifies this is a sequential process: first the column lens is applied, then the row lens, and finally the perspectives are synthesized.
+The resolved concepts from Stage 2 are combined and then interpreted through a universal, three-step lensing process applied to all matrices:
 
-*   **Input:** The combined concepts and the ontological context (e.g., `content: "Guiding Imperatives, Applied Context..."`, `row_lens: "Normative"`, `col_lens: "Necessity (vs Contingency)"`).
-*   **Output:** A final, synthesized narrative that explains the meaning of the content within that specific ontological context.
+1) Column lens → 2) Row lens → 3) Final synthesis.
+
+*   **Input:** The combined concepts and the ontological context (e.g., `content: "Guiding Imperatives, Applied Context..."`, `row: "Normative"`, `col: "Necessity (vs Contingency)"`).
+*   **Output:** A final, synthesized narrative that explains the meaning of the content within that specific ontological context, after column and row perspectives are applied.
 
 ## 4. Sequence of Operations
 
@@ -47,11 +49,12 @@ The calculator performs the following sequence of operations, with each step bui
     *   Each cell `C(i,j)` is computed using the full 3-stage pipeline on the dot product of row `i` from `A` and column `j` from `B`.
 2.  **Compute Matrix F (Functions):** `F = J ⊙ C`
     *   Each cell `F(i,j)` is computed using an element-wise multiplication of `J(i,j)` and `C(i,j)`, which is then processed through the Semantic Resolution and Lensing stages.
-3.  **Synthesize Matrix D (Solution Objectives):** `D = A + F`
-    *   Each cell `D(i,j)` is computed by mechanically synthesizing a statement from `A(i,j)` and `F(i,j)` using a fixed formula, which is then processed through the Lensing stage.
+3.  **Compute Matrix D (Solution Objectives):** `D = A + F`
+    *   Each cell `D(i,j)` is computed by mechanically forming the exact sentence: `"A(i,j) applied to frame the problem; F(i,j) to resolve the problem."`. This mechanical step serves as Stage 2 (semantic addition), and the resulting sentence is then passed to the universal three-step lensing process (Stage 3).
 
 ## 5. Observability
 
 The entire process is designed to be transparent.
-*   **CLI:** Use the `compute-cell` command with the `--verbose` flag to see the input and output of all three stages for any cell.
+*   **CLI:** Use the `compute-cell` command with the `--verbose` flag to see the input and output of all three stages (including Column → Row → Final lensing) for any cell.
 *   **Tracing:** Use the `--trace` flag to generate a detailed JSONL file in the `traces/` directory, which contains a complete, machine-readable record of every stage of every cell computation.
+*   **Neo4j (Working Memory):** Enable `--neo4j-export` in the CLI to write a universal, five-stage graph per cell. Each CLI invocation is assigned a unique `run_id`, so data can be filtered, compared, or deleted per run.

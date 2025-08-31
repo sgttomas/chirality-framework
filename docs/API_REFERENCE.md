@@ -60,11 +60,13 @@ class Cell:
     provenance: Dict[str, Any]      # Complete stage history
 ```
 
-**Key Provenance Fields:**
-- `stage_1_products`: Mechanical k-products from combinatorial stage
-- `stage_2_resolved`: Semantic concepts from resolution stage  
-- `stage_3_lensed`: Final interpretation from lensing stage
-- `operation`: Operation type ("compute_C", "compute_F", "synthesize_D")
+**Key Provenance Fields (Universal 5-Stage):**
+- `stage_1_construct`: Stage 1 content (for C: k-products in `texts`; for F/D: `text`)
+- `stage_2_semantic`: Stage 2 content (resolved concepts in `texts` or `text`)
+- `stage_3_column_lensed`: Column lens interpretation (`text`)
+- `stage_4_row_lensed`: Row lens interpretation (`text`)
+- `stage_5_final_synthesis`: Final integrated interpretation (`text`)
+- `operation`: Operation type ("compute_C", "compute_F", "compute_D")
 - `coordinates`: Human-readable coordinate description
 - `traced`: Boolean indicating if tracing was enabled
 
@@ -72,8 +74,8 @@ class Cell:
 ```python
 cell = compute_cell_C(0, 0, A, B, resolver, valley_summary)
 print(f"Result: {cell.value}")
-print(f"Products: {cell.provenance['stage_1_products']}")
-print(f"Resolved: {cell.provenance['stage_2_resolved']}")
+print(cell.provenance['stage_1_construct'].get('texts') or cell.provenance['stage_1_construct'].get('text'))
+print(cell.provenance['stage_2_semantic'].get('texts') or cell.provenance['stage_2_semantic'].get('text'))
 ```
 
 ### Matrix
@@ -178,7 +180,7 @@ from chirality import MATRIX_J
 **Matrix Relationships:**
 - **C = A * B**: Requirements matrix from axiom-bridge multiplication
 - **F = J ⊙ C**: Functions matrix from element-wise judgment-requirements
-- **D = synthesis(A, F)**: Solution objectives from axiom-function synthesis
+- **D = A + F**: Solution objectives from axiom-function synthesis (D cells are computed as an exact mechanical sentence followed by universal three-step lensing)
 
 ---
 
@@ -217,7 +219,7 @@ valley = "Problem Statement → [Problem Requirements] → Solution Objectives"
 
 cell = compute_cell_C(0, 0, MATRIX_A, MATRIX_B, resolver, valley)
 print(f"C[0,0]: {cell.value}")
-print(f"Products: {cell.provenance['stage_1_products']}")
+print(cell.provenance['stage_1_construct'].get('texts') or cell.provenance['stage_1_construct'].get('text'))
 ```
 
 ### compute_cell_F()
@@ -251,17 +253,16 @@ cell = compute_cell_F(0, 0, MATRIX_J, C, resolver, valley)
 print(f"F[0,0]: {cell.value}")
 ```
 
-### synthesize_cell_D()
+### compute_cell_D()
 
-Synthesis operation using canonical D formula.
+Compute D cell using the canonical D formula (mechanical + universal lensing).
 
 ```python
-def synthesize_cell_D(
+def compute_cell_D(
     i: int,                                    # Row index (0-2)
     j: int,                                    # Column index (0-3)
     A: Matrix,                                 # Axioms matrix (3×4)
     F: Matrix,                                 # Functions matrix (3×4)
-    problem: str,                              # Problem statement
     resolver: CellResolver,                    # LLM interface  
     valley_summary: str,                       # Valley context
     tracer: Optional[JSONLTracer] = None,      # Optional tracing
@@ -269,11 +270,11 @@ def synthesize_cell_D(
 ) -> Cell
 ```
 
-**Formula**: `D[i,j] = A[i,j] + "applied to frame the problem of {problem} and" + F[i,j] + "to resolve the problem"`
+**Formula**: `D[i,j] = A[i,j] + "applied to frame the problem;" + F[i,j] + " to resolve the problem."`
 
-**Two-Stage Pipeline:**
-1. **Stage 1**: Apply synthesis formula mechanically  
-2. **Stage 2**: Apply ontological lens for Solution Objectives context
+**Pipeline:**
+1. **Stage 1**: Mechanical formation (exact sentence)  
+2. **Stage 3**: Universal ontological lensing (Column → Row → Final)
 
 **Example:**
 ```python
@@ -281,8 +282,8 @@ def synthesize_cell_D(
 C = compute_matrix_C(MATRIX_A, MATRIX_B, resolver, valley)
 F = compute_matrix_F(MATRIX_J, C, resolver, valley)
 
-# Synthesize D cell
-cell = synthesize_cell_D(0, 0, MATRIX_A, F, "creating value", resolver, valley)
+# Compute D cell
+cell = compute_cell_D(0, 0, MATRIX_A, F, resolver, valley)
 print(f"D[0,0]: {cell.value}")
 ```
 
@@ -324,13 +325,12 @@ def compute_matrix_F(
 ) -> Matrix                                    # Result matrix (3×4)
 ```
 
-### synthesize_matrix_D()
+### compute_matrix_D()
 
 ```python
-def synthesize_matrix_D(
+def compute_matrix_D(
     A: Matrix,                                 # Axioms matrix (3×4)
     F: Matrix,                                 # Functions matrix (3×4) 
-    problem: str,                              # Problem statement
     resolver: CellResolver,                    # LLM interface
     valley_summary: str,                       # Valley context
     tracer: Optional[JSONLTracer] = None,      # Optional tracing
@@ -358,18 +358,19 @@ class CellResolver:
     ):
 ```
 
-**Key Methods:**
+**Key Methods (return `RichResult`):**
 ```python
-def resolve_semantic_pair(self, pair: str, context: SemanticContext) -> str:
-    """Stage 2: Resolve word pair into coherent concept."""
-    
-def apply_ontological_lens(self, content: str, context: SemanticContext) -> str:
-    """Stage 3: Apply row/column ontological interpretation."""
-    
-def assemble_prompt(self, valley_summary: str, station: str, row_label: str, 
-                   col_label: str, operation_type: str, terms: Dict, 
-                   operation_instructions: str = None) -> str:
-    """Fragment composition - dynamically build prompts."""
+def resolve_semantic_pair(self, pair: str, context: SemanticContext) -> RichResult:
+    """Stage 2: Resolve word pair into a concept (semantic "*")."""
+
+def apply_column_lens(self, content: str, context: SemanticContext) -> RichResult:
+    """Stage 3.1: Interpret content through the column ontology lens."""
+
+def apply_row_lens(self, content: str, context: SemanticContext) -> RichResult:
+    """Stage 3.2: Interpret content through the row ontology lens."""
+
+def synthesize_lensed_perspectives(self, column_perspective: str, row_perspective: str, context: SemanticContext) -> RichResult:
+    """Stage 3.3: Synthesize both perspectives into a final narrative."""
 ```
 
 **Temperature Settings:**
@@ -482,7 +483,13 @@ class Neo4jWorkingMemoryExporter:
         self,
         uri: str = None,                       # Neo4j URI (or env var)
         user: str = None,                      # Username (or env var) 
-        password: str = None                   # Password (or env var)
+        password: str = None,                  # Password (or env var)
+        run_id: str = None,                    # Optional run/session id
+        run_tag: str = None,                   # Optional tag (e.g., "cli")
+        run_user: str = None,                  # Optional user
+        run_git_sha: str = None,               # Optional commit id
+        run_model: str = None,                 # Optional model label
+        started_at: str = None,                # Optional start time (ISO)
     ):
 ```
 
@@ -495,21 +502,24 @@ def close(self) -> None:
     """Close database connection."""
 ```
 
-**Graph Schema:**
+**Graph Schema (Universal 5-Stage + Run):**
+- **(:Run)** nodes: Per export session (`id`, `startedAt`, optional metadata)
 - **(:Matrix)** nodes: Represent matrices (A, B, C, D, F, J)
 - **(:Cell)** nodes: Individual cells with coordinates and values
-- **(:Stage)** nodes: Pipeline stages (Combinatorial, Semantic, Lensed)
-- **[:CONTAINS]** relationships: Matrix → Cell
-- **[:HAS_STAGE]** relationships: Cell → Stage
+- **(:Stage:Construct|:Semantic|:ColumnLensed|:RowLensed|:FinalSynthesis)**
+  - Per-stage nodes with rich properties: `text/texts`, `terms_used`, `warnings`, `modelId`, `latencyMs`, `promptHash`, `createdAt`, `phase`, duplicated context (`station`, `valley_summary`, `row_label`, `col_label`)
+- **[:CONTAINS]** relationships: `Run → Cell`, `Run → Stage`, `Matrix → Cell`
+- **[:HAS_STAGE]** relationships: `Cell → Stage` (with `order`)
 
 **Usage:**
 ```python
-# Export semantic journey to working memory
-with Neo4jWorkingMemoryExporter() as exporter:
+# Export semantic journey to working memory (with a run/session)
+with Neo4jWorkingMemoryExporter(run_id="cli-20250831-abc123", run_tag="cli") as exporter:
     cell = compute_cell_C(0, 0, A, B, resolver, valley, exporter=exporter)
     
 # Query the working memory
-# MATCH (c:Cell {id: 'C-0-0'})-[:HAS_STAGE]->(s) RETURN s ORDER BY s.timestamp
+# MATCH (r:Run {id: 'cli-20250831-abc123'})-[:CONTAINS]->(:Cell {id: 'C-0-0'})-[:HAS_STAGE]->(s)
+# RETURN s ORDER BY s.order
 ```
 
 ---
@@ -564,7 +574,7 @@ python3 -m chirality.cli compute-cell MATRIX --i ROW --j COL [OPTIONS]
 - `--api-key`: OpenAI API key (or set OPENAI_API_KEY env var)
 - `--trace/--no-trace`: Enable JSONL tracing (default: false)
 - `--neo4j-export/--no-neo4j-export`: Export to Neo4j (default: false)
-- `--problem TEXT`: Problem statement for D matrix synthesis
+  (Note: D uses the canonical problem only; no `--problem` option.)
 
 **Examples:**
 ```bash
@@ -582,7 +592,7 @@ python3 -m chirality.cli compute-cell C --i 0 --j 0 --trace --neo4j-export
 
 # Compute different matrix types
 python3 -m chirality.cli compute-cell F --i 1 --j 2 --verbose  
-python3 -m chirality.cli compute-cell D --i 2 --j 1 --problem "creating value"
+python3 -m chirality.cli compute-cell D --i 2 --j 1 --verbose
 ```
 
 #### info
@@ -668,7 +678,7 @@ print(f"Requirements matrix: {C.shape}")
 import os
 from chirality import (
     CellResolver, JSONLTracer, 
-    compute_cell_C, compute_matrix_F, synthesize_matrix_D,
+    compute_cell_C, compute_matrix_F, compute_matrix_D,
     MATRIX_A, MATRIX_B, MATRIX_J
 )
 from chirality.exporters.working_memory_exporter import Neo4jWorkingMemoryExporter
@@ -693,8 +703,7 @@ with JSONLTracer(thread_id="production-run") as tracer:
         F = compute_matrix_F(MATRIX_J, C, resolver, valley, tracer, exporter)
         
         # Generate solution objectives
-        D = synthesize_matrix_D(MATRIX_A, F, "optimizing performance", 
-                               resolver, valley, tracer, exporter)
+        D = compute_matrix_D(MATRIX_A, F, resolver, valley, tracer, exporter)
 
 print("Complete semantic valley computed with full observability")
 ```
@@ -750,25 +759,16 @@ print(f"Custom resolution: {result}")
 # Test prompt modifications
 from chirality.core.cell_resolver import CellResolver
 
-class CustomCellResolver(CellResolver):
-    def assemble_prompt(self, valley_summary, station, row_label, col_label,
-                       operation_type, terms, operation_instructions=None):
-        # Custom prompt assembly logic
-        custom_prompt = f"""
-        Enhanced Context: {valley_summary}
-        Focus Area: {station}
-        Ontological Intersection: {row_label} × {col_label}
-        
-        Operation: {operation_type}
-        Terms: {terms}
-        
-        Custom Instructions: {operation_instructions or 'Standard processing'}
-        """
-        return custom_prompt
+# Prompt builders are centralized in prompts.py
+from chirality.core.prompts import (
+    build_stage2_prompt,
+    build_column_lensing_prompt, 
+    build_row_lensing_prompt,
+    build_final_lensing_prompt
+)
 
-# Test custom prompts
-custom_resolver = CustomCellResolver()
-cell = compute_cell_C(0, 0, A, B, custom_resolver, valley)
+# All semantic operations use these canonical builders
+# for consistent prompt construction across the framework
 ```
 
 ### Batch Processing
@@ -891,13 +891,13 @@ def explore_cell(row, col):
     print(f"Coordinates: ({MATRIX_A.row_labels[row]}, {MATRIX_B.col_labels[col]})")
     print(f"Result: {cell.value}")
     print(f"\nStage 1 Products:")
-    for i, product in enumerate(cell.provenance['stage_1_products']):
+    for i, product in enumerate(cell.provenance['stage_1_construct'].get('texts', [])):
         print(f"  k={i}: {product}")
     print(f"\nStage 2 Resolved:")  
-    for i, concept in enumerate(cell.provenance['stage_2_resolved']):
+    for i, concept in enumerate(cell.provenance['stage_2_semantic'].get('texts', [])):
         print(f"  {i}: {concept}")
     print(f"\nStage 3 Lensed:")
-    print(f"  {cell.provenance['stage_3_lensed']}")
+    print(f"  {cell.provenance['stage_5_final_synthesis']['text']}")
 
 # Explore interactively
 explore_cell(0, 0)  # Normative × Necessity

@@ -142,12 +142,12 @@ Output: "By establishing normative standards and focusing on necessity requireme
 ### Cell-Level Functions
 - `compute_cell_C(i, j, A, B, resolver, valley_summary, tracer)` - Matrix multiplication
 - `compute_cell_F(i, j, J, C, resolver, valley_summary, tracer)` - Element-wise multiplication  
-- `synthesize_cell_D(i, j, A, F, problem, resolver, valley_summary, tracer)` - Synthesis
+- `compute_cell_D(i, j, A, F, resolver, valley_summary, tracer)` - D cell (mechanical + universal lensing)
 
 ### Matrix-Level Functions  
 - `compute_matrix_C(A, B, resolver, valley_summary, tracer)` - Full C matrix
 - `compute_matrix_F(J, C, resolver, valley_summary, tracer)` - Full F matrix
-- `synthesize_matrix_D(A, F, problem, resolver, valley_summary, tracer)` - Full D matrix
+- `compute_matrix_D(A, F, resolver, valley_summary, tracer)` - Full D matrix
 
 ### Testing the Pipeline
 
@@ -160,10 +160,13 @@ A, B = create_test_matrices()
 resolver = MockCellResolver()
 cell = compute_cell_C(0, 0, A, B, resolver, "Test valley")
 
-# Examine provenance
-print(cell.provenance['stage_1_products'])  # Mechanical k-products
-print(cell.provenance['stage_2_resolved'])  # Semantic resolutions  
-print(cell.provenance['stage_3_lensed'])    # Final interpretation
+# Examine provenance (universal 5-stage schema)
+s1 = cell.provenance['stage_1_construct']
+s2 = cell.provenance['stage_2_semantic']
+s5 = cell.provenance['stage_5_final_synthesis']
+print(s1.get('texts') or s1.get('text'))   # Mechanical k-products (list) or element_pair
+print(s2.get('texts') or s2.get('text'))   # Semantic resolutions (list) or text
+print(s5.get('text'))                      # Final integrated interpretation
 ```
 
 ### CLI Debugging

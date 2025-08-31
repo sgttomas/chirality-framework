@@ -21,9 +21,9 @@ try:
 except Exception:
     OpenAI = None  # Defer hard failure until actually instantiated
 
-from .types import Cell, Matrix
+from .types import Cell, Matrix, RichResult
 from .context import SemanticContext
-from .prompts import SYSTEM_PROMPT
+from .prompts import SYSTEM_PROMPT, build_stage2_prompt, build_column_lensing_prompt, build_row_lensing_prompt, build_final_lensing_prompt
 
 
 def normalize_text(s: str) -> str:
@@ -34,10 +34,6 @@ def normalize_text(s: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
-
-def escape_for_prompt(s: str) -> str:
-    """Escape string for safe embedding in prompts."""
-    return json.dumps(normalize_text(s), ensure_ascii=False)[1:-1]
 
 
 class CellResolver:
@@ -50,6 +46,12 @@ class CellResolver:
     - Temperature control per operation type
     - Deterministic prompt hashing
     - Comprehensive error recovery
+    
+    Prompts are constructed using builders from prompts.py:
+    - build_stage2_prompt: For semantic pair resolution
+    - build_column_lensing_prompt: For column ontology lens interpretation
+    - build_row_lensing_prompt: For row ontology lens interpretation  
+    - build_final_lensing_prompt: For synthesizing both perspectives
     """
     
     def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o", seed: int = 42):
@@ -81,38 +83,8 @@ class CellResolver:
         # Default system frame for fragment composition (from prompts.py)
         self.default_system_frame = SYSTEM_PROMPT
     
-    def assemble_prompt(self, valley_summary: str, station: str, row_label: str, col_label: str, 
-                       operation_type: str, terms: Dict, operation_instructions: str = None) -> str:
-        """
-        Fragment composition - you control each piece.
-        
-        Dynamically assembles prompts from configurable fragments rather than static templates.
-        This is the core of the fragment composition architecture.
-        """
-        fragments = []
 
-        if valley_summary:
-            fragments.append(f"Valley Context: {valley_summary}")
-
-        fragments.append(f"Station: {station}")
-        fragments.append(f"Coordinates: ({row_label}, {col_label})")
-
-        if operation_instructions:
-            fragments.append(f"Operation: {operation_instructions}")
-        else:
-            # Default operation instructions based on type
-            if operation_type == "*":
-                fragments.append("Operation: Semantic multiplication - fuse meanings at their intersection")
-            elif operation_type == "interpret":
-                fragments.append("Operation: Ontological lensing - interpret through row/column context")
-            elif operation_type == "synthesize":
-                fragments.append("Operation: Synthesis - apply canonical D formula")
-
-        fragments.append(f"Terms: {terms}")
-
-        return "\n\n".join(fragments)
-
-    def resolve_semantic_pair(self, pair: str, context: SemanticContext) -> str:
+    def resolve_semantic_pair(self, pair: str, context: SemanticContext) -> RichResult:
         """
         Stage 2: Use fragment composition for semantic multiplication.
         
@@ -121,46 +93,70 @@ class CellResolver:
         """
         system_prompt = context.system_frame or self.default_system_frame
 
-        user_prompt = self.assemble_prompt(
-            valley_summary=context.valley_summary,
-            station=context.station_context,
-            row_label=context.row_label,
-            col_label=context.col_label,
-            operation_type="*",
-            terms={"term_a": pair.split(" * ")[0], "term_b": pair.split(" * ")[1]},
-            operation_instructions=context.operation_instructions
-        )
+        # Split pair into terms for the new builder signature
+        if " * " in pair:
+            term_a, term_b = pair.split(" * ", 1)
+            terms = [term_a, term_b]
+        else:
+            terms = [pair]
+        
+        user_prompt = build_stage2_prompt("*", terms, context)
 
         response, metadata = self._call_openai(system_prompt, user_prompt, "multiply")
-        return response.get("text", "")
-
-    def apply_ontological_lens(self, content: str, context: SemanticContext) -> str:
-        """
-        Stage 3: Fragment-based ontological lensing.
-        
-        Interprets content through the ontological lenses of the row/column coordinates.
-        This is where deep, context-specific insights are generated.
-        """
-        system_prompt = context.system_frame or self.default_system_frame
-
-        user_prompt = self.assemble_prompt(
-            valley_summary=context.valley_summary,
-            station=context.station_context,
-            row_label=context.row_label,
-            col_label=context.col_label,
-            operation_type="interpret",
-            terms={"content": content},
-            operation_instructions=context.operation_instructions
+        return RichResult(
+            text=response.get("text", ""),
+            terms_used=response.get("terms_used", []),
+            warnings=response.get("warnings", []),
+            metadata=metadata
         )
 
-        response, metadata = self._call_openai(system_prompt, user_prompt, "interpret")
-        return response.get("text", "")
-    
-# _get_system_prompt() method removed - now using imported SYSTEM_PROMPT from prompts.py
+    def apply_column_lens(self, content: str, context: SemanticContext) -> RichResult:
+        """
+        Universal Lensing Step 1: Apply column ontology lens to content.
+        
+        Used by all matrices (C, F, D, future) as first step of ontological lensing.
+        """
+        system_prompt = context.system_frame or self.default_system_frame
+        user_prompt = build_column_lensing_prompt(content, context)
+        response, metadata = self._call_openai(system_prompt, user_prompt, "interpret_col")
+        return RichResult(
+            text=response.get("text", ""),
+            terms_used=response.get("terms_used", []),
+            warnings=response.get("warnings", []),
+            metadata=metadata
+        )
 
-# Old methods removed - replaced by fragment composition architecture
+    def apply_row_lens(self, content: str, context: SemanticContext) -> RichResult:
+        """
+        Universal Lensing Step 2: Apply row ontology lens to content.
+        
+        Used by all matrices (C, F, D, future) as second step of ontological lensing.
+        """
+        system_prompt = context.system_frame or self.default_system_frame
+        user_prompt = build_row_lensing_prompt(content, context)
+        response, metadata = self._call_openai(system_prompt, user_prompt, "interpret_row")
+        return RichResult(
+            text=response.get("text", ""),
+            terms_used=response.get("terms_used", []),
+            warnings=response.get("warnings", []),
+            metadata=metadata
+        )
 
-# Old add_terms() and interpret_term() methods removed - replaced by fragment composition
+    def synthesize_lensed_perspectives(self, column_perspective: str, row_perspective: str, context: SemanticContext) -> RichResult:
+        """
+        Universal Lensing Step 3: Synthesize column and row perspectives into final narrative.
+        
+        Used by all matrices (C, F, D, future) as final step of ontological lensing.
+        """
+        system_prompt = context.system_frame or self.default_system_frame
+        user_prompt = build_final_lensing_prompt(column_perspective, row_perspective, context)
+        response, metadata = self._call_openai(system_prompt, user_prompt, "synthesize_final")
+        return RichResult(
+            text=response.get("text", ""),
+            terms_used=response.get("terms_used", []),
+            warnings=response.get("warnings", []),
+            metadata=metadata
+        )
 
     def _call_openai(self, system_prompt: str, user_prompt: str, operation: str = "semantic") -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
@@ -184,28 +180,42 @@ class CellResolver:
 
         while attempt <= self.max_retries:
             try:
-                resp = self.client.chat.completions.create(
+                # Use the OpenAI Responses API (not Chat Completions)
+                resp = self.client.responses.create(
                     model=self.model,
                     temperature=temperature,
                     top_p=0,
                     seed=self.seed,
-                    max_tokens=200,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
+                    max_output_tokens=200,
+                    instructions=system_prompt,
+                    input=user_prompt,
                 )
-                
+
                 # Extract and validate JSON content
-                raw = resp.choices[0].message.content or ""
+                raw = getattr(resp, "output_text", None)
+                if raw is None:
+                    # Fallback: concatenate text segments from response
+                    raw_parts = []
+                    try:
+                        for item in getattr(resp, "output", []) or []:
+                            for c in getattr(item, "content", []) or []:
+                                t = getattr(c, "text", None)
+                                if isinstance(t, str):
+                                    raw_parts.append(t)
+                    except Exception:
+                        pass
+                    raw = "".join(raw_parts)
+
+                raw = raw or ""
                 js = self._extract_json(raw)
                 obj = json.loads(js)
                 self._validate_obj(obj)
-                
-                # Calculate metadata (consolidated from ops.py)
+
+                # Calculate metadata
                 dt = int((time.time() - t0) * 1000)
+                model_id = getattr(resp, "model", self.model)
                 meta = {
-                    "modelId": resp.model,
+                    "modelId": model_id,
                     "latencyMs": dt,
                     "promptHash": prompt_hash_val,
                     "systemVersion": self._system_version_hash(),
@@ -216,9 +226,9 @@ class CellResolver:
                     "createdAt": self._now_iso(),
                     "phase": operation,
                 }
-                
+
                 return obj, meta
-                
+
             except Exception as e:
                 last_err = e
                 if attempt >= self.max_retries:

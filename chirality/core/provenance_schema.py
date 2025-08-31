@@ -21,7 +21,7 @@ def create_provenance(
     Create a canonical provenance dictionary for a cell.
     
     Args:
-        operation: Operation name (e.g., "compute_C", "compute_F", "synthesize_D")
+        operation: Operation name (e.g., "compute_C", "compute_F", "compute_D")
         coordinates: String representation of cell position (e.g., "(Normative, Determinacy)")
         stage_data: Dictionary containing stage-specific data (stage_1_*, stage_2_*, etc.)
         sources: List of source matrix names used in computation
@@ -54,8 +54,9 @@ def create_provenance(
 # Canonical provenance field definitions
 REQUIRED_FIELDS = ["operation", "sources", "timestamp"]
 CORE_FIELDS = ["coordinates", "traced"]
+# Universal provenance structure for all matrices
 STAGE_FIELDS = {
-    "compute_C": ["stage_1_products", "stage_2_resolved", "stage_3_lensed"],
-    "compute_F": ["stage_1_element_wise", "stage_2_resolved", "stage_3_lensed"],
-    "synthesize_D": ["stage_1_synthesis", "stage_2_lensed", "problem"]
+    "compute_C": ["stage_1_construct", "stage_2_semantic", "stage_3_column_lensed", "stage_4_row_lensed", "stage_5_final_synthesis"],
+    "compute_F": ["stage_1_construct", "stage_2_semantic", "stage_3_column_lensed", "stage_4_row_lensed", "stage_5_final_synthesis"], 
+    "compute_D": ["stage_1_construct", "stage_2_semantic", "stage_3_column_lensed", "stage_4_row_lensed", "stage_5_final_synthesis"]
 }

@@ -1,12 +1,33 @@
 """
 Simplified types for Chirality Framework semantic calculator.
 
-Contains only the essential data structures: Cell, Matrix, Operation.
+Contains only the essential data structures: Cell, Matrix.
 All abstractions removed - this is a fixed algorithm, not a flexible framework.
 """
 
-from typing import Any, Dict, List, Optional, Literal
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
+
+
+@dataclass
+class RichResult:
+    """
+    Structured result object containing both text output and associated metadata.
+    
+    Used by CellResolver methods to return comprehensive information about
+    LLM operations, including the resolved text and all metadata needed
+    for provenance tracking and Neo4j export.
+    
+    Attributes:
+        text: The final resolved text from the LLM operation
+        terms_used: List of input terms that were processed
+        warnings: List of any warnings generated during processing
+        metadata: Dict containing resolver metadata (modelId, latencyMs, promptHash, etc.)
+    """
+    text: str
+    terms_used: List[str]
+    warnings: List[str]
+    metadata: Dict[str, Any]
 
 
 @dataclass
@@ -65,16 +86,3 @@ class Matrix:
             return self.cells[row][col]
         return None
 
-
-@dataclass
-class Operation:
-    """
-    Minimal operation record for Chirality Framework semantic calculator.
-    
-    Simple logging-only record of semantic operations.
-    No complex abstractions - just tracks what happened.
-    """
-    kind: Literal["*", "+", "interpret", "⊙", "synthesize"]
-    inputs: List[str]          # Input matrix names
-    output: str                # Output matrix name
-    timestamp: str

@@ -12,7 +12,7 @@ The heart of the Chirality Framework is a three-stage process that generates dee
 
 1.  **Stage 1 (Combinatorial):** Mechanical combination of terms.
 2.  **Stage 2 (Semantic Resolution):** An LLM resolves the raw terms into meaningful concepts.
-3.  **Stage 3 (Ontological Lensing):** The LLM interprets these concepts through the contextual lens of the framework's ontological axes.
+3.  **Stage 3 (Ontological Lensing):** Universal three-step lensing applied to all matrices: Column → Row → Final Synthesis.
 
 For a complete technical description of this process, see the **[Canonical Algorithm Documentation](docs/ALGORITHM.md)**.
 
@@ -38,17 +38,20 @@ python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose
 
 # Compute different matrix types
 python3 -m chirality.cli compute-cell F --i 1 --j 2 --verbose
-python3 -m chirality.cli compute-cell D --i 2 --j 1 --problem "creating value"
+python3 -m chirality.cli compute-cell D --i 2 --j 1 --verbose
 
 # Enable tracing for full observability
 python3 -m chirality.cli compute-cell C --i 0 --j 0 --trace --verbose
+
+# Optional: export to Neo4j with a unique run/session id
+python3 -m chirality.cli compute-cell C --i 0 --j 0 --neo4j-export --verbose
 
 # Get help and information
 python3 -m chirality.cli --help
 python3 -m chirality.cli info
 ```
 
-This will display the output of all three stages for the specified cell.
+This will display the output of all three stages (including Column → Row → Final lensing) for the specified cell. When Neo4j export is enabled, the CLI prints a unique run_id and the exporter writes a full, metadata-rich graph for analysis.
 
 ## Development
 

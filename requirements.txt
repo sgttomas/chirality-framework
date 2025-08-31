@@ -4,7 +4,8 @@ python-dotenv>=1.0.0
 click>=8.0.0
 
 # Optional dependencies
-# openai>=1.0.0  # Only needed for OpenAIResolver
+# Use a version that supports the Responses API (client.responses.create)
+openai>=1.42.0  # Only needed for OpenAI-based CellResolver
 
 # Development dependencies (optional)
 # pytest>=7.0.0

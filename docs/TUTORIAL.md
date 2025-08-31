@@ -40,12 +40,12 @@ This is repeated for all four pairs, resulting in a list of resolved concepts:
 
 **Stage 3: Ontological Lensing (Deep Insight)**
 
-Finally, the resolved concepts are combined and interpreted through the powerful lens of the cell's coordinates.
+Finally, the resolved concepts are combined and interpreted through a universal three-step lensing process applied to all matrices: Column lens → Row lens → Final synthesis.
 
 *   **Input:**
     *   **Content:** `"Guiding Imperatives, Applied Context, Core Evaluation Criteria, Critical Assessment"`
-    *   **Row Lens:** `"Normative"`
-    *   **Column Lens:** `"Necessity (vs Contingency)"`
+*   **Row Lens:** `"Normative"`
+*   **Column Lens:** `"Necessity (vs Contingency)"`
 *   **Output (Final Cell Value):** A synthesized narrative, such as: `"To generate reliable knowledge, it is imperative to establish guiding principles based on essential facts and apply them within a critical context, ensuring that core evaluation criteria are used to make a decisive final assessment."`
 
 This process is repeated for all 12 cells, resulting in the complete **Matrix C**.
@@ -54,8 +54,8 @@ This process is repeated for all 12 cells, resulting in the complete **Matrix C*
 
 The process continues in the "Solution Objectives" station:
 
-1.  **Matrix F is computed** using an element-wise multiplication: `F = J ⊙ C`. Each cell `F(i,j)` is the semantic resolution of the terms from `J(i,j)` and `C(i,j)`, which is then passed through the Lensing stage.
-2.  **Matrix D is synthesized** using the formula `D = A + F`. Each cell `D(i,j)` is created by mechanically combining the terms from `A(i,j)` and `F(i,j)` into a sentence, which is then passed through the Lensing stage to generate a final, actionable objective.
+1.  **Matrix F is computed** using an element-wise multiplication: `F = J ⊙ C`. Each cell `F(i,j)` is the semantic resolution of the terms from `J(i,j)` and `C(i,j)`, followed by the universal three-step lensing.
+2.  **Matrix D is computed** using the formula `D = A + F`. Each cell `D(i,j)` is created by mechanically forming the exact sentence `"A(i,j) applied to frame the problem; F(i,j) to resolve the problem."` (semantic addition), then passed through the universal three-step lensing to generate a final, actionable objective.
 
 ## Conclusion
 

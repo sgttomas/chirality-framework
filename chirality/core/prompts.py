@@ -1,4 +1,4 @@
-# chirality_prompts.py
+# prompts.py
 """
 Prompt templates and canonical system message for the Chirality Framework Phase-1 build.
 
@@ -8,6 +8,7 @@ Each matrix cell is a coordinate (row_label × col_label) inside that landmark.
 Your job as the LLM: preserve and integrate meaning while mapping it faithfully into the valley's meta-ontology.
 """
 
+from __future__ import annotations
 import re
 import unicodedata
 import json
@@ -98,31 +99,171 @@ Output contract (STRICT):
 - Do NOT include code fences, prose, or any text outside the JSON object.
 """
 
-def generate_valley_summary(valley: dict | None, station: dict | None) -> str:
-    """
-    Build a compact 'valley map' like:
-      Semantic Valley: Problem Statement → [Requirements] → Objectives → Solution Objectives
-    The current station is bracketed.
-    Expects GraphQL shapes:
-      valley = { "stations": [ { "name": str, "index": int }, ... ] }
-      station = { "index": int, "name": str }
-    """
-    if not valley or not isinstance(valley, dict):
-        return "Semantic Valley: Problem Statement → Requirements → Objectives → Solution Objectives"
-    stations = valley.get("stations") or []
-    names = []
-    for i, s in enumerate(stations):
-        names.append(s.get("name", f"Station {i}"))
-    if not names:
-        names = ["Problem Statement", "Requirements", "Objectives", "Solution Objectives"]
-    cur = (station or {}).get("index", None)
-    if isinstance(cur, int) and 0 <= cur < len(names):
-        names[cur] = f"[{names[cur]}]"
-    return f"Semantic Valley: {' → '.join(names)}"
+# === Prompt Builders for 3-Stage Pipeline ===
+# These functions construct prompts for each stage of the semantic calculator.
+# They are the single source of truth for how prompts are assembled.
+# 
+# Stage 2: build_stage2_prompt() - Semantic pair resolution
+# Stage 3: Universal 3-step ontological lensing for ALL matrices:
+#   - build_column_lensing_prompt() - Column lens interpretation
+#   - build_row_lensing_prompt() - Row lens interpretation  
+#   - build_final_synthesis_prompt() - Synthesize both perspectives
+#
+# All builders use the q() function for text normalization and escaping.
 
-# === Static templates removed ===
-# All prompt composition now happens dynamically in CellResolver.assemble_prompt()
-# This follows the fragment composition architecture where prompts are built
-# from configurable fragments rather than fixed templates.
+
+def build_stage2_prompt(operation: str, terms: list[str], context: SemanticContext) -> str:
+    """
+    Build prompt for Stage 2: Semantic Operations.
+    
+    Handles both multiplication (*) and addition (+) operations with flexible terms.
+    
+    Args:
+        operation: "*" for multiplication, "+" for addition
+        terms: List of terms - [term_a, term_b] for "*", [content] for "+"
+        context: SemanticContext with valley position and ontological coordinates
+        
+    Returns:
+        Complete user prompt for Stage 2 semantic operation
+    """
+    fragments = []
+    
+    # Valley context
+    if context.valley_summary:
+        fragments.append(f"Valley Context: {context.valley_summary}")
+    
+    # Station
+    fragments.append(f"Station: {context.station_context}")
+    
+    # Ontological coordinates
+    fragments.append(f"Coordinates: ({context.row_label}, {context.col_label})")
+    
+    # Operation instruction
+    if operation == "*":
+        fragments.append("Operation: Semantic multiplication - fuse meanings at their intersection")
+        # For multiplication, expect [term_a, term_b]
+        if len(terms) >= 2:
+            terms_dict = {"term_a": q(terms[0]), "term_b": q(terms[1])}
+        else:
+            # Fallback for malformed input
+            terms_dict = {"term_a": q(terms[0] if terms else ""), "term_b": q(terms[1] if len(terms) > 1 else "")}
+    elif operation == "+":
+        fragments.append("Operation: Semantic addition - concatenate meanings coherently")
+        # For addition, expect [content] (though D won't use this LLM path)
+        terms_dict = {"content": q(terms[0] if terms else "")}
+    else:
+        fragments.append(f"Operation: {operation}")
+        terms_dict = {f"term_{i}": q(term) for i, term in enumerate(terms)}
+    
+    # Terms to process - use json.dumps for safety
+    fragments.append(f"Terms: {json.dumps(terms_dict, ensure_ascii=False)}")
+    
+    return "\n\n".join(fragments)
+
+
+
+
+def build_column_lensing_prompt(content: str, context: SemanticContext) -> str:
+    """
+    Build prompt for Column Lensing step of universal 3-step ontological process.
+    
+    Interprets content through the column ontology lens only.
+    Used as Step 1 of universal lensing for ALL matrices.
+    
+    Args:
+        content: Content to interpret through column lens
+        context: SemanticContext with valley position and ontological coordinates
+        
+    Returns:
+        Complete user prompt for column lensing
+    """
+    fragments = []
+    
+    # Valley context
+    if context.valley_summary:
+        fragments.append(f"Valley Context: {context.valley_summary}")
+    
+    # Station
+    fragments.append(f"Station: {context.station_context}")
+    
+    # Operation instruction - focus ONLY on column ontology
+    fragments.append(f"Operation: Interpret the following content in the context of '{context.terms['problem']}', focusing ONLY on the meaning of the column ontology: '{context.col_label}'")
+    
+    # Terms - use json.dumps for safety
+    terms_dict = {"content": q(content)}
+    fragments.append(f"Terms: {json.dumps(terms_dict, ensure_ascii=False)}")
+    
+    return "\n\n".join(fragments)
+
+
+def build_row_lensing_prompt(content: str, context: SemanticContext) -> str:
+    """
+    Build prompt for Row Lensing step of universal 3-step ontological process.
+    
+    Interprets content through the row ontology lens only.
+    Used as Step 2 of universal lensing for ALL matrices.
+    
+    Args:
+        content: Content to interpret through row lens
+        context: SemanticContext with valley position and ontological coordinates
+        
+    Returns:
+        Complete user prompt for row lensing
+    """
+    fragments = []
+    
+    # Valley context
+    if context.valley_summary:
+        fragments.append(f"Valley Context: {context.valley_summary}")
+    
+    # Station
+    fragments.append(f"Station: {context.station_context}")
+    
+    # Operation instruction - focus ONLY on row ontology
+    fragments.append(f"Operation: Interpret the following content in the context of '{context.terms['problem']}', focusing ONLY on the meaning of the row ontology: '{context.row_label}'")
+    
+    # Terms - use json.dumps for safety
+    terms_dict = {"content": q(content)}
+    fragments.append(f"Terms: {json.dumps(terms_dict, ensure_ascii=False)}")
+    
+    return "\n\n".join(fragments)
+
+
+def build_final_lensing_prompt(column_perspective: str, row_perspective: str, context: SemanticContext) -> str:
+    """
+    Build prompt for Final Synthesis step of universal 3-step ontological process.
+    
+    Synthesizes column and row perspectives into final integrated narrative.
+    Used as Step 3 of universal lensing for ALL matrices.
+    
+    Args:
+        column_perspective: The interpretation from the column lens
+        row_perspective: The interpretation from the row lens
+        context: SemanticContext with valley position and ontological coordinates
+        
+    Returns:
+        Complete user prompt for final synthesis
+    """
+    fragments = []
+    
+    # Valley context
+    if context.valley_summary:
+        fragments.append(f"Valley Context: {context.valley_summary}")
+    
+    # Station
+    fragments.append(f"Station: {context.station_context}")
+    
+    # Ontological coordinates
+    fragments.append(f"Coordinates: ({context.row_label}, {context.col_label})")
+    
+    # Operation instruction
+    fragments.append("Operation: Synthesize the two perspectives into a final, integrated narrative that fully integrates these semantic interpretations in the context of the station we are at in the semantic valley")
+    
+    # Terms - use json.dumps for safety
+    terms_dict = {"column_perspective": q(column_perspective), "row_perspective": q(row_perspective)}
+    fragments.append(f"Terms: {json.dumps(terms_dict, ensure_ascii=False)}")
+    
+    return "\n\n".join(fragments)
+
 
 # The q() function and valley utilities remain available for fragment composition

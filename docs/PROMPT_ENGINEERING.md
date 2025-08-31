@@ -6,7 +6,7 @@ This guide provides practical methodology for refining the prompts that drive th
 
 ## Overview: The Prompt Architecture
 
-The Chirality Framework semantic calculator uses **fragment composition** rather than static templates. The `CellResolver.assemble_prompt()` method dynamically builds prompts from configurable fragments, allowing for systematic refinement and testing.
+The Chirality Framework semantic calculator uses **fragment composition** rather than static templates. The prompt builders in `chirality/core/prompts.py` dynamically construct prompts from configurable fragments, allowing for systematic refinement and testing.
 
 ### Core Prompt Components
 
@@ -16,9 +16,11 @@ The Chirality Framework semantic calculator uses **fragment composition** rather
    - Establishes voice and style guidelines
 
 2. **Operation-Specific Fragments**
-   - `resolve_semantic_pair()`: Stage 2 semantic resolution prompts
-   - `apply_ontological_lens()`: Stage 3 lensing prompts
-   - Each uses dynamic context from `SemanticContext`
+   - `build_stage2_prompt()`: Constructs Stage 2 semantic resolution prompts
+   - `build_column_lensing_prompt()`: Constructs column lens prompts
+   - `build_row_lensing_prompt()`: Constructs row lens prompts
+  - `build_final_lensing_prompt()`: Constructs final synthesis prompts
+   - All builders in `chirality/core/prompts.py`
 
 3. **Context Injection**
    - Valley position and station context
@@ -52,7 +54,7 @@ The Chirality Framework semantic calculator uses **fragment composition** rather
 | **Over-abstraction** | "Benchmarks * Fundamental" → "Measurement Philosophy" | Guide toward concrete, actionable concepts |
 | **Inconsistent style** | Mixed formal/informal outputs | Establish clear voice guidelines in system prompt |
 
-### Stage 3: Ontological Lensing (`apply_ontological_lens`)
+### Stage 3: Universal Ontological Lensing (`apply_column_lens`, `apply_row_lens`, `synthesize_lensed_perspectives`)
 
 **Purpose**: Apply deep contextual interpretation through row/column coordinates
 
@@ -125,7 +127,7 @@ python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose
 ```
 
 **Step 2: Modify Prompt Fragments**
-Edit `chirality/core/cell_resolver.py::assemble_prompt()` methods:
+Edit prompt builders in `chirality/core/prompts.py`:
 - Adjust system context
 - Refine operation instructions
 - Enhance ontological context

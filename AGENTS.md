@@ -12,17 +12,17 @@ Your work will focus on the core components of the semantic calculator.
 
 ### Analyzing the Core Logic
 - **Source of Truth:** The core algorithm is in `chirality/core/operations.py`. When analyzing the logic, focus on the `compute_cell_*` functions and their implementation of the 3-stage pipeline (Combinatorial -> Semantic Resolution -> Lensing).
-- **Prompting Engine:** The `chirality/core/cell_resolver.py` is the sole interface to the LLM. Its `assemble_prompt` method is key to how context is passed to the LLM.
+- **Prompting Engine:** The `chirality/core/cell_resolver.py` is the sole interface to the LLM. Prompt construction is centralized in `chirality/core/prompts.py` via explicit builders (e.g., `build_stage2_prompt`, `build_column_lensing_prompt`, `build_row_lensing_prompt`, `build_final_lensing_prompt`).
 - **Canonical Data:** The fixed input matrices are defined as constants in `chirality/core/matrices.py`.
 
 ### Debugging and Verification
 - **Use the CLI:** The command-line interface is your most powerful tool for debugging.
   ```bash
   # Verify the output of a single cell
-  python -m chirality.cli compute-cell C --i 0 --j 0
+  python3 -m chirality.cli compute-cell C --i 0 --j 0
 
   # See the full 3-stage pipeline for a cell
-  python -m chirality.cli compute-cell C --i 0 --j 0 --verbose
+  python3 -m chirality.cli compute-cell C --i 0 --j 0 --verbose
   ```
 - **Use the Tracer:** For detailed, machine-readable logs, run commands with the `--trace` flag. The output will be in the `traces/` directory.
 
