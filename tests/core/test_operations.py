@@ -192,7 +192,7 @@ class TestStage3OntologicalLensing:
         assert cell.value == cell.provenance["stage_5_final_synthesis"]["text"]
         
         # Final value should include interpretation
-        assert "interpret" in cell.value.lower() or "establishing" in cell.value.lower()
+        assert "syn[" in cell.value.lower() and "col[" in cell.value.lower() and "row[" in cell.value.lower()
 
 
 class TestCompletePipeline:
@@ -286,7 +286,7 @@ class TestMatrixOperations:
         matrix_C = compute_matrix_C(A, B, resolver, "Test valley")
         
         assert matrix_C.name == "C"
-        assert matrix_C.station == "Requirements"
+        assert matrix_C.station == "Problem Requirements"
         assert len(matrix_C.cells) == 3  # 3 rows
         assert len(matrix_C.cells[0]) == 4  # 4 columns
         
@@ -306,7 +306,7 @@ class TestMatrixOperations:
         matrix_F = compute_matrix_F(J, C, resolver, "Test valley")
         
         assert matrix_F.name == "F"
-        assert matrix_F.station == "Objectives"
+        assert matrix_F.station == "Solution Objectives"
         assert matrix_F.cells[0][0].provenance["operation"] == "compute_F"
     
     def test_compute_matrix_D(self):
@@ -317,7 +317,7 @@ class TestMatrixOperations:
         matrix_D = compute_matrix_D(A, F, resolver, "Test valley")
         
         assert matrix_D.name == "D"
-        assert matrix_D.station == "Objectives"
+        assert matrix_D.station == "Solution Objectives"
         
         # Check synthesis formula was applied
         cell = matrix_D.cells[0][0]

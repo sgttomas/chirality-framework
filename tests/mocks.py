@@ -33,7 +33,8 @@ class MockCellResolver:
             "resolve_semantic_pair": 0,
             "apply_column_lens": 0,
             "apply_row_lens": 0,
-            "synthesize_lensed_perspectives": 0
+            "synthesize_lensed_perspectives": 0,
+            "shift_station_context": 0
         }
     
     def resolve_semantic_pair(self, pair: str, context: SemanticContext) -> RichResult:
@@ -117,13 +118,28 @@ class MockCellResolver:
             metadata={"modelId": "mock_resolver"}
         )
     
+    def shift_station_context(self, content: str, context: SemanticContext) -> RichResult:
+        """
+        Mock station shift for testing Station 5 validation.
+        
+        Following colleague_1's guidance for clear Validation-oriented output with coordinates.
+        """
+        self.call_count["shift_station_context"] += 1
+        return RichResult(
+            text=f"VALIDATION[{context.row_label},{context.col_label}]: {content}",
+            terms_used=[content],
+            warnings=[],
+            metadata={"modelId": "mock_resolver"}
+        )
+    
     def reset_call_counts(self):
         """Reset call counters for fresh test."""
         self.call_count = {
             "resolve_semantic_pair": 0,
             "apply_column_lens": 0,
             "apply_row_lens": 0,
-            "synthesize_lensed_perspectives": 0
+            "synthesize_lensed_perspectives": 0,
+            "shift_station_context": 0
         }
     
     def get_call_counts(self) -> Dict[str, int]:

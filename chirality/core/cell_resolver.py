@@ -23,7 +23,7 @@ except Exception:
 
 from .types import Cell, Matrix, RichResult
 from .context import SemanticContext
-from .prompts import SYSTEM_PROMPT, build_stage2_prompt, build_column_lensing_prompt, build_row_lensing_prompt, build_final_lensing_prompt
+from .prompts import SYSTEM_PROMPT, build_stage2_prompt, build_column_lensing_prompt, build_row_lensing_prompt, build_final_lensing_prompt, build_station_shift_prompt
 
 
 def normalize_text(s: str) -> str:
@@ -54,7 +54,7 @@ class CellResolver:
     - build_final_lensing_prompt: For synthesizing both perspectives
     """
     
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o", seed: int = 42):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4.1-nano", seed: int = 42):
         if OpenAI is None:
             raise ImportError("OpenAI package required. Install with: pip install openai")
 
@@ -158,6 +158,30 @@ class CellResolver:
             metadata=metadata
         )
 
+    def shift_station_context(self, content: str, context: SemanticContext) -> RichResult:
+        """
+        Station 5 operation: Transform verification results into validation context.
+        
+        This operation shifts from Verification (X matrix) to Validation (Z matrix)
+        by recontextualizing the verification results within a validation framework.
+        
+        Args:
+            content: The verification content to transform
+            context: SemanticContext with validation station context
+            
+        Returns:
+            RichResult with validation-contextualized content
+        """
+        system_prompt = context.system_frame or self.default_system_frame
+        user_prompt = build_station_shift_prompt(content, context)
+        response, metadata = self._call_openai(system_prompt, user_prompt, "validation_shift")
+        return RichResult(
+            text=response.get("text", ""),
+            terms_used=response.get("terms_used", []),
+            warnings=response.get("warnings", []),
+            metadata=metadata
+        )
+
     def _call_openai(self, system_prompt: str, user_prompt: str, operation: str = "semantic") -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Consolidated OpenAI call with robust error handling.
@@ -180,31 +204,21 @@ class CellResolver:
 
         while attempt <= self.max_retries:
             try:
-                # Use the OpenAI Responses API (not Chat Completions)
-                resp = self.client.responses.create(
+                # Use the OpenAI Chat Completions API
+                resp = self.client.chat.completions.create(
                     model=self.model,
                     temperature=temperature,
                     top_p=0,
                     seed=self.seed,
-                    max_output_tokens=200,
-                    instructions=system_prompt,
-                    input=user_prompt,
+                    max_tokens=200,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ]
                 )
 
-                # Extract and validate JSON content
-                raw = getattr(resp, "output_text", None)
-                if raw is None:
-                    # Fallback: concatenate text segments from response
-                    raw_parts = []
-                    try:
-                        for item in getattr(resp, "output", []) or []:
-                            for c in getattr(item, "content", []) or []:
-                                t = getattr(c, "text", None)
-                                if isinstance(t, str):
-                                    raw_parts.append(t)
-                    except Exception:
-                        pass
-                    raw = "".join(raw_parts)
+                # Extract and validate JSON content from Chat Completions response
+                raw = resp.choices[0].message.content or ""
 
                 raw = raw or ""
                 js = self._extract_json(raw)
@@ -213,7 +227,7 @@ class CellResolver:
 
                 # Calculate metadata
                 dt = int((time.time() - t0) * 1000)
-                model_id = getattr(resp, "model", self.model)
+                model_id = resp.model
                 meta = {
                     "modelId": model_id,
                     "latencyMs": dt,
@@ -301,8 +315,25 @@ class CellResolver:
         if not isinstance(obj["text"], str):
             raise ValueError("'text' must be string")
         
-        if not (isinstance(obj["terms_used"], list) and all(isinstance(t, str) for t in obj["terms_used"])):
-            raise ValueError("'terms_used' must be list[str]")
+        # Ensure terms_used is a list - convert if needed
+        if "terms_used" not in obj:
+            obj["terms_used"] = []
+        elif not isinstance(obj["terms_used"], list):
+            # Convert single item or other format to list
+            if isinstance(obj["terms_used"], str):
+                obj["terms_used"] = [obj["terms_used"]]
+            else:
+                obj["terms_used"] = []
+        # Ensure all items are strings
+        obj["terms_used"] = [str(item) for item in obj["terms_used"]]
         
-        if not (isinstance(obj["warnings"], list) and all(isinstance(w, str) for w in obj["warnings"])):
-            raise ValueError("'warnings' must be list[str]")
+        # Ensure warnings is a list - convert if needed
+        if "warnings" not in obj:
+            obj["warnings"] = []
+        elif not isinstance(obj["warnings"], list):
+            if isinstance(obj["warnings"], str):
+                obj["warnings"] = [obj["warnings"]]
+            else:
+                obj["warnings"] = []
+        # Ensure all items are strings  
+        obj["warnings"] = [str(item) for item in obj["warnings"]]

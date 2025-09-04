@@ -7,58 +7,87 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/tag/sgttomas/chirality-framework?sort=semver&label=release)](https://github.com/sgttomas/chirality-framework/tags)
 
-**Version: See VERSION.md** | **Status: Refactored to Canonical Algorithm**
+**Version: 16.1.0** | **Status: Active Development**
 
-The Chirality Framework is a direct, simple, and observable implementation of a fixed, canonical algorithm for structured problem-solving. It is not a general-purpose framework but a "semantic calculator" designed to execute a specific sequence of semantic transformations.
+The Chirality Framework is a "semantic calculator" designed to execute a fixed, canonical algorithm for structured problem-solving. It transforms a set of base matrices through a multi-stage semantic pipeline, producing a series of derived matrices that represent a complete traversal of a "semantic valley" from problem to evaluation.
 
-The value of this project is in the unique, insightful **output** of the calculation, not in the flexibility of the code.
+The value of this project is in the unique, insightful **output** of the calculation and the **observability** of the process, not in the flexibility of the code.
 
-## Core Concept: The Three-Stage Interpretation Pipeline
+## Core Concept: The Semantic Valley Pipeline
 
-The heart of the Chirality Framework is a three-stage process that generates deep meaning from fixed inputs:
+The framework computes a sequence of matrices, each representing a station in the semantic valley. The primary operations involve:
+1.  **Semantic Dot Product:** A multi-stage process involving mechanical term combination, LLM-driven semantic resolution, and ontological lensing.
+2.  **Station Shifting:** An LLM-driven transformation of a matrix from one context (e.g., Verification) to another (e.g., Validation).
+3.  **Structural Operations:** Standard matrix operations like transposing and slicing.
 
-1.  **Stage 1 (Combinatorial):** Mechanical combination of terms.
-2.  **Stage 2 (Semantic Resolution):** An LLM resolves the raw terms into meaningful concepts.
-3.  **Stage 3 (Ontological Lensing):** Universal three-step lensing applied to all matrices: Column → Row → Final Synthesis.
+For a complete technical description, see the **[Canonical Algorithm Documentation](docs/ALGORITHM.md)**.
 
-For a complete technical description of this process, see the **[Canonical Algorithm Documentation](docs/ALGORITHM.md)**.
+## Quick Start: The End-to-End Workflow
 
-## Quick Start: Using the CLI
-
-The primary way to interact with the calculator is via the command-line interface. The most common command is `compute-cell`, which allows you to observe the 3-stage pipeline for any cell in a matrix.
+The recommended way to use the framework is to compute the entire pipeline and view the results in the generated HTML viewer.
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.9+
 - An OpenAI API key set as the `OPENAI_API_KEY` environment variable.
 
-### Examples: Computing cells through the 3-stage pipeline
+### Step 1: Compute the Full Pipeline
+This command runs the entire semantic pipeline (Matrices C through E), generates snapshots of every matrix (including the base matrices A, B, and J), and creates detailed trace files for debugging.
 
 ```bash
-# Navigate to the project root
-cd /path/to/chirality-framework
+# Install with OpenAI support
+pip install 'chirality-framework[openai]'
 
-# Compute cell C[0,0] with verbose output (shows all 3 stages)
-python3 -m chirality.cli compute-cell C --i 0 --j 0 --verbose
+# Set your API key (add to your shell profile for persistence)
+export OPENAI_API_KEY="sk-..."
 
-# Compute with OpenAI resolver (requires API key)
-python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose
+# Run the full pipeline with the OpenAI resolver
+python3 -m chirality.cli compute-pipeline --resolver openai --snapshot-jsonl --include-base
+```
+This will create two directories, `snapshots/<run_id>/` and `traces/<run_id>/`, containing the output files.
 
-# Compute different matrix types
-python3 -m chirality.cli compute-cell F --i 1 --j 2 --verbose
-python3 -m chirality.cli compute-cell D --i 2 --j 1 --verbose
+### Step 2: Render and View the Results
+This command reads the generated snapshots and creates a self-contained HTML file to display all the matrices in an elegant, readable format.
 
-# Enable tracing for full observability
-python3 -m chirality.cli compute-cell C --i 0 --j 0 --trace --verbose
+```bash
+# Render the latest run and open it in your browser
+python3 -m chirality.cli render-viewer --latest --open
+```
+This will create a `viewer-output/` directory containing the `index.html` and `style.css` files and automatically open the page for you. You can change the output location with `--output-dir`.
 
-# Optional: export to Neo4j with a unique run/session id
-python3 -m chirality.cli compute-cell C --i 0 --j 0 --neo4j-export --verbose
+## Advanced Usage
 
-# Get help and information
-python3 -m chirality.cli --help
-python3 -m chirality.cli info
+### Computing Individual Matrices
+The `compute-matrix` command allows you to compute and snapshot any single matrix, automatically handling its prerequisites.
+
+```bash
+# Compute just the final Evaluation matrix (E)
+python3 -m chirality.cli compute-matrix E --resolver openai --snapshot-jsonl
+
+# Snapshot a base matrix for reference
+python3 -m chirality.cli compute-matrix A --snapshot-jsonl
 ```
 
-This will display the output of all three stages (including Column → Row → Final lensing) for the specified cell. When Neo4j export is enabled, the CLI prints a unique run_id and the exporter writes a full, metadata-rich graph for analysis.
+### Inspecting a Single Cell
+For detailed debugging, the `compute-cell` command lets you observe the full multi-stage pipeline for any single cell in a matrix.
+
+```bash
+# Observe the computation of cell C[0,0] with verbose output
+python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose --trace
+```
+
+### Viewing Options
+The `render-viewer` command has several options for customizing the output:
+
+```bash
+# Render a specific run with a custom title
+python3 -m chirality.cli render-viewer --run-id "<run_id>" --title "My Analysis"
+
+# Render with the "Elements" style for a more code-like view
+python3 -m chirality.cli render-viewer --latest --style elements
+
+# Disable the default value sanitization to see raw output
+python3 -m chirality.cli render-viewer --latest --style elements --no-sanitize-values
+```
 
 ## Development
 
