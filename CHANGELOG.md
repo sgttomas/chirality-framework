@@ -62,6 +62,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced test coverage: 54 total tests including viewer and CLI functionality
 - Package preparation with proper .gitignore and MANIFEST.in
 
+## [16.0.1] - 2025-08-31
+
+### Fixed
+- Fixed version synchronization between VERSION.md and pyproject.toml to ensure correct PyPI packaging
+- Fixed indentation error in Neo4j working memory exporter that was causing import failures
+- Updated PyPI deployment workflow with correct project URL
+
+### Changed
+- Added version synchronization checker script (`scripts/check_version_sync.py`)
+- Added comprehensive PyPI deployment documentation (`docs/PYPI_DEPLOYMENT.md`)
+
 ## [16.0.0] - 2025-08-31
 
 ### Added
