@@ -165,3 +165,4 @@ To set up the development environment and run tests, please refer to the instruc
 
 Additional docs:
 - `docs/INTERFACE.md`: Producer mirror of the chirality-app contract (app mode).
+- `GEMINI.md`: Guidance for using Gemini/AI assistants with this repo.
