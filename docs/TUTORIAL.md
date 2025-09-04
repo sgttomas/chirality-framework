@@ -2,6 +2,8 @@
 
 This tutorial will guide you through the primary end-to-end workflow of the Chirality Framework, from installation to generating and viewing a full set of matrices.
 
+For a compact list of commands and options, see the CLI Quick Reference in `docs/API_REFERENCE.md#cli-reference`.
+
 ## 1. Installation
 
 First, install the framework from PyPI. It's recommended to do this in a virtual environment. To use the OpenAI resolver, you must install the `[openai]` extra.
