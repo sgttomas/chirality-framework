@@ -19,17 +19,27 @@ import sys
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
+try:
+    # Python 3.8+
+    from importlib import metadata as _im
+except Exception:  # pragma: no cover
+    _im = None
 
 def _get_version():
-    """Reads the version from the VERSION.md file."""
+    """Return installed package version; fallback to VERSION.md then 0.0.0."""
+    # Prefer the canonical installed package/distribution version
+    if _im is not None:
+        try:
+            return _im.version("chirality-framework")
+        except Exception:
+            pass
+    # Fallback to VERSION.md when running from source tree
     try:
-        # Path to VERSION.md at the project root, relative to this file
         version_path = Path(__file__).parent.parent / "VERSION.md"
         with open(version_path, "r") as f:
-            # First line should be like "15.0.1 — ..."
             return f.readline().split("—")[0].strip()
     except Exception:
-        return "0.0.0" # Fallback version
+        return "0.0.0"
 
 # Load environment variables from .env file in project root
 load_dotenv(override=True)
