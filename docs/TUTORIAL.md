@@ -45,6 +45,19 @@ After the command completes, you will have two new directories:
 - `snapshots/<run_id>/`: Contains the clean summary files (e.g., `C-....jsonl`, `D-....jsonl`).
 - `traces/<run_id>/`: Contains the highly detailed debug trace files.
 
+### App Integration Mode (Optional)
+If you need to automate runs from another application, use app mode to produce a manifest and per-cell snapshots:
+
+```
+python3 -m chirality.cli compute-pipeline \
+  --resolver echo \
+  --out runs/tutorial-run-1 \
+  --problem-file problem.json \
+  --max-seconds 900
+```
+
+This writes per-cell JSONL snapshots for `C`, `D`, `X`, `E` under `runs/<run_id>/snapshots/` and a manifest `runs/<run_id>/index.json` (written last, atomically). The CLI prints exactly one JSON line to stdout on success with the `run_id` and manifest path. For backward compatibility, legacy full-matrix snapshots for all computed matrices are also written under `snapshots/<run_id>/` and can be rendered with the viewer.
+
 ## 4. Render and View the Results
 
 Now that you have the snapshot files, you can generate a self-contained HTML viewer to see the matrices in an elegant, readable format.

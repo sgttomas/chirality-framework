@@ -127,7 +127,7 @@ class MatrixSnapshotWriter:
         os.replace(temp_path, target_path)
         
         return target_path
-    
+
     def get_snapshot_directory(self) -> Path:
         """
         Get the directory where snapshots are being written.
@@ -136,3 +136,65 @@ class MatrixSnapshotWriter:
             Path to the snapshot directory for this run
         """
         return self.run_directory
+
+    # --- New: cells-jsonl-v1 writer for app consumption ---
+    def write_matrix_cells_jsonl(
+        self,
+        matrix: Matrix,
+        out_dir: Path,
+        fixed_filename: str,
+    ) -> Path:
+        """
+        Write per-cell JSONL (one object per line) using the app contract.
+
+        Schema per line:
+          {
+            "id": "{matrix}:r{row}:c{col}",
+            "matrix": "C|D|X|E",
+            "row": int,
+            "col": int,
+            "row_label": str,
+            "col_label": str,
+            "station": str,
+            "text": str,
+            "citations": [],
+            "refs": [],
+            "meta": {"order": int}
+          }
+
+        Args:
+            matrix: Matrix to serialize
+            out_dir: directory to write into (must exist)
+            fixed_filename: e.g., "C.jsonl"
+        """
+        out_dir = Path(out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        target_path = out_dir / fixed_filename
+
+        tmp_path = target_path.with_suffix(".tmp")
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            order = 0
+            for i in range(matrix.shape[0]):
+                for j in range(matrix.shape[1]):
+                    cell = matrix.get_cell(i, j)
+                    if cell is None:
+                        continue
+                    obj = {
+                        "id": f"{matrix.name}:r{i}:c{j}",
+                        "matrix": matrix.name,
+                        "row": i,
+                        "col": j,
+                        "row_label": matrix.row_labels[i] if i < len(matrix.row_labels) else None,
+                        "col_label": matrix.col_labels[j] if j < len(matrix.col_labels) else None,
+                        "station": matrix.station,
+                        "text": cell.value,
+                        "citations": [],
+                        "refs": [],
+                        "meta": {"order": order},
+                    }
+                    f.write(json.dumps(obj, ensure_ascii=False, separators=(",", ":")))
+                    f.write("\n")
+                    order += 1
+
+        os.replace(tmp_path, target_path)
+        return target_path

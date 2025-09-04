@@ -140,3 +140,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - This release is a complete architectural rewrite and is not backward-compatible.
 - The CLI has been completely changed, with `compute-cell` as the new primary command.
 - All import paths have been updated due to the new structure.
+## [16.3.0] - 2025-09-04
+
+### Added
+- App Integration Mode in `compute-pipeline` with `--out`, `--problem-file`, and `--max-seconds`:
+  - Writes per-cell `cells-jsonl-v1` snapshots for C/D/X/E under `runs/<run_id>/snapshots/`.
+  - Writes `runs/<run_id>/index.json` manifest last and atomically, including checksums, bytes, and record counts.
+  - Emits a single final stdout JSON line with `run_id` and manifest path.
+  - Exit codes standardized: 0 OK; 2 invalid args; 3 timeout; 4 I/O; 5 resolver; 1 general.
+- Dual-write legacy snapshots for all computed matrices to `snapshots/<run_id>/` for viewer compatibility.
+- New `chirality/exporters/manifest_exporter.py` and tests.
+- New producer-side `docs/INTERFACE.md` and documentation updates (README, API_REFERENCE, TUTORIAL, AGENTS, CLAUDE).

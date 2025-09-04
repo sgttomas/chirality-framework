@@ -37,6 +37,11 @@ With the core semantic calculator fully implemented and tested, future work can 
 *   **Online Testing Suite**: Add `@pytest.mark.online` tests that validate against real OpenAI API calls
 *   **Performance Optimization**: Profile the 3-stage pipeline and optimize `CellResolver` for speed and cost
 *   **Enhanced Error Handling**: Improve robustness for edge cases and API failures
+*   **Problem-Aware Prompting (Planned)**: Thread problem metadata into prompts when provided via `--problem-file` in app mode. Scope:
+    - Extend `SemanticContext` to carry `problem_title` and `problem_statement`.
+    - Update prompt builders (`build_stage2_prompt`, `build_column_lensing_prompt`, `build_row_lensing_prompt`, `build_final_lensing_prompt`) to include concise problem framing.
+    - Gate behavior behind a flag (e.g., `--problem-context`) or automatically enable in app mode; document versioning impact.
+    - Add tests to assert problem fragments appear in constructed prompts and influence outputs deterministically with the Echo resolver.
 
 ### Medium Priority  
 *   **Extended Semantic Valley**: Implement next matrices in the canonical sequence (X, Z, etc.)
