@@ -36,9 +36,8 @@ jobs:
   
   release-build:
     runs-on: ubuntu-latest
-    needs: [check-manual-deployment]
-    # Allow release builds to run even if manual check is skipped
-    if: always() && (github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.confirm_deployment == 'deploy-to-pypi'))
+    # Run for releases OR confirmed manual deployments  
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.confirm_deployment == 'deploy-to-pypi')
 
     steps:
       - uses: actions/checkout@v4
