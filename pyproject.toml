@@ -8,7 +8,7 @@ version = "16.3.0"
 description = "A semantic calculator for executing a canonical, multi-stage pipeline for structured problem-solving and knowledge generation."
 readme = "README.md"
 keywords = ["llm", "ontology", "semantic computing", "pipeline orchestration", "static site generator", "knowledge generation"]
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Chirality Framework Team"}
 ]
@@ -21,7 +21,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
