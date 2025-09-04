@@ -187,7 +187,7 @@ def build_column_lensing_prompt(content: str, context: SemanticContext) -> str:
     fragments.append(f"Station: {context.station_context}")
     
     # Operation instruction - focus ONLY on column ontology
-    fragments.append(f"Operation: Interpret the following content in the context of '{context.terms['problem']}', focusing ONLY on the meaning of the column ontology: '{context.col_label}'")
+    fragments.append(f"Operation: Interpret the following content, focusing ONLY on the meaning of the column ontology: '{context.col_label}'")
     
     # Terms - use json.dumps for safety
     terms_dict = {"content": q(content)}
@@ -220,7 +220,7 @@ def build_row_lensing_prompt(content: str, context: SemanticContext) -> str:
     fragments.append(f"Station: {context.station_context}")
     
     # Operation instruction - focus ONLY on row ontology
-    fragments.append(f"Operation: Interpret the following content in the context of '{context.terms['problem']}', focusing ONLY on the meaning of the row ontology: '{context.row_label}'")
+    fragments.append(f"Operation: Interpret the following content, focusing ONLY on the meaning of the row ontology: '{context.row_label}'")
     
     # Terms - use json.dumps for safety
     terms_dict = {"content": q(content)}
@@ -259,9 +259,49 @@ def build_final_lensing_prompt(column_perspective: str, row_perspective: str, co
     # Operation instruction
     fragments.append("Operation: Synthesize the two perspectives into a final, integrated narrative that fully integrates these semantic interpretations in the context of the station we are at in the semantic valley")
     
+    # Concise output constraint
+    fragments.append("Output Constraint: Synthesize the two perspectives into one or two compact, elegant sentences. Your response must be plain prose. Do not include any prefixes (e.g., COL[...], ROW[...], SYN[...]) or any structural scaffolding.")
+    
     # Terms - use json.dumps for safety
     terms_dict = {"column_perspective": q(column_perspective), "row_perspective": q(row_perspective)}
     fragments.append(f"Terms: {json.dumps(terms_dict, ensure_ascii=False)}")
+    
+    return "\n\n".join(fragments)
+
+
+def build_station_shift_prompt(content: str, context: 'SemanticContext') -> str:
+    """
+    Build prompt for Station 5 operation: Verification → Validation context shift.
+    
+    This prompt transforms verification results into validation framework,
+    shifting the semantic context from "checking correctness" to "establishing validity".
+    
+    Args:
+        content: Verification content to transform
+        context: SemanticContext with validation station details
+        
+    Returns:
+        Complete user prompt for station shift operation
+    """
+    from .context import SemanticContext  # Avoid circular import
+    
+    fragments = []
+    
+    # Valley context
+    if context.valley_summary:
+        fragments.append(f"Valley Context: {context.valley_summary}")
+    
+    # Station transition
+    fragments.append(f"Station Transition: Verification → Validation")
+    
+    # Ontological coordinates  
+    fragments.append(f"Coordinates: ({context.row_label}, {context.col_label})")
+    
+    # Operation instruction
+    fragments.append("Operation: Transform the verification content into a validation context. This involves shifting from 'checking correctness' to 'establishing validity' - moving from confirming that something meets criteria to determining its fundamental soundness and legitimacy.")
+    
+    # Content to transform
+    fragments.append(f"Verification Content to Transform: {q(content)}")
     
     return "\n\n".join(fragments)
 

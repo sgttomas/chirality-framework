@@ -1,6 +1,6 @@
 # Neo4j Integration: The Framework's Working Memory
 
-**Status:** Implemented for core pipeline (Matrices C, F, D) with universal 5‑stage schema and Run scoping
+**Status:** Implemented for all computed matrices (C, F, D, X, Z, E) with universal schema support.
 
 ## 1. Purpose: A Queryable Record of the Semantic Journey
 
@@ -61,4 +61,4 @@ ORDER BY s.order
 
 
 
-This query would return the three `:Stage` nodes associated with that cell, showing the progression from raw products to resolved concepts to the final lensed meaning.
+This query would return the five `:Stage` nodes associated with that cell, showing the progression from raw products to resolved concepts to the final lensed meaning.

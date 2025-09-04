@@ -1,5 +1,5 @@
 """
-Clean resolvers for Chirality Framework v15.0.1 semantic calculator.
+Clean resolvers for Chirality Framework v16.0.0 semantic calculator.
 
 Contains only the essential EchoResolver for testing purposes.
 All production semantic resolution goes through the CellResolver.
@@ -66,6 +66,19 @@ class EchoResolver:
         return RichResult(
             text=f"SYN[{column_perspective} | {row_perspective}]",
             terms_used=[column_perspective, row_perspective],
+            warnings=[],
+            metadata={"modelId": "echo_resolver"}
+        )
+    
+    def shift_station_context(self, content: str, context: SemanticContext) -> RichResult:
+        """
+        Mock station shift - transforms verification to validation context.
+        
+        Following colleague_1's guidance for clear Validation-oriented output with coordinates.
+        """
+        return RichResult(
+            text=f"VALIDATION[{context.row_label},{context.col_label}]: {content}",
+            terms_used=[content],
             warnings=[],
             metadata={"modelId": "echo_resolver"}
         )

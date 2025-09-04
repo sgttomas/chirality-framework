@@ -5,6 +5,63 @@ All notable changes to the Chirality Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [16.2.0] - 2025-09-04
+
+### Fixed
+- **OpenAI Integration**: Fixed critical OpenAI API client implementation
+  - Corrected `client.responses.create()` to `client.chat.completions.create()`
+  - Fixed response parsing to use `resp.choices[0].message.content`
+  - Made JSON validation more permissive for `terms_used` and `warnings` fields
+  - Restored correct model name "gpt-4.1-nano"
+- **Matrix Context Handling**: Simplified Matrix X and E context to use `{"content": combined_concepts}`
+- **Prompt Engineering**: Enhanced final synthesis prompt for 1-2 compact sentences without structural scaffolding
+
+### Enhanced
+- **Error Handling**: More robust JSON validation that gracefully handles model variations
+- **Output Quality**: Eliminated COL[...], ROW[...], SYN[...] prefixes for clean semantic output
+
+## [16.1.0] - 2025-09-03
+
+### Added
+- **Station 6 (Evaluation)**: Complete implementation with matrices G, T, P, E:
+  - Matrix G: First 3 rows of Z (Evaluation Input, 3×4)
+  - Matrix T: Transpose of first 3 rows of B (Evaluation Criteria, 4×3)  
+  - Array P: Fourth row of Z as 1×4 (Evaluation Context)
+  - Matrix E: G * T semantic multiplication (Evaluation, 3×3)
+- **CLI Enhancement**: New `compute-matrix` command for complete matrix computation:
+  - Supports all 13 matrices (A, B, J, C, F, D, K, X, Z, G, P, T, E)
+  - JSONL snapshot export with atomic writes to `snapshots/<run_id>/`
+  - Run ID correlation between traces and snapshots
+  - `--trace-only` convenience flag for development debugging
+- **Pipeline Computing**: New `compute-pipeline` command for batch matrix computation:
+  - Dependency management with smart caching to avoid re-computation
+  - `--include-base` flag to include canonical matrices (A, B, J)
+  - `--only` flag for selective matrix computation with validation
+  - Correlated trace and snapshot outputs with single run ID
+- **Matrix Viewer**: New `render-viewer` command for HTML visualization:
+  - Elegant static HTML generation from snapshot files
+  - Responsive design with navigation and provenance display
+  - `--latest` and `--run-id` selection with automatic run discovery
+  - `--include` filtering and `--open` browser integration
+- **Snapshot Export**: Robust MatrixSnapshotWriter with atomic file operations:
+  - Safe atomic writes using temp file + rename pattern
+  - Structured JSON export with complete cell data and provenance
+  - Run-scoped directory organization for correlation
+
+### Enhanced
+- **Trace Settings**: Advanced precedence handling for trace/export flags:
+  - `--trace-only` overrides `--neo4j-export` with user feedback
+  - `CHIRALITY_DISABLE_EXPORT` environment variable support
+  - Proper resource cleanup in try/finally blocks
+- **Error Handling**: Comprehensive input validation and helpful error messages
+- **Documentation**: Complete examples for all new commands and workflows
+
+### Technical
+- UTC timestamp standardization across all components
+- 5-stage provenance support for compute_E operations
+- Enhanced test coverage: 54 total tests including viewer and CLI functionality
+- Package preparation with proper .gitignore and MANIFEST.in
+
 ## [16.0.0] - 2025-08-31
 
 ### Added

@@ -1,62 +1,80 @@
-# Tutorial: From Axioms to Objectives
+# Chirality Framework Tutorial
 
-This tutorial demonstrates the end-to-end process of the Chirality Framework's "semantic calculator." We will walk through the generation of the first three matrices (C, F, and D), showing how the system transforms high-level, abstract axioms into concrete, actionable objectives.
+This tutorial will guide you through the primary end-to-end workflow of the Chirality Framework, from installation to generating and viewing a full set of matrices.
 
-This example uses the normative case, where the problem being solved is "generating reliable knowledge."
+## 1. Installation
 
-## Step 1: The Setup - Canonical Matrices
+First, install the framework from PyPI. It's recommended to do this in a virtual environment. To use the OpenAI resolver, you must install the `[openai]` extra.
 
-The process begins with two fixed inputs, defined in `chirality/core/matrices.py`:
+```bash
+# Create and activate a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
 
-*   **`MATRIX_A` (Problem Statement):** Defines the perspectives (Normative, Operative, Evaluative) and functions (Guiding, Applying, etc.) of the problem space.
-*   **`MATRIX_B` (Decision Basis):** Defines the levels of knowledge (Data, Information, etc.) and logical attributes (Necessity, Sufficiency, etc.).
+# Install the framework with OpenAI support
+pip install 'chirality-framework[openai]'
+```
 
-## Step 2: Computing Matrix C (Problem Requirements)
+## 2. Set Your OpenAI API Key
 
-The first operation is `C = A * B`. This generates the core requirements. Let's trace the creation of a single cell, **C(0,0)**, which is at the intersection of the "Normative" row and the "Necessity (vs Contingency)" column.
+The framework requires a valid OpenAI API key to perform semantic computations. Set it as an environment variable in your shell.
 
-### The 3-Stage Pipeline for C(0,0)
+```bash
+# Add this line to your .bashrc, .zshrc, or other shell profile for persistence
+export OPENAI_API_KEY="sk-..."
+```
 
-**Stage 1: Combinatorial (Mechanical)**
+## 3. Compute the Full Semantic Pipeline
 
-The system first mechanically computes the dot product for C(0,0), which involves combining four pairs of terms. No LLM is used here.
+The easiest way to get started is to compute all matrices in the semantic valley at once using the `compute-pipeline` command. This command will:
+- Compute all matrices from C through E, including all prerequisites.
+- Create JSONL "snapshot" files for each matrix, which are clean summaries of the final state.
+- Create detailed "trace" files for debugging every computation step.
 
-*   **Input:** `A(0,0...3)` and `B(0...3,0)`
-*   **Output (raw k-products):**
-    *   `"Direction" * "Essential Facts"`
-    *   `"Implementation" * "Critical Context"`
-    *   `"Evaluation" * "Fundamental Understanding"`
-    *   `"Assessment" * "Vital Judgment"`
+Run the following command in your terminal:
 
-**Stage 2: Semantic Resolution (First Meaning)**
+```bash
+python3 -m chirality.cli compute-pipeline --resolver openai --snapshot-jsonl --trace-only --include-base
+```
+- `--resolver openai`: Specifies that we want to use the live OpenAI API for semantic resolution.
+- `--snapshot-jsonl`: Enables the creation of the summary snapshot files.
+- `--trace-only`: Enables detailed tracing and disables any potential Neo4j database export.
+- `--include-base`: Also creates snapshots for the foundational matrices (A, B, J).
 
-Next, the LLM is asked to find the semantic intersection of each pair, one by one.
+After the command completes, you will have two new directories:
+- `snapshots/<run_id>/`: Contains the clean summary files (e.g., `C-....jsonl`, `D-....jsonl`).
+- `traces/<run_id>/`: Contains the highly detailed debug trace files.
 
-*   **Input:** `"Direction" * "Essential Facts"`
-*   **Output:** `"Guiding Imperatives"`
+## 4. Render and View the Results
 
-This is repeated for all four pairs, resulting in a list of resolved concepts:
-`["Guiding Imperatives", "Applied Context", "Core Evaluation Criteria", "Critical Assessment"]`
+Now that you have the snapshot files, you can generate a self-contained HTML viewer to see the matrices in an elegant, readable format.
 
-**Stage 3: Ontological Lensing (Deep Insight)**
+Run the following command:
 
-Finally, the resolved concepts are combined and interpreted through a universal three-step lensing process applied to all matrices: Column lens → Row lens → Final synthesis.
+```bash
+python3 -m chirality.cli render-viewer --latest --open
+```
+- `--latest`: Automatically finds the most recent run directory in `snapshots/`.
+- `--open`: Automatically opens the generated HTML file in your default web browser.
 
-*   **Input:**
-    *   **Content:** `"Guiding Imperatives, Applied Context, Core Evaluation Criteria, Critical Assessment"`
-*   **Row Lens:** `"Normative"`
-*   **Column Lens:** `"Necessity (vs Contingency)"`
-*   **Output (Final Cell Value):** A synthesized narrative, such as: `"To generate reliable knowledge, it is imperative to establish guiding principles based on essential facts and apply them within a critical context, ensuring that core evaluation criteria are used to make a decisive final assessment."`
+This will create a new `viewer-output/` directory containing `index.html` and `style.css`. Your browser should open to a page displaying all the computed matrices, from A to E, in their canonical order.
 
-This process is repeated for all 12 cells, resulting in the complete **Matrix C**.
+## 5. (Optional) Inspecting Snapshots with `jq`
 
-## Step 3: Computing Matrices F and D (Solution Objectives)
+The snapshot files are simple, single-line JSON objects, which makes them easy to inspect from the command line with a tool like `jq`.
 
-The process continues in the "Solution Objectives" station:
+```bash
+# Find your latest run ID
+RUN_ID=$(ls -t snapshots | head -n 1)
 
-1.  **Matrix F is computed** using an element-wise multiplication: `F = J ⊙ C`. Each cell `F(i,j)` is the semantic resolution of the terms from `J(i,j)` and `C(i,j)`, followed by the universal three-step lensing.
-2.  **Matrix D is computed** using the formula `D = A + F`. Each cell `D(i,j)` is created by mechanically forming the exact sentence `"A(i,j) applied to frame the problem; F(i,j) to resolve the problem."` (semantic addition), then passed through the universal three-step lensing to generate a final, actionable objective.
+# Pretty-print the snapshot for Matrix C
+jq . snapshots/$RUN_ID/C-*.jsonl
 
-## Conclusion
+# Extract just the cell values from Matrix E
+jq -r '.cells[].value' snapshots/$RUN_ID/E-*.jsonl
 
-Through this structured, observable, and repeatable process, the Chirality Framework successfully transforms a set of abstract, axiomatic inputs into a rich set of concrete requirements and objectives. The 3-stage pipeline ensures that meaning is generated in a traceable and contextually relevant way at every step of the semantic valley journey.
+# Get the shape of Matrix X
+jq '.shape' snapshots/$RUN_ID/X-*.jsonl
+```
+
+That's it! You have successfully run the entire Chirality Framework pipeline and visualized the results.

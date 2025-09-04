@@ -63,6 +63,10 @@ The Chirality Framework semantic calculator uses **fragment composition** rather
 - **Column lens**: Provides the **focus** (what to emphasize)
 - **Station context**: Provides the **purpose** (why this matters)
 
+Note on the canonical problem string:
+- The canonical problem statement ("generating reliable knowledge") is NOT a lensing input.
+- It appears only in Matrix D as part of the mechanical sentence construction; lensing then interprets that sentence based solely on the ontological coordinates (row/column) and the station context.
+
 **Effective Lensing Patterns**:
 ```
 Input: "Essential Values, Conditional Actions, Foundational Benchmarks"

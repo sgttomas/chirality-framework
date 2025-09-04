@@ -1,5 +1,5 @@
 """
-Validation rules for Chirality Framework v15.0.1 semantic structures.
+Validation rules for Chirality Framework v16.0.0 semantic structures.
 
 Enforces dimensional constraints and operation sequencing.
 """
@@ -145,8 +145,14 @@ def validate_provenance(cell: Cell) -> List[str]:
     # Validate operation-specific fields if operation is known
     operation = cell.provenance.get("operation")
     # Universal provenance validation for all matrices
-    if operation in ["compute_C", "compute_F", "compute_D"]:
+    if operation in ["compute_C", "compute_F", "compute_D", "compute_X", "compute_E"]:
         required_fields = ["stage_1_construct", "stage_2_semantic", "stage_3_column_lensed", "stage_4_row_lensed", "stage_5_final_synthesis"]
+        for field in required_fields:
+            if field not in cell.provenance:
+                errors.append(f"{operation} provenance missing {field}")
+    elif operation == "compute_Z":
+        # Matrix Z uses lean 2-stage provenance structure
+        required_fields = ["stage_1_construct", "stage_2_semantic"]
         for field in required_fields:
             if field not in cell.provenance:
                 errors.append(f"{operation} provenance missing {field}")

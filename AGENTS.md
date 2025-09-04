@@ -2,16 +2,16 @@
 
 ## Project Structure & Module Organization
 - Source: `chirality/` (core code), `chirality/core/*` (algorithm, resolvers, tracer, exporter).
-- CLI: `chirality/cli.py` (`compute-cell`, `info`).
+- CLI: `chirality/cli.py` (`compute-cell`, `compute-matrix`, `compute-pipeline`, `render-viewer`, `info`).
 - Tests: `tests/` (unit tests, mocks); Docs: `docs/`.
 - Versioning: `VERSION.md`; packaging: `pyproject.toml`.
 
 ## Build, Test, and Development Commands
-- Build distributions: `python -m pip install -U build && python -m build`.
-- Run tests: `pytest -v`.
-- Compute a cell: `python3 -m chirality.cli compute-cell C --i 0 --j 0 --verbose`.
-- Tracing: add `--trace` to write JSONL to `traces/`.
-- Neo4j export: add `--neo4j-export` (CLI auto‑generates a run_id).
+- Build distributions: `python3 -m build`.
+- Run tests: `.venv/bin/pytest -v`.
+- Run full pipeline & view results: `python3 -m chirality.cli compute-pipeline --snapshot-jsonl && python3 -m chirality.cli render-viewer --latest --open`.
+- Tracing: add `--trace` or `--trace-only` to generate JSONL files in `traces/`.
+- Snapshots: add `--snapshot-jsonl` to generate matrix snapshots in `snapshots/`.
 
 ## Coding Style & Naming Conventions
 - Python 3.9+; format with Black. Type‑check with mypy (strict in `pyproject.toml`).

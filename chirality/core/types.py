@@ -86,3 +86,32 @@ class Matrix:
             return self.cells[row][col]
         return None
 
+    def transpose(self) -> 'Matrix':
+        """
+        Transposes the matrix by swapping rows and columns.
+        
+        Returns a new Matrix instance with transposed dimensions, labels, and cells.
+        """
+        transposed_cells = []
+        
+        for j in range(self.shape[1]):
+            new_row = []
+            for i in range(self.shape[0]):
+                original_cell = self.get_cell(i, j)
+                if original_cell:
+                    new_row.append(Cell(
+                        row=j,
+                        col=i,
+                        value=original_cell.value,
+                        provenance=original_cell.provenance
+                    ))
+            transposed_cells.append(new_row)
+        
+        return Matrix(
+            name=f"{self.name}_transposed",
+            station=self.station,
+            row_labels=self.col_labels,
+            col_labels=self.row_labels,
+            cells=transposed_cells
+        )
+

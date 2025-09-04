@@ -1,5 +1,5 @@
 """
-Canonical Provenance Schema for Chirality Framework v15.0.1
+Canonical Provenance Schema for Chirality Framework v16.0.0
 
 Defines the standard structure for cell provenance tracking
 to ensure consistency between operations and validation.
@@ -58,5 +58,7 @@ CORE_FIELDS = ["coordinates", "traced"]
 STAGE_FIELDS = {
     "compute_C": ["stage_1_construct", "stage_2_semantic", "stage_3_column_lensed", "stage_4_row_lensed", "stage_5_final_synthesis"],
     "compute_F": ["stage_1_construct", "stage_2_semantic", "stage_3_column_lensed", "stage_4_row_lensed", "stage_5_final_synthesis"], 
-    "compute_D": ["stage_1_construct", "stage_2_semantic", "stage_3_column_lensed", "stage_4_row_lensed", "stage_5_final_synthesis"]
+    "compute_D": ["stage_1_construct", "stage_2_semantic", "stage_3_column_lensed", "stage_4_row_lensed", "stage_5_final_synthesis"],
+    "compute_X": ["stage_1_construct", "stage_2_semantic", "stage_3_column_lensed", "stage_4_row_lensed", "stage_5_final_synthesis"],
+    "compute_E": ["stage_1_construct", "stage_2_semantic", "stage_3_column_lensed", "stage_4_row_lensed", "stage_5_final_synthesis"]
 }
