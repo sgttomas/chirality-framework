@@ -13,6 +13,14 @@
 - Tracing: add `--trace` or `--trace-only` to generate JSONL files in `traces/`.
 - Snapshots: add `--snapshot-jsonl` to generate matrix snapshots in `snapshots/`.
 
+### App Integration Mode (Producer Contract)
+- Contract snapshots + manifest for external apps (e.g., chirality-app):
+  - `python3 -m chirality.cli compute-pipeline --resolver echo --out runs/<run_id> --problem-file problem.json --max-seconds 900`
+  - On success, stdout last line only: `{ "run_id": "<run_id>", "manifest": "runs/<run_id>/index.json" }`.
+  - Exit codes: `0` success; `2` invalid args; `3` timeout; `4` I/O; `5` resolver; `1` general.
+  - Writes per-cell JSONL for `C,D,X,E` under `runs/<run_id>/snapshots/` and a manifest `index.json` (atomic, last).
+  - Backward compatibility: also writes legacy full-matrix snapshots for all computed matrices under `snapshots/<run_id>/` for the built-in viewer.
+
 ## Coding Style & Naming Conventions
 - Python 3.9+; format with Black. Type‑check with mypy (strict in `pyproject.toml`).
 - Naming: use `compute_cell_*`, `compute_matrix_*`; avoid deprecated `synthesize_*`.
@@ -36,3 +44,6 @@
 - Algorithm: 3 stages with universal lensing (Column → Row → Final).
 - D matrix: mechanical sentence (semantic addition) + universal lensing.
 - Exporter: writes Matrix/Cell/Stage and Run nodes; filter queries by `(:Run {id})` when analyzing.
+
+See also:
+- `docs/INTERFACE.md`: producer mirror of the chirality-app contract (app mode specifics).

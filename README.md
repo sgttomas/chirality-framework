@@ -7,7 +7,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/tag/sgttomas/chirality-framework?sort=semver&label=release)](https://github.com/sgttomas/chirality-framework/tags)
 
-**Version: 16.2.0** | **Status: Active Development**
+**Version: 16.3.0** | **Status: Active Development**
 
 The Chirality Framework is a "semantic calculator" designed to execute a fixed, canonical algorithm for structured problem-solving. It transforms a set of base matrices through a multi-stage semantic pipeline, producing a series of derived matrices that represent a complete traversal of a "semantic valley" from problem to evaluation.
 
@@ -21,6 +21,25 @@ The framework computes a sequence of matrices, each representing a station in th
 3.  **Structural Operations:** Standard matrix operations like transposing and slicing.
 
 For a complete technical description, see the **[Canonical Algorithm Documentation](docs/ALGORITHM.md)**.
+
+## The Ontological Modality Path
+
+The sequence of stations in the semantic valley is not arbitrary; it follows a deep, underlying pattern of cognitive modalities. This path describes the *type* of work being done at each stage, revealing a structured cycle of systematic processing, epistemic (knowledge-based) evaluation, and alethic (truth-based) assessment.
+
+| Modality | Station | Operation | Purpose |
+| :--- | :--- | :--- | :--- |
+| `Problem Statement` | 1. Problem Statement | `A, B` | Define axioms |
+| `Systematic` | 2. Requirements | `C = A * B` | Systematically enumerate possibilities |
+| `Process` | 3. Objectives | `D = A + F` | Procedurally construct objectives |
+| `Epistemic` | 4. Verification | `X = K * J` | First check against knowledge criteria |
+| `Process` | 5. Validation | `Z = shift(X)` | Procedurally shift context |
+| `Epistemic` | 6. Evaluation | `E = G * T` | Second check against knowledge criteria |
+| `Alethic` | 7. Assessment | `M = R x E` | First check against truth modalities |
+| `Epistemic` | 8. Implementation | `W = M x X` | Ground truth in verified knowledge |
+| `Alethic` | 9. Integration & Reflection | `U, N` | Final checks against truth modalities |
+| `Resolution` | 11. Resolution | `Final` | Synthesize final, reliable knowledge |
+
+For a detailed explanation of this conceptual architecture, see the **[Project Philosophy Documentation](docs/PHILOSOPHY.md)**.
 
 ## Quick Start: The End-to-End Workflow
 
@@ -55,6 +74,23 @@ python3 -m chirality.cli render-viewer --latest --open
 This will create a `viewer-output/` directory containing the `index.html` and `style.css` files and automatically open the page for you. You can change the output location with `--output-dir`.
 
 ## Advanced Usage
+
+### App Integration Mode (Producer Contract)
+For automation by external apps (e.g., chirality-app), use app mode to write a manifest and contract snapshots with a single JSON result to stdout.
+
+```
+python3 -m chirality.cli compute-pipeline \
+  --resolver echo \
+  --out runs/my-run-1 \
+  --problem-file problem.json \
+  --max-seconds 900
+```
+
+- Writes per-cell JSONL snapshots for `C`, `D`, `X`, `E` under `runs/<run_id>/snapshots/` with format `cells-jsonl-v1`.
+- Writes `runs/<run_id>/index.json` last and atomically with checksums, sizes, and record counts.
+- Prints exactly one JSON line to stdout on success: `{ "run_id": "...", "manifest": "runs/<run_id>/index.json" }`.
+- Exit codes: `0` success; `2` invalid args; `3` timeout; `4` I/O; `5` resolver; `1` general.
+- Backward compatibility: also dual-writes legacy snapshots for all computed matrices to `snapshots/<run_id>/` for the built-in viewer.
 
 ### Computing Individual Matrices
 The `compute-matrix` command allows you to compute and snapshot any single matrix, automatically handling its prerequisites.
@@ -92,3 +128,6 @@ python3 -m chirality.cli render-viewer --latest --style elements --no-sanitize-v
 ## Development
 
 To set up the development environment and run tests, please refer to the instructions in `CONTRIBUTING.md`.
+
+Additional docs:
+- `docs/INTERFACE.md`: Producer mirror of the chirality-app contract (app mode).

@@ -60,13 +60,21 @@ tracer.close()
 ```
 
 ### MatrixSnapshotWriter
-Writes a clean, final-state summary of a computed matrix to a JSONL file.
+Writes snapshots in two formats:
+
+- Legacy matrix JSONL (single JSON object with embedded cells), suitable for the built-in HTML viewer.
+- Per-cell `cells-jsonl-v1` (one JSON object per line), suitable for app integrations.
 
 ```python
 from chirality.exporters.snapshot_exporter import MatrixSnapshotWriter
 
 writer = MatrixSnapshotWriter(run_id="my-run-123")
+
+# Legacy format (single JSON object, used by viewer)
 writer.write_matrix(computed_matrix, "openai")
+
+# App format (one JSON per line, cells-jsonl-v1)
+writer.write_matrix_cells_jsonl(computed_matrix, Path("runs/my-run-123/snapshots"), f"{computed_matrix.name}.jsonl")
 ```
 
 ### Neo4jWorkingMemoryExporter
@@ -96,3 +104,36 @@ write_assets(html, "viewer/")
 
 ---
 ... (rest of the original content) ...
+
+## Manifest Exporter
+
+Generates `runs/<run_id>/index.json` with checksums, bytes, and record counts for snapshots.
+
+```python
+from pathlib import Path
+from chirality.exporters.manifest_exporter import ManifestExporter
+
+run_dir = Path("runs/my-run-123")
+exporter = ManifestExporter(run_dir, "chirality-framework", "1.2.3", framework_schema_version="1.0.0")
+matrices = {
+    "C": (run_dir / "snapshots/C.jsonl", "cells-jsonl-v1"),
+    "D": (run_dir / "snapshots/D.jsonl", "cells-jsonl-v1"),
+    "X": (run_dir / "snapshots/X.jsonl", "cells-jsonl-v1"),
+    "E": (run_dir / "snapshots/E.jsonl", "cells-jsonl-v1"),
+}
+manifest_path = exporter.write_manifest("my-run-123", {"title": "T", "statement": "S"}, {"total_ms": 12345}, matrices)
+```
+
+The manifest is written atomically and only after all referenced files exist.
+
+## CLI: App Mode
+
+The `compute-pipeline` command supports an app integration mode:
+
+- `--out runs/<run_id>`: output directory (run_id validated).
+- `--problem-file`: problem metadata JSON.
+- `--max-seconds`: best‑effort timeout.
+- Success prints exactly one JSON line: `{ "run_id": "...", "manifest": "runs/<run_id>/index.json" }`.
+- Exit codes: `0` ok, `2` invalid args, `3` timeout, `4` I/O, `5` resolver, `1` general.
+
+In app mode, per-cell snapshots for `C`, `D`, `X`, `E` are written to `runs/<run_id>/snapshots/` and a manifest is created. For backward compatibility, full legacy snapshots for all computed matrices are also written to `snapshots/<run_id>/`.

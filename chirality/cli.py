@@ -3,8 +3,10 @@
 CLI for Chirality Framework Semantic Calculator
 
 Provides direct access to the 3-stage pipeline for debugging and observability.
-Focus on the compute-cell command which shows the complete transformation
-from mechanical k-products through semantic resolution to ontological lensing.
+
+Modes:
+- Developer mode (default): rich console UX, tracing, viewer snapshots under `snapshots/`.
+- App integration mode: use `compute-pipeline --out runs/<run_id> [--problem-file ...] [--max-seconds ...]` to write contract snapshots and a manifest under `runs/<run_id>/`, and print a single JSON line to stdout on success.
 """
 
 import click
@@ -967,8 +969,15 @@ def compute_matrix(matrix: str, resolver: str, api_key: Optional[str], trace: bo
               help='Compute only specific matrices (comma-separated list, e.g., "C,F,D")')
 @click.option('--verbose', '-v', is_flag=True,
               help='Show progress messages')
+@click.option('--out', 'out_dir', type=click.Path(file_okay=False, dir_okay=True),
+              help='App mode: output run directory (e.g., runs/<run_id>)')
+@click.option('--problem-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
+              help='App mode: JSON file with {"title": str, "statement": str}')
+@click.option('--max-seconds', type=int,
+              help='App mode: best-effort hard timeout in seconds (e.g., 900)')
 def compute_pipeline(resolver: str, api_key: Optional[str], trace_only: bool,
-                    snapshot_jsonl: bool, include_base: bool, only: Optional[str], verbose: bool):
+                    snapshot_jsonl: bool, include_base: bool, only: Optional[str], verbose: bool,
+                    out_dir: Optional[str], problem_file: Optional[str], max_seconds: Optional[int]):
     """
     Compute multiple matrices through the pipeline with correlated tracing and snapshots.
     
@@ -983,6 +992,12 @@ def compute_pipeline(resolver: str, api_key: Optional[str], trace_only: bool,
     exporter_obj = None
     snapshot_writer = None
     
+    # App-integration mode is engaged when --out or --problem-file or --max-seconds provided
+    app_mode = bool(out_dir or problem_file or max_seconds)
+    
+    # If in app mode, suppress non-essential stdout (treat stdout as data channel)
+    # We still respect --verbose (logs go to stderr via click.echo if needed)
+    
     # Define canonical matrix list for validation
     VALID_MATRICES = ['A', 'B', 'J', 'C', 'F', 'D', 'K', 'X', 'Z', 'G', 'P', 'T', 'E']
     
@@ -990,7 +1005,7 @@ def compute_pipeline(resolver: str, api_key: Optional[str], trace_only: bool,
         # Use the helper to determine final trace and neo4j_export settings
         final_trace, final_neo4j_export = resolve_run_settings(False, False, trace_only)
         
-        # Generate a single run ID for correlation
+        # Generate a single run ID for correlation (non-app mode)
         run_id = f"pipeline-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
         
         # Input validation for --only flag
@@ -1055,12 +1070,106 @@ def compute_pipeline(resolver: str, api_key: Optional[str], trace_only: bool,
         
         valley_summary = "Problem Statement -> Problem Requirements -> Solution Objectives -> Verification -> Validation -> Evaluation"
         
-        if verbose:
+        if verbose and not app_mode:
             click.echo()
             click.echo(click.style(f"Computing Pipeline: {', '.join(matrices_to_compute)}", **STAGE_STYLE))
             click.echo(click.style("=" * 50, **DIM_STYLE))
         
-        # Iterate through required matrices, computing dependencies as needed
+        # In app mode, jump to contract-compliant writer path
+        if app_mode:
+            import json as _json
+            import re as _re
+            import sys as _sys
+            import time as _time
+            from pathlib import Path as _Path
+            from .exporters.manifest_exporter import ManifestExporter
+            
+            start_ts = _time.time()
+            # Resolve run_dir and run_id
+            runs_root = _Path("runs")
+            if out_dir:
+                run_path = _Path(out_dir)
+                run_id = run_path.name
+                # Validate run_id
+                if not _re.fullmatch(r"^[a-z0-9-_]{1,64}$", run_id):
+                    raise click.BadParameter(f"Invalid run_id '{run_id}'. Must match ^[a-z0-9-_]{1,64}$")
+                # Disallow traversal in out_dir
+                if ".." in run_path.parts:
+                    raise click.BadParameter("Invalid --out path (no traversal allowed)")
+            else:
+                # Auto-generate run_id
+                run_id = f"app-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
+                run_path = runs_root / run_id
+            # Ensure directories
+            snapshots_out = run_path / "snapshots"
+            snapshots_out.mkdir(parents=True, exist_ok=True)
+
+            # Problem payload
+            problem_dict = None
+            if problem_file:
+                with open(problem_file, "r", encoding="utf-8") as pf:
+                    problem_dict = _json.load(pf)
+                # Minimal validation
+                if not isinstance(problem_dict, dict) or "title" not in problem_dict or "statement" not in problem_dict:
+                    raise click.BadParameter("--problem-file must contain {\"title\", \"statement\"}")
+            else:
+                problem_dict = {"title": "", "statement": ""}
+
+            # Compute required matrices with dependencies
+            computed: dict[str, Matrix] = {}
+            computed['C'] = compute_matrix_C(A, B, resolver_obj, valley_summary, tracer_obj, exporter_obj)
+            computed['F'] = compute_matrix_F(J, computed['C'], resolver_obj, valley_summary, tracer_obj, exporter_obj)
+            computed['D'] = compute_matrix_D(A, computed['F'], resolver_obj, valley_summary, tracer_obj, exporter_obj)
+            computed['K'] = compute_matrix_K(computed['D'])
+            computed['X'] = compute_matrix_X(computed['K'], J, resolver_obj, valley_summary, tracer_obj, exporter_obj)
+            # Validation/Evaluation deps for E
+            computed['Z'] = compute_matrix_Z(computed['X'], resolver_obj, valley_summary, tracer_obj, exporter_obj)
+            computed['G'] = compute_matrix_G(computed['Z'])
+            computed['T'] = compute_matrix_T_from_B(B)
+            computed['E'] = compute_matrix_E(computed['G'], computed['T'], resolver_obj, valley_summary, tracer_obj, exporter_obj)
+            # Optional derived for viewer ergonomics
+            try:
+                computed['P'] = compute_array_P(computed['Z'])
+            except Exception:
+                pass
+
+            # Timeout checks (best-effort)
+            def _check_deadline():
+                if max_seconds is None:
+                    return
+                if (_time.time() - start_ts) > max_seconds:
+                    raise TimeoutError("max-seconds exceeded")
+
+            _check_deadline()
+
+            # Write per-cell JSONL snapshots for C, D, X, E (contract)
+            writer = MatrixSnapshotWriter(run_id)
+            files: dict[str, tuple[_Path, str]] = {}
+            for m in ['C', 'D', 'X', 'E']:
+                _check_deadline()
+                path = writer.write_matrix_cells_jsonl(computed[m], snapshots_out, f"{m}.jsonl")
+                files[m] = (path, "cells-jsonl-v1")
+
+            # Dual-write legacy snapshots for viewer and existing workflows
+            legacy_writer = MatrixSnapshotWriter(run_id)
+            for m_name, m_val in computed.items():
+                _check_deadline()
+                try:
+                    legacy_writer.write_matrix(m_val, resolver)
+                except Exception:
+                    # Continue on best-effort basis; app contract relies on runs/ manifest
+                    pass
+
+            # Build and write manifest last (atomic)
+            exporter = ManifestExporter(run_path, "chirality-framework", _get_version(), framework_schema_version="1.0.0")
+            durations = {"total_ms": int((_time.time() - start_ts) * 1000)}
+            manifest_path = exporter.write_manifest(run_id, problem_dict, durations, files)
+
+            # Final stdout JSON (and nothing else)
+            click.echo(_json.dumps({"run_id": run_id, "manifest": str(manifest_path).replace("\\", "/")}), nl=True)
+            return
+
+        # Iterate through required matrices, computing dependencies as needed (legacy path)
         for matrix_name in matrices_to_compute:
             if verbose:
                 click.echo(f"\n  Computing Matrix {matrix_name}...")
@@ -1201,7 +1310,7 @@ def compute_pipeline(resolver: str, api_key: Optional[str], trace_only: bool,
                 cell_count = result_matrix.shape[0] * result_matrix.shape[1]
                 click.echo(f"    ✓ {matrix_name} ({result_matrix.shape[0]}×{result_matrix.shape[1]}, {cell_count} cells)")
         
-        # Final summary
+        # Final summary (legacy path)
         click.echo()
         click.echo(click.style("Pipeline Computation Complete", **SUCCESS_STYLE))
         click.echo(click.style("-" * 40, **DIM_STYLE))
@@ -1214,8 +1323,21 @@ def compute_pipeline(resolver: str, api_key: Optional[str], trace_only: bool,
             snapshot_dir = snapshot_writer.get_snapshot_directory() if snapshot_writer else f"snapshots/{run_id}/"
             click.echo(f"  Snapshots: {snapshot_dir}")
         
+    except click.BadParameter as e:
+        click.echo(click.style(f"Error: {e}", **ERROR_STYLE), err=True)
+        sys.exit(2)
+    except TimeoutError as e:
+        click.echo(click.style(f"Timeout: {e}", **ERROR_STYLE), err=True)
+        sys.exit(3)
+    except (OSError, IOError) as e:
+        click.echo(click.style(f"I/O Error: {e}", **ERROR_STYLE), err=True)
+        sys.exit(4)
+    except ImportError as e:
+        # Likely resolver dependency (e.g., openai)
+        click.echo(click.style(f"Resolver Error: {e}", **ERROR_STYLE), err=True)
+        sys.exit(5)
     except Exception as e:
-        click.echo(click.style(f"Error: {e}", **ERROR_STYLE))
+        click.echo(click.style(f"Error: {e}", **ERROR_STYLE), err=True)
         if verbose:
             import traceback
             traceback.print_exc()

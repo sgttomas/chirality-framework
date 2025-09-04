@@ -48,6 +48,13 @@ python3 -m chirality.cli compute-cell C --i 0 --j 0 --trace --neo4j-export --ver
 
 # Framework info
 python3 -m chirality.cli info
+
+# App integration mode (manifest + cells-jsonl-v1 snapshots + final stdout JSON)
+python3 -m chirality.cli compute-pipeline \
+  --resolver echo \
+  --out runs/dev-run-1 \
+  --problem-file problem.json \
+  --max-seconds 900
 ```
 
 ### Installation & Setup
