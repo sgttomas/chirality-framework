@@ -137,3 +137,28 @@ The `compute-pipeline` command supports an app integration mode:
 - Exit codes: `0` ok, `2` invalid args, `3` timeout, `4` I/O, `5` resolver, `1` general.
 
 In app mode, per-cell snapshots for `C`, `D`, `X`, `E` are written to `runs/<run_id>/snapshots/` and a manifest is created. For backward compatibility, full legacy snapshots for all computed matrices are also written to `snapshots/<run_id>/`.
+
+## CLI Reference
+
+Quick reference for all CLI commands and common options. See also the dedicated app-mode section below.
+
+- `chirality compute-cell <C|F|D|K|X|Z|G|P|T|E> --i <row> --j <col> [options]`
+  - Options: `--resolver <echo|openai>`, `--api-key <key>` (or `OPENAI_API_KEY`), `--trace/--no-trace`, `--neo4j-export/--no-neo4j-export`, `--trace-only`, `--verbose/-v`.
+  - Purpose: Compute a single cell and show staged provenance.
+
+- `chirality compute-matrix <A|B|J|C|F|D|K|X|Z|G|P|T|E> [options]`
+  - Options: `--resolver <echo|openai>`, `--api-key <key>`, `--trace/--no-trace`, `--neo4j-export/--no-neo4j-export`, `--trace-only`, `--snapshot-jsonl`, `--verbose/-v`.
+  - Purpose: Compute a full matrix (handles prerequisites) and optionally write legacy snapshots.
+
+- `chirality compute-pipeline [options]`
+  - Developer mode: `--resolver <echo|openai>`, `--api-key <key>`, `--trace-only`, `--snapshot-jsonl`, `--include-base`, `--only "C,F,D"`, `--verbose/-v`.
+  - App mode (producer contract): `--out runs/<run_id>`, `--problem-file problem.json`, `--max-seconds <int>`. Writes `runs/<run_id>/index.json` and per‑cell JSONL snapshots for `C,D,X,E`; stdout last line is `{"run_id":"<run_id>","manifest":"runs/<run_id>/index.json"}`. See “CLI: App Mode”.
+
+- `chirality render-viewer [--run-id <id> | --latest] [options]`
+  - Options: `--source-dir <dir>` (default `snapshots`), `--output-dir <dir>` (default `viewer-output`), `--title <text>`, `--include "A,C,F"`, `--style <tables|elements>`, `--no-sanitize-values`, `--open`.
+  - Purpose: Generate static HTML to view legacy snapshots.
+
+- `chirality info`
+  - Purpose: Print version and canonical matrix/station info.
+
+Exit codes (where applicable): `0` success; `2` invalid args; `3` timeout; `4` I/O; `5` resolver; `1` general.

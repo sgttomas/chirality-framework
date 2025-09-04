@@ -92,6 +92,31 @@ python3 -m chirality.cli compute-pipeline \
 - Exit codes: `0` success; `2` invalid args; `3` timeout; `4` I/O; `5` resolver; `1` general.
 - Backward compatibility: also dual-writes legacy snapshots for all computed matrices to `snapshots/<run_id>/` for the built-in viewer.
 
+### App Mode (Chirality App Integration)
+
+- Generate a run:
+
+  `python3 -m chirality.cli compute-pipeline --resolver <echo|openai> --out runs/<run_id> --problem-file problem.json --max-seconds 900`
+
+- Output:
+  - `runs/<run_id>/index.json`
+  - `runs/<run_id>/snapshots/{C,D,X,E}.jsonl`
+
+- Stdout (last line):
+
+  `{"run_id":"<run_id>","manifest":"runs/<run_id>/index.json"}`
+
+- Contract:
+  - Manifest `framework_schema_version = "1.0.0"`
+  - Each matrix entry includes `path`, `format:"cells-jsonl-v1"`, `records`, `sha256`, `bytes`
+  - JSONL rows include `id, matrix, row, col, row_label, col_label, station, text, citations, refs, meta.order`
+
+### Using Framework Artifacts (chirality-app)
+
+- Set `CHIRALITY_RUNS_DIR=/absolute/path/to/chirality-framework/runs` in chirality-app `.env.local`
+- Ingest: `POST /api/agent/run` with body `{"framework_run_id":"<run_id>"}` (optionally include `"enable_rag": true`)
+- Export: `GET /api/agent/export/<run_id>` with header `X-Role: approver`
+
 ### Computing Individual Matrices
 The `compute-matrix` command allows you to compute and snapshot any single matrix, automatically handling its prerequisites.
 
@@ -124,6 +149,15 @@ python3 -m chirality.cli render-viewer --latest --style elements
 # Disable the default value sanitization to see raw output
 python3 -m chirality.cli render-viewer --latest --style elements --no-sanitize-values
 ```
+
+## Common CLI Commands
+
+- Compute full pipeline (dev): `python3 -m chirality.cli compute-pipeline --resolver echo --snapshot-jsonl --include-base -v`
+- App-mode run (artifacts): `python3 -m chirality.cli compute-pipeline --resolver echo --out runs/my-run-1 --problem-file problem.json --max-seconds 900`
+- Render latest viewer: `python3 -m chirality.cli render-viewer --latest --open`
+- Inspect a cell: `python3 -m chirality.cli compute-cell C --i 0 --j 0 -v`
+
+See full CLI Quick Reference in `docs/API_REFERENCE.md#cli-reference`.
 
 ## Development
 
