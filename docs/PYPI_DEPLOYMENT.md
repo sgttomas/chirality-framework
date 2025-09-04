@@ -2,6 +2,13 @@
 
 This document describes how to deploy the Chirality Framework to PyPI.
 
+## Important: Deployment Triggers
+
+**The PyPI deployment does NOT happen automatically on pushes to main.** Instead, it uses release-based deployment for better control and security:
+
+- ✅ **Automatic**: Triggered when you [create a GitHub release](https://github.com/sgttomas/chirality-framework/releases/new)
+- ⚡ **Manual**: Available via [workflow dispatch](https://github.com/sgttomas/chirality-framework/actions/workflows/python-publish.yml) for emergency deployments
+
 ## Automated Deployment (Recommended)
 
 The repository is configured with automated PyPI deployment via GitHub Actions. When a GitHub release is published, the package is automatically built and uploaded to PyPI using trusted publishing.
@@ -24,16 +31,33 @@ The repository is configured with automated PyPI deployment via GitHub Actions. 
    ```
 
 3. **Create GitHub Release**:
-   - Go to the GitHub repository releases page
+   ```bash
+   # Use helper script for easy release creation
+   python scripts/create_release.py
+   ```
+   
+   Or manually:
+   - Go to the [GitHub repository releases page](https://github.com/sgttomas/chirality-framework/releases/new)
    - Click "Create a new release"
-   - Create a tag with format `vX.Y.Z` (e.g., `v16.0.0`)
+   - Create a tag with format `vX.Y.Z` (e.g., `v16.2.0`) - **must match VERSION.md**
    - Fill in release title and description
-   - Publish the release
+   - **Publish the release** - this automatically triggers PyPI deployment
 
 4. **Monitor Deployment**:
-   - Check the GitHub Actions tab for the "Upload Python Package" workflow
+   - Check the [GitHub Actions tab](https://github.com/sgttomas/chirality-framework/actions/workflows/python-publish.yml) for the "Upload Python Package" workflow
    - The workflow should build and upload the package automatically
    - Check PyPI for the new version at https://pypi.org/project/chirality-framework/
+
+## Manual Deployment (Emergency Only)
+
+If you need to deploy immediately without creating a release:
+
+1. **Go to Actions**: Navigate to [Upload Python Package workflow](https://github.com/sgttomas/chirality-framework/actions/workflows/python-publish.yml)
+2. **Click "Run workflow"**: You'll see a "Run workflow" button on the right
+3. **Enter confirmation**: Type exactly `deploy-to-pypi` in the confirmation field
+4. **Run workflow**: Click the green "Run workflow" button
+
+⚠️ **Warning**: Manual deployments bypass release notes and changelog updates. Use only for critical fixes.
 
 ## Manual Deployment (Fallback)
 
@@ -75,6 +99,13 @@ If the automated deployment fails or for testing purposes:
    ```
 
 ## Troubleshooting
+
+### "Why didn't PyPI deploy automatically after my push to main?"
+
+PyPI deployment is **release-based**, not push-based. You need to:
+1. Verify versions are synced: `python scripts/check_version_sync.py`
+2. [Create a GitHub release](https://github.com/sgttomas/chirality-framework/releases/new) with tag matching your VERSION.md
+3. The release publication will trigger the deployment
 
 ### Version Mismatch Error
 If you get "File already exists" errors on PyPI, check:
