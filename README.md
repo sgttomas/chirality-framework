@@ -26,18 +26,23 @@ For a complete technical description, see the **[Canonical Algorithm Documentati
 
 The sequence of stations in the semantic valley is not arbitrary; it follows a deep, underlying pattern of cognitive modalities. This path describes the *type* of work being done at each stage, revealing a structured cycle of systematic processing, epistemic (knowledge-based) evaluation, and alethic (truth-based) assessment.
 
-| Modality | Station | Operation | Purpose |
-| :--- | :--- | :--- | :--- |
-| `Problem Statement` | 1. Problem Statement | `A, B` | Define axioms |
-| `Systematic` | 2. Requirements | `C = A * B` | Systematically enumerate possibilities |
-| `Process` | 3. Objectives | `D = A + F` | Procedurally construct objectives |
-| `Epistemic` | 4. Verification | `X = K * J` | First check against knowledge criteria |
-| `Process` | 5. Validation | `Z = shift(X)` | Procedurally shift context |
-| `Epistemic` | 6. Evaluation | `E = G * T` | Second check against knowledge criteria |
-| `Alethic` | 7. Assessment | `M = R x E` | First check against truth modalities |
-| `Epistemic` | 8. Implementation | `W = M x X` | Ground truth in verified knowledge |
-| `Alethic` | 9. Integration & Reflection | `U, N` | Final checks against truth modalities |
-| `Resolution` | 11. Resolution | `Final` | Synthesize final, reliable knowledge |
+| Modality | Station | Operation |
+| :--- | :--- | :--- |
+| `Problem` | 1. Problem Statement | `[A], [B]` |
+| `Systematic` | 2. Requirements | `[C] = [A] * [B]` |
+| `Process` | 3. Objectives | `[D] = [A] + [F]` |
+| `Epistemic` | 4. Verification | `[K] = [D]^T, [X] = [K] * [J]` |
+| `Epistemic` | 5. Validation | `[Z] = shift([X])` |
+| `Process` | 6. Evaluation | `[G], [P], [T], [E]` |
+| `Alethic` | 7. Assessment | `[M] = [R] x [E]` |
+| `Epistemic` | 8. Implementation | `[W] = [M] x [X]` |
+| `Alethic` | 9. Integration | `[U] = [W] x [P]` |
+| `Alethic` | 10. Reflection | `[N] = [U] x [H]` |
+| `Resolution` | 11. Resolution | `Final = synth([N])` |
+
+**Clarifications:**
+- **X/Z Modality:** Both Verification (S4) and Validation (S5) are `Epistemic`. S4 strictly precedes S5.
+- **E Modality:** Evaluation (S6) is a `Process` modality, not Epistemic.
 
 For a detailed explanation of this conceptual architecture, see the **[Project Philosophy Documentation](docs/PHILOSOPHY.md)**.
 
@@ -166,3 +171,5 @@ To set up the development environment and run tests, please refer to the instruc
 Additional docs:
 - `docs/INTERFACE.md`: Producer mirror of the chirality-app contract (app mode).
 - `GEMINI.md`: Guidance for using Gemini/AI assistants with this repo.
+ - `CLAUDE.md`: Guidance for using Claude Code with this repo.
+ - `AGENTS.md`: Notes for agentic coding assistants working on this project.
