@@ -93,6 +93,7 @@ output/
 results/
 artifacts/
 dumps/
+runs/
 
 # Temporary files
 *.tmp

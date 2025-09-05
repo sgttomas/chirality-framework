@@ -1108,7 +1108,9 @@ def compute_pipeline(resolver: str, api_key: Optional[str], trace_only: bool,
                     raise click.BadParameter("Invalid --out path (no traversal allowed)")
             else:
                 # Auto-generate run_id
-                run_id = f"app-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
+                import time
+                timestamp = int(time.time())
+                run_id = f"run_{timestamp}_{uuid.uuid4().hex[:6]}"
                 run_path = runs_root / run_id
             # Ensure directories
             snapshots_out = run_path / "snapshots"
