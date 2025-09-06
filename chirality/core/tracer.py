@@ -166,7 +166,8 @@ class JSONLTracer:
                         self.seen_set.remove(oldest)
 
                 # Get file handle
-                file_handle = self._get_file_handle(cell_context.matrix)
+                matrix_name = extras.get("component", "unknown")
+                file_handle = self._get_file_handle(matrix_name)
 
                 # Serialize to JSON
                 json_line = json.dumps(
@@ -181,7 +182,7 @@ class JSONLTracer:
                 file_handle.flush()
 
                 # Check rotation based on actual file size
-                self._check_rotation_needed(cell_context.matrix)
+                self._check_rotation_needed(matrix_name)
 
             except Exception as e:
                 # Log error but don't block semantic operations
@@ -193,14 +194,28 @@ class JSONLTracer:
         """Build complete trace event with deterministic hashing."""
         extras = extras or {}
 
+        # Extract matrix info from extras since SemanticContext was removed
+        matrix = extras.get("component", "unknown")
+        coords = extras.get("coordinates", "(0,0)")
+        # Parse coordinates like "(0,0)" -> i=0, j=0
+        try:
+            coord_str = coords.strip("()")
+            i, j = map(int, coord_str.split(","))
+        except (ValueError, AttributeError):
+            i, j = 0, 0
+
+        # Get row/col labels from extras or use defaults
+        row_label = extras.get("row_label", "unknown")
+        col_label = extras.get("col_label", "unknown")
+
         # Content for hashing (includes row/col labels and products)
         content_for_hash = {
-            "matrix": cell_context.matrix,
-            "i": cell_context.i,
-            "j": cell_context.j,
+            "matrix": matrix,
+            "i": i,
+            "j": j,
             "stage": stage_type,
-            "row_label": cell_context.row_label,
-            "col_label": cell_context.col_label,
+            "row_label": row_label,
+            "col_label": col_label,
             "text": result.text,
             "terms_used": sorted(result.terms_used),
             "warnings": sorted(result.warnings),
@@ -215,22 +230,22 @@ class JSONLTracer:
 
         return TraceEvent(
             stage=stage_type,
-            matrix=cell_context.matrix,
-            i=cell_context.i,
-            j=cell_context.j,
-            row_label=cell_context.row_label,
-            col_label=cell_context.col_label,
+            matrix=matrix,
+            i=i,
+            j=j,
+            row_label=row_label,
+            col_label=col_label,
             text=result.text,
             terms_used=result.terms_used,
             warnings=result.warnings or [],
             products=extras.get("products"),
             thread_id=self.thread_id,
             run_id=self.run_id,
-            station=extras["station"],
-            valley_summary=extras["valley_summary"],
-            pattern=cell_context.operation_type,
+            station=extras.get("station", ""),
+            valley_summary=extras.get("valley_summary", ""),
+            pattern=extras.get("operation_type", ""),
             stage_plan=extras.get("stage_plan", []),
-            inputs=cell_context.terms,
+            inputs=extras.get("terms", {}),
             model_id=result.metadata.get("model_id", "") if hasattr(result, "metadata") else "",
             latency_ms=result.metadata.get("latency_ms", 0) if hasattr(result, "metadata") else 0,
             prompt_hash=extras.get("prompt_hash", ""),

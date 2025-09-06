@@ -147,7 +147,7 @@ class CellResolver:
 
         # Build simple messages (system + shift operator)
         system_text = self.builder.registry.get_text("system")
-        shift_text = self.builder.registry.get_text("ops.shift")
+        shift_text = self.builder.registry.get_text("lens_shift_z")
 
         # Substitute content placeholder in shift text
         shift_content = shift_text.replace("{{content}}", content)

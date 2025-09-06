@@ -32,6 +32,8 @@ This stage is purely mechanical and does not involve an LLM. It combines the ter
 
 For operations involving semantic multiplication (`*` or `⊙`), an LLM resolves the raw terms from Stage 1 into a single, concise concept. This is the first layer of meaning generation.
 
+**Implementation Note:** The framework uses OpenAI's Responses API exclusively (not Chat Completions API) with JSON output format enforced through system prompts rather than API parameters.
+
 *   **Input:** A list of term pairs (e.g., `["Values * Necessary", "Actions * Contingent"]`).
 *   **Output:** A resolved concept or sentence (depending on the operator), which then becomes the input to Stage 3.
 
@@ -55,7 +57,7 @@ The calculator performs the following sequence of operations, with each step bui
 3.  **Compute Matrix D (Solution Objectives):** `D = A + F` (Mechanical Stage 1, then Combined Lensing)
 4.  **Compute Matrix K (Pre-Verification Transform):** `K = D^T` (No LLM)
 5.  **Compute Matrix X (Verification):** `X = K * J`
-6.  **Compute Matrix Z (Validation):** `Z = shift(X)` (A single Combined Lensing call that includes shift semantics)
+6.  **Compute Matrix Z (Validation):** `Z = shift(X)` (A single, Z-specific Combined Lensing call that performs the context shift from Verification to Validation)
 7.  **Compute Matrix T (Evaluation Criteria):** `T = (B[0:3,:])^T` (No LLM)
 8.  **Compute Matrix G (Evaluation Input):** `G = Z[0:3,:]` (No LLM)
 9.  **Compute Array P (Evaluation Context):** `P = Z[3,:]` (No LLM)

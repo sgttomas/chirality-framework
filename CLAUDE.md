@@ -36,8 +36,11 @@ black chirality/ tests/
 # Basic cell computation (echo resolver - deterministic, no API calls)
 python3 -m chirality.cli compute-cell C --i 0 --j 0 --verbose
 
-# Live OpenAI testing (requires OPENAI_API_KEY env var)
+# Live OpenAI testing (requires OPENAI_API_KEY env var + SDK >=1.50.0)
 python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose
+
+# FULL PIPELINE EXECUTION (v17.1.0 - Now Working!)
+python3 -m chirality.cli compute-pipeline --resolver openai --snapshot-jsonl --include-base
 
 # Different matrix types
 python3 -m chirality.cli compute-cell F --i 1 --j 2 --verbose
@@ -90,10 +93,18 @@ All matrix operations (C, F, D, X, E) follow the same universal pipeline:
 
 **MANDATORY**: The Chirality Framework uses OpenAI's **Responses API** exclusively.
 - **NEVER USE**: `client.chat.completions.create(messages=[...])` - Chat Completions API is FORBIDDEN
-- **ALWAYS USE**: `client.responses.create(prompt=..., ...)` - Responses API is REQUIRED
+- **ALWAYS USE**: `client.responses.create(input=..., ...)` - Responses API is REQUIRED
+- **CRITICAL**: Use `input` parameter, NOT `prompt` parameter
+- **SDK VERSION**: Requires OpenAI SDK >=1.50.0 for full Responses API compatibility
 - This has been incorrectly reverted multiple times. This is non-negotiable.
 - The framework requires direct prompt control without message role abstractions.
 - ANY use of Chat Completions API must be immediately fixed.
+
+**CRITICAL API FIXES IMPLEMENTED (v17.1.0)**:
+- Fixed parameter name: `input` instead of `prompt`
+- Removed unsupported parameters: `max_tokens`, `response_format`  
+- Implemented robust response parsing with fallback logic
+- Enhanced JSON error diagnostics with truncated response previews
 
 ### Key Files & Their Roles
 
@@ -128,7 +139,10 @@ All matrix operations (C, F, D, X, E) follow the same universal pipeline:
 
 #### Supporting Systems
 - **`exporters/working_memory_exporter.py`**: Neo4j export with universal provenance schema
-- **`tracer.py`**: JSONL tracing for complete observability
+- **`tracer.py`**: JSONL tracing for complete observability - **RESTORED in v17.1.0**
+  - Fixed to work without deprecated SemanticContext class
+  - Extracts matrix info from extras dict for semantic journey tracking
+  - Critical for diagnosing semantic incoherence and drift
 - **`validate.py`**: Validation for framework structural integrity (updated for 3-stage)
 
 ### Matrix Relationships
@@ -182,6 +196,13 @@ All cells now use a simplified 3-stage provenance structure:
 - Neo4j export preserves both type distinctions (labels) and instance distinctions (unique IDs)
 - Never modify canonical matrices (A, B, J) unless updating the fundamental specification
 
+### CRITICAL INTEGRATION FIXES (v17.1.0)
+**MUST VERIFY THESE ARE WORKING**:
+1. **OpenAI Responses API**: `client.responses.create(input=...)` with robust response parsing
+2. **Semantic Tracing**: JSONL tracer operational for coherence diagnostics
+3. **Full Pipeline**: Complete C→F→D→K→X→Z→E semantic resolution validated
+4. **No Additional Context**: LLM calls use ONLY prompts, no extra context per user requirement
+
 ### Common Debugging Workflow
 1. Test with echo resolver first to verify pipeline mechanics
 2. Test with OpenAI resolver to verify semantic resolution
@@ -189,11 +210,11 @@ All cells now use a simplified 3-stage provenance structure:
 4. Use `--trace` flag for detailed JSONL logs
 5. Use `--neo4j-export` for graph analysis of semantic journeys
 
-## Recent Architecture Changes (Combined Lensing Refactor)
+## Recent Architecture Changes (Combined Lensing Refactor + v17.1.0 Milestone)
 
-The framework underwent a major refactor to implement combined lensing architecture:
+The framework underwent a major refactor to implement combined lensing architecture, culminating in **v17.1.0 achieving full semantic resolution operational status**.
 
-### What Changed
+### Major Changes (Combined Lensing)
 - **Old**: Three-stage lensing (column lens → row lens → synthesis) with 3 separate LLM calls
 - **New**: Single combined lensing operation with 1 LLM call per cell
 - **Old**: 5-stage provenance (`stage_3_column_lensed`, `stage_4_row_lensed`, `stage_5_final_synthesis`)
@@ -201,13 +222,21 @@ The framework underwent a major refactor to implement combined lensing architect
 - **Old**: Methods like `resolve_semantic_pair()`, `apply_column_lens()`, etc.
 - **New**: Unified methods like `run_stage2_multiply()`, `run_combined_lens()`
 
+### Critical Integration Fixes (v17.1.0)
+- **OpenAI Responses API Fixed**: Corrected parameter names, response parsing, error handling
+- **Semantic Tracing Restored**: Fixed tracer to work without SemanticContext class
+- **Full Pipeline Validated**: Complete C→F→D→K→X→Z→E execution with authentic semantic transformations
+- **Asset Registry Corrections**: Fixed asset references ("lens_shift_z" not "ops.shift")
+
 ### Why It Matters
 - **Efficiency**: Reduces LLM calls from 4+ per cell to 2 (one for Stage 2, one for Stage 3)
 - **Coherence**: Combined lensing produces more integrated interpretations
 - **Simplicity**: Cleaner API with fewer methods and simpler provenance structure
+- **Production Ready**: Full semantic resolution now operational with complete observability
 
 ### Migration Notes
-- All tests have been updated to use new API
+- All tests have been updated to use new API (81 tests passing)
 - MockCellResolver and EchoResolver updated with new methods
 - Validation function updated to expect 3-stage provenance
-- CI/CD pipelines configured to enforce new architecture
+- OpenAI client hardened with robust response parsing and error diagnostics
+- Semantic tracing system fully restored for coherence diagnostics

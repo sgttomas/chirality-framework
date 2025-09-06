@@ -7,20 +7,22 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/tag/sgttomas/chirality-framework?sort=semver&label=release)](https://github.com/sgttomas/chirality-framework/tags)
 
-**Version: 16.3.0** | **Status: Active Development**
+**Version: 17.1.0** | **Status: Active Development**
 
 The Chirality Framework is a "semantic calculator" designed to execute a fixed, canonical algorithm for structured problem-solving. It transforms a set of base matrices through a multi-stage semantic pipeline, producing a series of derived matrices that represent a complete traversal of a "semantic valley" from problem to evaluation.
 
 The value of this project is in the unique, insightful **output** of the calculation and the **observability** of the process, not in the flexibility of the code.
 
-## Core Concept: The Canonical Pipeline
+## Core Concept: The Asset-Based Canonical Pipeline
 
-The framework computes a sequence of matrices, each representing a station in the semantic valley. The primary operations involve:
-1.  **Semantic Dot Product:** A two-stage LLM process involving:
-    a.  **Semantic Resolution:** Raw terms are resolved into a concise conceptual summary.
-    b.  **Combined Ontological Lensing:** The conceptual summary is interpreted through a unified lens of the cell's row, column, and station context in a single, powerful LLM call.
-2.  **Station Shifting:** An LLM-driven transformation of a matrix from one context (e.g., Verification) to another (e.g., Validation), also performed using the Combined Lensing pipeline.
-3.  **Structural Operations:** Standard matrix operations like transposing and slicing, which do not involve an LLM.
+The framework's logic is driven by a canonical pipeline that is orchestrated using a set of version-controlled, maintainer-authored text files called "prompt assets." All semantic interpretation is performed by an LLM guided by these assets.
+
+The primary operations involve:
+1.  **Mechanical Construction (Stage 1):** The framework mechanically constructs the initial input for a cell, for example by creating term pairs for a semantic dot product. For Matrix D, this involves creating a sentence from a hard-coded formula. This stage does not use an LLM.
+2.  **Semantic Resolution (Stage 2):** For operations like semantic multiplication, an LLM, guided by an "operator" prompt asset, resolves the initial input into a single, concise concept.
+3.  **Combined Ontological Lensing (Stage 3):** The output from the previous stage is interpreted by an LLM guided by a "lensing" prompt asset. This single, powerful call synthesizes the content through the simultaneous perspectives of the cell's row, column, and the station's overall purpose (provided by a "station brief" asset).
+
+For a complete technical description, see the **[Canonical Algorithm Documentation](docs/ALGORITHM.md)**.
 
 For a complete technical description, see the **[Canonical Algorithm Documentation](docs/ALGORITHM.md)**.
 
@@ -54,13 +56,14 @@ The recommended way to use the framework is to compute the entire pipeline and v
 
 ### Prerequisites
 - Python 3.9+
-- An OpenAI API key set as the `OPENAI_API_KEY` environment variable.
+- An OpenAI API key set as the `OPENAI_API_KEY` environment variable
+- **Note**: The framework uses OpenAI's Responses API exclusively (not Chat Completions API)
 
 ### Step 1: Compute the Full Pipeline
 This command runs the entire semantic pipeline (Matrices C through E), generates snapshots of every matrix (including the base matrices A, B, and J), and creates detailed trace files for debugging.
 
 ```bash
-# Install with OpenAI support
+# Install with OpenAI support (requires OpenAI SDK >=1.50.0)
 pip install 'chirality-framework[openai]'
 
 # Set your API key (add to your shell profile for persistence)

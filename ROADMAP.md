@@ -1,10 +1,16 @@
 # Project Roadmap
 
-**Status Last Updated**: August 28, 2025
+**Status Last Updated**: September 6, 2025
 
-## Current Status: Prompt Architecture Refactoring Complete
+## Current Status: Full Semantic Resolution Operational
 
 The project has completed a major architectural refactoring to externalize all semantic content and streamline the core pipeline. The old three-stage lensing process has been replaced with a more powerful and coherent **Combined Lensing** pipeline.
+
+**Major Milestone Achieved (v17.1.0)**: The framework now successfully performs complete semantic resolution with the OpenAI Responses API. All critical integration issues have been resolved:
+- ✅ OpenAI Responses API compatibility fixed (input parameter, response parsing)
+- ✅ Semantic tracing system restored (critical for coherence diagnostics)
+- ✅ Complete pipeline validation (C through E matrices) with authentic semantic transformation
+- ✅ All 81 tests passing with production-ready package build
 
 This transformation into a fully asset-based, canonical algorithm is now complete. The core logic is stable, and the semantic content is now fully owned and version-controlled by the maintainer in the `chirality/prompt_assets/` directory.
 

@@ -32,13 +32,22 @@ This is the new, refactored API for executing the stages of the canonical pipeli
 -   `run_stage2_multiply(terms: list[str], component_id: str) -> RichResult`: Performs semantic multiplication on a list of terms (C/X/E).
 -   `run_stage2_elementwise(terms: list[str], component_id: str) -> RichResult`: Performs element-wise semantic multiplication (F).
 -   `run_stage2_addition(parts: list[str]) -> str`: Performs mechanical string concatenation (no LLM call).
--   `run_combined_lens(content: str, component_id: str, row_label: str, col_label: str) -> RichResult`: Performs the unified row, column, and station interpretation in a single LLM call (all stations).
+-   `run_combined_lens(content: str, component_id: str, row_label: str, col_label: str) -> RichResult`: Performs the unified row, column, and station interpretation in a single LLM call. For Matrix Z, this method is still called, but the underlying strategy maps it to a special-purpose lensing prompt that performs the context shift.
+
+### Prompt Strategy API (`chirality.lib.strategies.PromptStrategy`)
+
+-   `plan(stage: str, component_id: str) -> list[str]`: Returns the list of prompt asset IDs for a given stage and component.
+-   `get_station_brief_id(component_id: str) -> str`: Gets the asset ID for a component's station brief.
+-   `get_station_meta(component_id: str) -> dict`: Returns metadata about the station, including its `name`, `ordinal`, and the `total` number of stations.
 
 ---
 
 ## LLM Client and Configuration
 
 -   **`chirality.core.llm_client.py`**: Provides a single `call_responses(...)` function, which is the exclusive wrapper for the OpenAI Responses API. All LLM calls in the framework route through this client. Chat Completions is not used anywhere in this codebase.
+    -   **Requirements**: OpenAI SDK >=1.50.0 
+    -   **API Compatibility**: Uses `input` parameter instead of `prompt`, implements robust response parsing for `output_text` with fallback to `output[].content[].text`
+    -   **JSON Format**: Relies on system prompt JSON contract rather than API `response_format` parameter (temporarily removed due to SDK compatibility)
 -   **`chirality.core.llm_config.py`**: Defines the global, hardcoded configuration for the LLM, including model name, temperature, and other decoding parameters. There are no per-station or user-configurable overrides.
 
 ---

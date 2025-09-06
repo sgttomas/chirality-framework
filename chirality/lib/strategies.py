@@ -90,7 +90,7 @@ class PromptStrategy:
         elif stage == "shift":
             if component_id != "Z":
                 raise ValueError(f"Shift operation only valid for component Z, got {component_id}")
-            return ["station_shift"]
+            return ["lens_shift_z"]
 
         else:
             raise ValueError(f"Invalid stage: {stage}")
@@ -151,6 +151,44 @@ class PromptStrategy:
             stages.append("combined_lens")
 
         return stages
+
+    @classmethod
+    def get_station_meta(cls, component_id: str) -> dict:
+        """
+        Get station metadata for a component.
+
+        Args:
+            component_id: Matrix component ('C', 'D', 'F', 'X', 'Z', 'E')
+
+        Returns:
+            Dict with station metadata: {name, ordinal, total}
+        """
+        station_names = {
+            "C": "Requirements",
+            "D": "Objectives",
+            "F": "Objectives",
+            "X": "Verification",
+            "Z": "Validation",
+            "E": "Evaluation",
+        }
+
+        station_ordinals = {
+            "C": 2,
+            "D": 3,
+            "F": 3,
+            "X": 4,
+            "Z": 5,
+            "E": 6,
+        }
+
+        if component_id not in station_names:
+            raise ValueError(f"Invalid component_id: {component_id}")
+
+        return {
+            "name": station_names[component_id],
+            "ordinal": station_ordinals[component_id],
+            "total": 11,  # Total stations in semantic valley
+        }
 
 
 # Convenience functions for external use

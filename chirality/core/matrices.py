@@ -62,7 +62,7 @@ MATRIX_B = Matrix(
             ["necessary", "sufficient", "complete", "consistent"],
             ["contingent", "actionable", "contextual", "congruent"],
             ["purposeful", "effective", "comprehensive", "coherent"],
-            ["essential", "optimal", "holistic", "principled"],
+            ["constitutive", "optimal", "holistic", "principled"],
         ]
     ),
 )

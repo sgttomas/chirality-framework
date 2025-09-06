@@ -1,229 +1,142 @@
-# Release Notes: Chirality Framework v17.0.0
+# Chirality Framework v17.1.0 - Release Notes
 
-## Major Architecture Refactor: Combined Lensing Implementation
+**Release Date**: September 6, 2025  
+**Status**: Production Ready  
+**Breaking Changes**: None
 
-### Summary
-This release implements a fundamental architecture change from legacy three-stage lensing to a unified combined lensing approach, significantly improving efficiency and semantic coherence while maintaining the core three-stage interpretation pipeline.
+## 🎉 Major Milestone: Full Semantic Resolution Operational
 
-### 🚀 Key Improvements
-**Semantic Coherence of Matrix A and B Improvements**:
-- Revised the 
+Version 17.1.0 marks a critical milestone in the Chirality Framework's development - **the semantic calculator is now fully operational** with authentic LLM-driven semantic resolution across the entire pipeline from Requirements (Matrix C) through Evaluation (Matrix E).
 
+## 🚀 What's New
 
-**Efficiency Gains**:
-- Reduced LLM calls from 4+ per cell to 2 per cell (Stage 2 + Stage 3)
-- Combined lensing produces more coherent semantic interpretations
-- Simplified API with unified resolver methods
+### Complete Semantic Content Implementation
+All maintainer-authored prompt assets have been populated with canonical semantic content:
+- **System Prompt**: Complete framework context with semantic operations and JSON output contract
+- **Station Briefs**: Dedicated context for Requirements, Objectives, Verification, Validation, and Evaluation stations
+- **Stage 2 Operators**: Multiplication and element-wise semantic operations with examples
+- **Stage 3 Lensing**: Combined lensing and Z-specific shift operations for context transformation
 
-**Architecture Simplification**:
-- Replaced 5-stage provenance with clean 3-stage structure
-- Eliminated complex three-step lensing (column → row → synthesis)
-- Single combined lensing operation with unified row × column × station perspective
+### OpenAI Responses API Integration ✅
+The framework now successfully integrates with OpenAI's Responses API:
+- **Fixed API Compatibility**: Updated to use `input` parameter instead of `prompt`
+- **Robust Response Parsing**: Implements fallback logic for `output_text` and `output[].content[].text`
+- **Enhanced Error Handling**: Added JSON error diagnostics with truncated response previews
+- **SDK Upgrade**: Minimum requirement upgraded to OpenAI SDK >=1.50.0
+- **JSON Output Enforcement**: Relies on system prompt contract for consistent JSON formatting
 
-**Maintainer-Authored Prompt System**:
-- All semantic prompts moved to `chirality/prompt_assets/` as markdown files
-- Structured prompt registry with versioning and checksums
-- Component-driven station selection and operation strategies
+### Semantic Tracing System Restored 🔧
+Critical diagnostic capabilities have been fully restored:
+- **Fixed Tracer Architecture**: Updated to work without deprecated SemanticContext class
+- **Semantic Journey Tracking**: Captures complete provenance for coherence diagnostics
+- **Error-Free Operation**: Eliminated all attribute access errors that were breaking diagnostics
 
-### 🔧 Technical Changes
+## 🔬 Technical Improvements
 
-#### Matrix A and B updated 
-**the contents of Matrix A and B were revised by the Maintainer**
-***Old method***
-```# Fixed canonical Matrix A (3x4)
-MATRIX_A = Matrix(
-    name="A",
-    station="Problem Statement",
-    row_labels=["Normative", "Operative", "Evaluative"],
-    col_labels=["Guiding", "Applying", "Judging", "Reviewing"],
-    cells=_create_matrix_cells([
-        ["Values", "Actions", "Benchmarks", "Feedback"],
-        ["Standards", "Methods", "Decisions", "Adaptation"],
-        ["Objectives", "Coordination", "Evaluation", "Refinement"]
-    ])
-)
+### Architecture Enhancements
+- **Enhanced Placeholder Support**: Added `{{station_id}}` for dynamic station identification
+- **Path B D-Matrix Implementation**: Hard-coded canonical D formula as mechanical operation
+- **Z Matrix Handling**: Dedicated shift lensing template for Validation context transformation
+- **Strategies Module**: Added station metadata support and updated asset routing
 
-# Fixed canonical Matrix B (4x4)  
-MATRIX_B = Matrix(
-    name="B",
-    station="Problem Statement",
-    row_labels=["Data", "Information", "Knowledge", "Wisdom"],
-    col_labels=["Necessity (vs Contingency)", "Sufficiency", "Completeness", "Consistency"],
-    cells=_create_matrix_cells([
-        ["Necessary vs Contingent", "Sufficient", "Complete", "Consistent"],
-        ["Relevant", "Actionable", "Contextual", "Congruent"],
-        ["Fundamental", "Effective", "Systematic", "Coherent"],
-        ["Essential", "Optimal", "Holistic", "Principled"]
-    ])
-)
-```
-***New Method***
-```
-# Fixed canonical Matrix A (3x4)
-MATRIX_A = Matrix(
-    name="A",
-    station="Problem Statement",
-    row_labels=["normative", "operative", "iterative"],
-    col_labels=["guiding", "applying", "judging", "reflecting"],
-    cells=_create_matrix_cells(
-        [
-            ["objectives", "actions", "benchmarks", "feedback"],
-            ["standards", "methods", "criteria", "adaptation"],
-            ["development", "coordination", "evaluation", "refinement"],
-        ]
-    ),
-)
+### Quality Assurance
+- **Full Test Suite**: All 81 tests passing with new architecture
+- **Echo Resolver Validation**: Successful validation for all matrices (C, D, F, X, Z, E)
+- **OpenAI Resolver Validation**: Complete semantic pipeline validated with live API
+- **Asset Integrity**: SHA256 validation functional for all prompt assets
+- **Package Build**: Production-ready package with all prompt assets included
 
-# Fixed canonical Matrix B (4x4)
-MATRIX_B = Matrix(
-    name="B",
-    station="Problem Statement",
-    row_labels=["data", "information", "knowledge", "wisdom"],
-    col_labels=["necessity (vs contingency)", "sufficiency", "completeness", "consistency"],
-    cells=_create_matrix_cells(
-        [
-            ["necessary", "sufficient", "complete", "consistent"],
-            ["contingent", "actionable", "contextual", "congruent"],
-            ["purposeful", "effective", "comprehensive", "coherent"],
-            ["essential", "optimal", "holistic", "principled"],
-        ]
-    ),
-)
+## 🛠️ Developer Experience
+
+### Configuration Improvements
+- **Centralized LLM Config**: `llm_config.py` is now single source of truth for LLM parameters
+- **Environment Cleanup**: Removed model and temperature from environment variables
+- **Asset Registry**: Updated metadata.yml with correct checksums and versions
+
+### Documentation Updates
+- **API Reference**: Updated with OpenAI requirements and compatibility notes
+- **Algorithm Documentation**: Added Responses API implementation details
+- **Contributing Guide**: Enhanced with SDK requirements and API notes
+
+## 🌟 Demonstration: Complete Semantic Resolution
+
+This release enables the framework to perform authentic semantic transformations. For example:
+
+**Input (Stage 1 - Mechanical)**: `"objectives * necessary"`  
+**Stage 2 (Semantic Resolution)**: *"The Chirality Framework systematically constrains large-language-model outputs through typed semantic operators..."*  
+**Stage 3 (Combined Lensing)**: *"...systematically guides the derivation of comprehensive requirements by exhaustively spanning the problem space..."*
+
+The framework now successfully transforms mechanical k-products into coherent, contextually-appropriate knowledge artifacts that progress logically through the semantic valley.
+
+## 📋 Compatibility & Requirements
+
+### System Requirements
+- Python 3.9+
+- OpenAI SDK >=1.50.0 (for semantic resolution)
+- OpenAI API key set as `OPENAI_API_KEY` environment variable
+
+### Installation
+```bash
+# Install with OpenAI support
+pip install 'chirality-framework[openai]'
+
+# Set your API key
+export OPENAI_API_KEY="sk-..."
+
+# Run complete semantic pipeline
+python3 -m chirality.cli compute-pipeline --resolver openai --snapshot-jsonl -v
 ```
 
+### Backward Compatibility
+- All existing CLI commands and options remain unchanged
+- Echo resolver continues to work for development/testing
+- Existing snapshot and trace formats preserved
+- No breaking changes to public API
 
-#### New Combined Lensing API
-**Old Methods (Removed)**:
-```python
-resolve_semantic_pair()
-apply_column_lens() 
-apply_row_lens()
-synthesize_final_result()
+## 🎯 Use Cases Now Enabled
+
+### Research & Development
+- **Semantic Analysis**: Complete pipeline from problem requirements to evaluation
+- **Coherence Diagnostics**: Full tracing for semantic drift detection
+- **Knowledge Generation**: Authentic semantic transformations with provenance
+
+### Integration & Automation
+- **App Mode**: Producer contract for chirality-app integration
+- **Batch Processing**: Complete pipeline automation with manifest generation
+- **Observability**: HTML viewer for semantic journey visualization
+
+## 🔍 Quality Validation
+
+This release has been thoroughly validated:
+- ✅ Complete pipeline execution (C through E matrices) with OpenAI resolver
+- ✅ All mechanical operations (A, B, J matrices) functioning correctly  
+- ✅ Semantic tracing system operational for coherence diagnostics
+- ✅ HTML viewer rendering complete semantic results
+- ✅ App mode producing valid manifests and snapshots
+- ✅ All unit and integration tests passing (81 tests)
+
+## 🚀 Getting Started
+
+### Quick Start
+```bash
+# Complete semantic pipeline
+python3 -m chirality.cli compute-pipeline --resolver openai --snapshot-jsonl --include-base
+
+# View results in browser
+python3 -m chirality.cli render-viewer --latest --open
+
+# Inspect single cell with full tracing
+python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose --trace
 ```
 
-**New Methods**:
-```python
-run_stage2_multiply()     # Semantic multiplication for k-products
-run_stage2_elementwise()  # Element-wise semantic operations  
-run_stage2_addition()     # Mechanical addition for Matrix D
-run_combined_lens()       # Single unified lensing operation
-run_shift()              # Station context shift for Matrix Z
-```
+## 🎉 Conclusion
 
-#### Provenance Structure Changes
-**Before (5-stage)**:
-```
-stage_1_construct
-stage_2_semantic  
-stage_3_column_lensed
-stage_4_row_lensed
-stage_5_final_synthesis
-```
+Version 17.1.0 represents the successful realization of the Chirality Framework as a production-ready "semantic calculator." The framework now performs authentic semantic resolution, transforming mechanical combinations into meaningful knowledge artifacts through a structured, observable, and reproducible process.
 
-**After (3-stage)**:
-```
-stage_1_construct         # Mechanical generation
-stage_2_semantic         # Semantic resolution
-stage_3_combined_lensed  # Unified lensing (empty for Matrix Z)
-```
-
-#### Matrix Z Special Case
-Matrix Z now uses a lean 2-stage pipeline with station shift instead of lensing:
-- Stage 1: Direct content extraction
-- Stage 2: Station shift from Verification to Validation context
-- No Stage 3 lensing (empty `stage_3_combined_lensed`)
-
-### 📁 New File Structure
-
-#### Prompt System Architecture
-```
-chirality/lib/
-├── strategies.py          # Component-to-station mapping & operation strategies
-├── prompt_registry.py     # Maintainer-authored prompt asset management
-├── prompt_builder.py      # Message construction with placeholder substitution
-└── llm_client.py         # Unified OpenAI Responses API client
-```
-
-#### Prompt Assets
-```
-chirality/prompt_assets/
-├── stage2_multiply.md     # Semantic multiplication prompts
-├── stage2_elementwise.md  # Element-wise operation prompts
-├── combined_lens.md       # Unified lensing prompts
-├── station_shift.md       # Station context shift prompts
-└── station_briefs/       # Station-specific context briefs
-```
-
-#### Test Coverage
-```
-tests/integration/
-└── test_prompt_system_integration.py  # Comprehensive prompt system tests
-
-.github/workflows/
-├── ci.yml                # Main CI pipeline with prompt validation
-├── release.yml           # Automated release workflow
-├── security.yml          # Weekly security audits
-└── docs.yml             # Documentation generation
-```
-
-### ⚡ Performance Impact
-
-**Before**: 4+ LLM calls per cell
-- 1 × `resolve_semantic_pair()`
-- 1 × `apply_column_lens()`
-- 1 × `apply_row_lens()`
-- 1 × `synthesize_final_result()`
-
-**After**: 2 LLM calls per cell
-- 1 × `run_stage2_multiply()` (or equivalent)
-- 1 × `run_combined_lens()`
-
-**Result**: ~50% reduction in LLM API calls with improved semantic coherence.
-
-### 🔒 Critical Requirements Maintained
-
-- **OpenAI Responses API**: Continues to use `client.responses.create()` exclusively
-- **Normative Spec Sovereignty**: All semantic content remains maintainer-authored
-- **3-Stage Pipeline**: Core algorithm structure preserved
-- **Matrix Relationships**: All canonical matrix operations unchanged
-- **Provenance Tracking**: Complete computational lineage maintained
-
-### 🧪 Testing & Validation
-
-- **81 comprehensive tests** with 100% pass rate covering all aspects of the new architecture
-- **Complete test suite overhaul** - deleted obsolete tests, added focused architecture validation
-- **Full CI/CD pipeline** with security scanning and automated releases
-- **Production-ready validation** with core operations, validation, and evaluation all verified
-
-### 📋 Migration Impact
-
-**Breaking Changes**:
-- Old resolver methods no longer available
-- 5-stage provenance structure no longer supported
-- Legacy prompt building code removed
-
-**Compatibility**:
-- CLI commands unchanged
-- Matrix computation results equivalent
-- Echo resolver maintains deterministic behavior
-- All existing test patterns updated
-
-### 🎯 What's Next
-
-This refactor establishes the foundation for:
-- Enhanced semantic coherence through unified lensing
-- Improved maintainability with structured prompt assets
-- Better observability through simplified provenance
-- Reduced API costs through call optimization
-
-### 📊 Full Change Summary
-
-**Files Modified**: 15+ core files updated
-**Files Added**: 8 new architecture files + comprehensive tests
-**Files Removed**: 2 obsolete implementation files
-**Tests Added**: 17 integration tests + updated existing test suite
-**API Calls Reduced**: ~50% fewer LLM calls per computation
+The semantic valley is fully operational - from problem requirements through final evaluation - with complete observability and diagnostic capabilities intact.
 
 ---
 
-**Migration Note**: This is a major architecture change. While CLI behavior remains consistent, any direct use of the old resolver API will need updating to the new combined lensing methods.
+**For Technical Details**: See [CHANGELOG.md](CHANGELOG.md)  
+**For Integration**: See [docs/API_REFERENCE.md](docs/API_REFERENCE.md)  
+**For Development**: See [CONTRIBUTING.md](CONTRIBUTING.md)

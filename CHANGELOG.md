@@ -5,6 +5,49 @@ All notable changes to the Chirality Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.1.0] - 2025-09-06
+
+### Added
+-   **Complete Semantic Content Implementation**: All maintainer-authored prompt assets have been populated with canonical semantic content
+    -   System prompt with complete framework context, semantic operations, and JSON output contract
+    -   Station briefs for Requirements, Objectives, Verification, Validation, and Evaluation stations
+    -   Stage 2 operators: multiplication and element-wise semantic operations
+    -   Stage 3 lensing: combined lensing and Z-specific shift operations
+-   **Enhanced Placeholder Support**: Added `{{station_id}}` placeholder for dynamic station identification in prompts
+-   **Path B D-Matrix Implementation**: Hard-coded D formula (`A(i,j) + " applied to frame the problem; " + F(i,j) + " to resolve the problem."`) in operations.py as mechanical operation
+
+### Changed
+-   **Prompt Builder Architecture**: Enhanced to prepend system.md to all Stage 2/3 LLM calls for consistent context
+-   **Z Matrix Handling**: Implemented dedicated shift lensing template for Validation context transformation
+-   **Strategies Module**: Added `get_station_meta()` method for station metadata and updated Z matrix routing to `lens_shift_z` asset
+-   **Documentation Consistency**: Updated both AGENTS.md and docs/PROMPT_ENGINEERING.md to include `{{station_id}}` as allowed placeholder
+-   **Package Data**: Extended pyproject.toml to include new ops/operators/*.md and ops/lensing/*.md files
+
+### Fixed
+-   **OpenAI Responses API Integration**: Fixed critical API compatibility issues
+    -   Updated API calls to use `input` parameter instead of `prompt` (Responses API requirement)
+    -   Removed unsupported `max_tokens` parameter from API calls
+    -   Temporarily removed `response_format` parameter (relying on System Prompt JSON contract)
+    -   Implemented robust response parsing with fallback logic for `output_text` and `output[].content[].text`
+    -   Added improved JSON error diagnostics with truncated response previews for debugging
+    -   Upgraded minimum OpenAI SDK requirement to >=1.50.0
+-   **Critical Tracer System**: Fixed semantic journey tracking after SemanticContext removal
+    -   Updated tracer to extract matrix information from `extras` dict instead of removed SemanticContext
+    -   Fixed all attribute access errors that were breaking semantic diagnostic capabilities
+    -   Restored critical artifacts for diagnosing semantic incoherence and drift
+-   **Asset Registry**: Updated metadata.yml with correct SHA256 checksums, file sizes, and versions for all prompt assets
+-   **Test Compatibility**: Fixed all test expectations to match new asset naming conventions
+-   **Environment Configuration**: Removed model and temperature from environment variables, making llm_config.py the single source of truth for LLM parameters
+
+### Technical
+-   **Full Semantic Resolution Operational**: OpenAI resolver now successfully processes complete pipeline with authentic semantic transformation
+-   All 81 tests passing with new architecture
+-   Echo resolver validation successful for all matrices (C, D, F, X, Z, E)  
+-   OpenAI resolver validation successful for complete semantic pipeline (C through E)
+-   Complete 3-stage provenance structure implemented and validated
+-   Asset integrity checking via SHA256 validation functional
+-   Semantic tracing system fully operational for coherence diagnostics
+
 ## [17.0.0] - 2025-09-05
 
 ### Added

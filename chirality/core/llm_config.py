@@ -14,8 +14,8 @@ from dataclasses import dataclass, field
 class LLMConfig:
     """Global LLM configuration parameters."""
 
-    model: str = "gpt-4.1-nano"
-    temperature: float = 0.7
+    model: str = "gpt-4o"
+    temperature: float = 1.0
     top_p: float = 0.9
     max_tokens: Optional[int] = None  # Let API determine from context
     seed: Optional[int] = None  # For deterministic testing
