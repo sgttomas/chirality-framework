@@ -165,29 +165,29 @@ class PromptStrategy:
         """
         station_names = {
             "C": "Requirements",
-            "D": "Objectives", 
+            "D": "Objectives",
             "F": "Objectives",
             "X": "Verification",
             "Z": "Validation",
             "E": "Evaluation",
         }
-        
+
         station_ordinals = {
             "C": 2,
             "D": 3,
-            "F": 3, 
+            "F": 3,
             "X": 4,
             "Z": 5,
             "E": 6,
         }
-        
+
         if component_id not in station_names:
             raise ValueError(f"Invalid component_id: {component_id}")
-            
+
         return {
             "name": station_names[component_id],
             "ordinal": station_ordinals[component_id],
-            "total": 11  # Total stations in semantic valley
+            "total": 11,  # Total stations in semantic valley
         }
 
 

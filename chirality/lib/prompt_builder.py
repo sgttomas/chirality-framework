@@ -111,7 +111,7 @@ class PromptBuilder:
         # Get station brief content for inlining
         station_brief_id = PromptStrategy.get_station_brief_id(component_id)
         station_brief_text = self.registry.get_text(station_brief_id)
-        
+
         # Get station metadata for station_id
         station_meta = PromptStrategy.get_station_meta(component_id)
         station_id = station_meta["name"]

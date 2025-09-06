@@ -252,7 +252,9 @@ def compute_cell_D(
     # D(i,j) = A(i,j) + " applied to frame the problem; " + F(i,j) + " to resolve the problem."
     a_cell = A.get_cell(i, j)
     f_cell = F.get_cell(i, j)
-    synthesis_statement = f"{a_cell.value} applied to frame the problem; {f_cell.value} to resolve the problem."
+    synthesis_statement = (
+        f"{a_cell.value} applied to frame the problem; {f_cell.value} to resolve the problem."
+    )
 
     # Trace Stage 1 (mechanical synthesis)
     if tracer:

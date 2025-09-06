@@ -77,15 +77,15 @@ class LLMClient:
                 # NOTE: response_format not supported by Responses API (as of SDK 1.106.1)
                 # Relying on System Prompt's JSON Output Contract instead
             }
-            
+
             # Only add seed if specified
             if config.seed is not None:
                 params["seed"] = config.seed
-                
+
             # Optional: add max_output_tokens if needed (not max_tokens)
             # if config.max_tokens is not None:
             #     params["max_output_tokens"] = config.max_tokens
-                
+
             response = self.client.responses.create(**params)
 
             # Extract response text using correct Responses API format
@@ -102,7 +102,7 @@ class LLMClient:
                     response_text = "".join(parts)
                 except Exception:
                     response_text = ""
-            
+
             if not response_text:
                 response_text = ""
 
@@ -113,7 +113,7 @@ class LLMClient:
                 response_dict = json.loads(response_text)
             except json.JSONDecodeError as e:
                 # Include a truncated preview to aid triage without flooding logs
-                preview = (response_text or "")
+                preview = response_text or ""
                 max_preview = 2000  # chars
                 if len(preview) > max_preview:
                     preview = preview[:max_preview] + "... [truncated]"
