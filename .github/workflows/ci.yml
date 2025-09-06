@@ -55,6 +55,20 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev]" 
         pip install pytest pytest-cov pyyaml
+        
+    - name: Debug package structure
+      run: |
+        echo "=== Package structure debug ==="
+        python -c "import sys; print('Python path:', sys.path)"
+        python -c "import os; print('CWD contents:', os.listdir('.'))"
+        python -c "import os; print('chirality/ contents:', os.listdir('chirality'))"
+        python -c "import os; print('chirality/lib/ contents:', os.listdir('chirality/lib') if os.path.exists('chirality/lib') else 'MISSING')"
+        echo "=== Try import chirality ==="
+        python -c "import chirality; print('✓ chirality import OK')"
+        echo "=== Try import chirality.lib ==="
+        python -c "import chirality.lib; print('✓ chirality.lib import OK')"
+        echo "=== Try import specific modules ==="
+        python -c "from chirality.lib.prompt_builder import PromptBuilder; print('✓ PromptBuilder import OK')"
     
     - name: Validate prompt asset integrity
       run: |
