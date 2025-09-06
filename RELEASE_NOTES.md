@@ -1,14 +1,23 @@
-# Chirality Framework v17.1.0 - Release Notes
+# Chirality Framework v17.1.1 - Release Notes
 
 **Release Date**: September 6, 2025  
 **Status**: Production Ready  
 **Breaking Changes**: None
 
-## 🎉 Major Milestone: Full Semantic Resolution Operational
+## 🔧 Maintenance Release: PyPI Publishing & CI Fixes
 
-Version 17.1.0 marks a critical milestone in the Chirality Framework's development - **the semantic calculator is now fully operational** with authentic LLM-driven semantic resolution across the entire pipeline from Requirements (Matrix C) through Evaluation (Matrix E).
+Version 17.1.1 is a maintenance release that resolves critical infrastructure issues preventing automated PyPI publishing and ensures all CI/CD pipelines function correctly.
 
-## 🚀 What's New
+## 🔧 Infrastructure Fixes
+
+### Release Workflow Resolution
+- **Fixed Architecture Tests**: Updated to use existing test files instead of missing references
+- **PyPI Environment Configuration**: Corrected environment from 'release' to 'pypi' (matches GitHub settings)
+- **Trusted Publishing**: Switched from legacy token authentication to OpenID Connect trusted publishing
+- **CI Formatting**: Applied Black formatting to resolve linting failures
+- **Asset Validation**: Fixed prompt asset validation to check correct asset names
+
+### Previous Major Features (v17.1.0)
 
 ### Complete Semantic Content Implementation
 All maintainer-authored prompt assets have been populated with canonical semantic content:
