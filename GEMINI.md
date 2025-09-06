@@ -4,14 +4,41 @@ Guidance for using Google Gemini (or similar AI coding assistants) with this rep
 
 ## Project Overview
 
-Chirality Framework is a semantic calculator implementing a canonical pipeline that features a unified **Combined Lensing** step for all semantic interpretation. It focuses on a canonical algorithm and predictable outputs rather than framework flexibility.
+Chirality Framework is a "semantic calculator" that implements a fixed, canonical algorithm. Its core logic is driven by an **asset-based prompt system**, where all semantic instructions are defined in version-controlled markdown files, not in the Python code. The framework executes a multi-stage pipeline featuring a unified **Combined Lensing** step for all semantic interpretation.
 
-- Quick start: see `README.md`
-- Tutorial: `docs/TUTORIAL.md`
-- CLI Quick Reference: `docs/API_REFERENCE.md#cli-reference`
-- App contract (producer): `docs/INTERFACE.md`
+-   Quick start: see `README.md`
+-   Algorithm details: `docs/ALGORITHM.md`
+-   Prompting system: `docs/PROMPT_ENGINEERING.md`
+-   CLI Reference: `docs/API_REFERENCE.md#cli-reference`
 
-## Day‑to‑Day Commands
+## Key Architectural Concepts for AI Agents
+
+To contribute effectively, it is critical to understand the new asset-based architecture.
+
+### 1. The Prompt Asset System (`chirality/prompt_assets/`)
+
+-   **Source of Truth**: All semantic content (the "why" and "how" of the interpretation) lives in `.md` files within this directory. The Python code is just an engine that orchestrates these assets.
+-   **Asset Types**:
+    -   `system.md`: The global prompt prepended to all LLM calls.
+    -   `station_briefs/`: One file per station (e.g., `requirements.md`) that defines the station's purpose.
+    -   `ops/operators/`: Instructions for Stage 2 semantic resolutions (e.g., `multiply.md`).
+    -   `ops/lensing/`: Templates for Stage 3 combined lensing (e.g., `combined.md`, `shift.md`).
+-   **Registry & Integrity**: `metadata.yml` acts as a manifest, mapping asset IDs to files and their SHA256 checksums. The system will fail if a file is modified without its checksum being updated in the manifest.
+
+### 2. The Core Pipeline Logic
+
+-   **Stage 1 (Mechanical)**: The framework code mechanically assembles the initial input. For Matrix D, the formula `A(i,j) + " applied to frame the problem; " + F(i,j) + " to resolve the problem."` is **hard-coded** in `chirality/core/operations.py`.
+-   **Stage 2 (Semantic Resolution)**: The LLM, guided by an `operator` asset, resolves the initial input into a concise concept.
+-   **Stage 3 (Combined Lensing)**: The LLM, guided by a `lensing` asset and a `station_brief`, interprets the Stage 2 output through ontological lenses.
+-   **Z-Matrix Path**: Matrix Z follows a special path. It bypasses Stage 2 and uses a dedicated lensing asset (`ops/lensing/shift.md`) in Stage 3 to perform its context shift.
+
+### 3. The Prompt Assembly Logic (`chirality/lib/`)
+
+-   `strategies.py`: This module is the "brain" that maps a given component (e.g., "C") and stage (e.g., "combined_lens") to a list of prompt asset IDs. It also contains the logic for the special Z-path and for retrieving station metadata.
+-   `prompt_builder.py`: This module assembles the final prompt message sent to the LLM. It fetches asset content from the registry, substitutes placeholders, and prepends the `system.md` prompt.
+-   **Placeholders**: The system supports a fixed set of placeholders: `{{terms}}`, `{{content}}`, `{{row_label}}`, `{{col_label}}`, `{{station_brief}}`, and `{{station_id}}`. No other placeholders will work without code changes.
+
+## Day-to-Day Commands
 
 Testing and quality:
 
@@ -24,12 +51,6 @@ black chirality/ tests/ # formatting
 CLI (common):
 
 ```bash
-# Single cell (deterministic echo)
-python3 -m chirality.cli compute-cell C --i 0 --j 0 -v
-
-# One matrix with legacy snapshot
-python3 -m chirality.cli compute-matrix X --resolver echo --snapshot-jsonl -v
-
 # Full pipeline (dev mode)
 python3 -m chirality.cli compute-pipeline --resolver echo --snapshot-jsonl --include-base -v
 
@@ -41,55 +62,17 @@ python3 -m chirality.cli compute-pipeline \
   --max-seconds 900
 ```
 
-## App Integration (Producer Contract)
-
-App mode writes:
-- `runs/<run_id>/index.json` (atomic, last)
-- `runs/<run_id>/snapshots/{C,D,X,E}.jsonl` (cells-jsonl-v1)
-
-Stdout (last line only):
-```json
-{"run_id":"<run_id>","manifest":"runs/<run_id>/index.json"}
-```
-
-Manifest includes `framework_schema_version: "1.0.0"`, and per‑matrix `path`, `format`, `records`, `sha256`, `bytes`.
-
-## Resolver Notes
-
-- **CRITICAL**: Per maintainer directive, the OpenAI resolver MUST use the `client.responses.create()` method. The `client.chat.completions.create()` API must NOT be used.
-- Default for development: `echo` (deterministic, no API calls).
-- OpenAI resolver optional: install extras `pip install 'chirality-framework[openai]'` and set `OPENAI_API_KEY`.
-- Tests must use mocks (`tests/mocks.py`); do not introduce live LLM calls in tests.
-
 ## Contribution Guardrails
 
-- Style: Black; Types: mypy (strict) — see `pyproject.toml`.
-- Naming: prefer `compute_cell_*`, `compute_matrix_*` (avoid deprecated `synthesize_*`).
-- Provenance keys: `stage_1_construct`, `stage_2_semantic`, `stage_3_combined_lensed`.
-- Do not change canonical matrices (`chirality/core/matrices.py`) unless updating the spec.
-- Secrets: never commit keys; use environment variables or `.env` (not committed).
-- Conventional Commits for messages, e.g., `docs(cli): ...`, `feat(exporter): ...`.
+-   **CRITICAL API USAGE**: The OpenAI resolver **MUST** use the `client.responses.create()` method. The `client.chat.completions.create()` API is forbidden.
+-   **Immutable Files**: Never modify `chirality/normative_spec.txt`.
+-   **Prompt Authoring**: As an AI, you must **NEVER** author or change the semantic content of the prompt assets. Only the maintainer can do this. You may only propose changes to the code that orchestrates these assets.
+-   **Provenance Keys**: The canonical keys are `stage_1_construct`, `stage_2_semantic`, `stage_3_combined_lensed`.
 
 ## Suggested Workflow for Changes
 
 1.  **Analyze the Request**: Understand whether the request involves changing the framework's mechanics (code) or its semantics (prompt assets).
 2.  **For Code Changes**: Read the relevant modules in `chirality/core/` and `chirality/lib/`. Propose changes that align with the existing canonical pipeline and asset-based architecture.
-3.  **For Semantic Changes**: Propose changes to the maintainer for the content of files in `chirality/prompt_assets/`. Do not edit these files directly. Reference the **Prompt Authoring Policy**.
+3.  **For Semantic Changes**: Remind the user that only they can author semantic content. If they provide new content, your job is to implement it by creating/updating the `.md` files and the `metadata.yml` manifest.
 4.  **Testing**: Ensure any proposed code changes are accompanied by updates to the tests in `tests/`. Use the mock/echo resolver for all tests.
 5.  **Validation**: Run `pytest -v`, `mypy`, and `black` locally before finalizing any proposal.
-
-## Common Pitfalls
-
-- Printing extra lines in app mode: ensure the CLI prints only the final JSON line on success.
-- Omitting `records/sha256/bytes` in the manifest: app ingestion requires these.
-- Writing to non‑atomic files: always write temp + `os.replace`.
-- Forgetting run‑relative paths in `index.json` (must be relative to `runs/<run_id>/`).
-
-## Immutable Files Policy
-- **Normative Specification**: Under no circumstances should you ever modify `chirality/normative_spec.txt`. The semantics of the framework are canonical and must not be changed. If you believe a change is required, you must notify the user and explain your reasoning. The user will be responsible for making any approved changes.
-
-## Prompt Authoring Policy
-- All prompts (including system prompts, station briefs, and any semantic instructions) are part of the normative specification.
-- Only the user (maintainer) may author or edit the semantic content of prompts. As an LLM agent, I must NEVER write or change prompt semantics.
-- I may only propose changes to prompt *structure* (e.g., variable interpolation, templating, or context assembly order) and must not implement them without explicit user direction.
-- Each station must have its own station brief to ground the LLM; the user authors these briefs. The E station brief is especially critical and is owned by the user.

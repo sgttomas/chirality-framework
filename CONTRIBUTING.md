@@ -11,6 +11,7 @@ Please understand that this project is not a general-purpose, extensible framewo
 ### Prerequisites
 - Python 3.9+
 - An OpenAI API key (set as the `OPENAI_API_KEY` environment variable for live tests)
+- **Note**: The framework uses OpenAI's Responses API exclusively and requires OpenAI SDK >=1.50.0
 
 ### Development Setup
 
@@ -39,7 +40,7 @@ The most valuable contributions will be those that improve the core algorithm, i
 The framework's reasoning, voice, and semantic interpretation are controlled exclusively by the maintainer through a series of version-controlled text files.
 
 -   **Location**: `chirality/prompt_assets/`
--   **Content**: This directory contains the `system.md` prompt, the `station/*.md` briefs, and the `ops/**/*.md` operator and lensing templates.
+-   **Content**: This directory contains the `system.md` prompt, the `station_briefs/*.md` files, and the operator and lensing templates in `ops/`.
 -   **Contribution Process**: As these files define the canonical semantics of the framework, they are not open to direct modification via pull requests. Contributions to the semantics should be proposed in GitHub Issues for discussion with the maintainer.
 
 ### Code Contributions (The "How")
@@ -52,8 +53,7 @@ Contributions to the code that orchestrates the semantic pipeline are welcome. T
     *   `strategies.py`: Defines the canonical order of assets to be used for each stage of the pipeline.
     *   `prompt_builder.py`: Assembles the final prompt messages based on the strategy and substitutes the required placeholders.
 *   **`chirality/core/llm_client.py`**: The exclusive wrapper for the OpenAI Responses API.
-*   **`chirality/core/cell_resolver.py`**: The refactored resolver. Its role is to orchestrate the process, using the `PromptBuilder` to get messages and the `llm_client` to get a result. See its new, canonical API in `docs/API_REFERENCE.md`.
-*   **`chirality/core/operations.py`**: The high-level orchestration layer. The `compute_cell_*` functions here define the steps of the canonical pipeline (e.g., Stage 2 multiplication followed by Stage 3 Combined Lensing).
+*   **`chirality/core/operations.py`**: The high-level orchestration layer. The `compute_cell_*` functions here define the steps of the canonical pipeline (e.g., Stage 2 multiplication followed by Stage 3 Combined Lensing). Note that the construction of Matrix D's input sentence is hard-coded here as a mechanical step.
 
 ### Testing Contributions
 

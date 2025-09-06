@@ -103,17 +103,25 @@ class PromptBuilder:
         Returns:
             List of message dicts for LLM API
         """
-        asset_ids = PromptStrategy.plan("combined_lens", component_id)
+        if component_id == "Z":
+            asset_ids = PromptStrategy.plan("shift", component_id)
+        else:
+            asset_ids = PromptStrategy.plan("combined_lens", component_id)
 
         # Get station brief content for inlining
         station_brief_id = PromptStrategy.get_station_brief_id(component_id)
         station_brief_text = self.registry.get_text(station_brief_id)
+        
+        # Get station metadata for station_id
+        station_meta = PromptStrategy.get_station_meta(component_id)
+        station_id = station_meta["name"]
 
         context = {
             "row_label": row_label,
             "col_label": col_label,
             "content": content,
             "station_brief": station_brief_text,
+            "station_id": station_id,
         }
 
         return self._build_messages(asset_ids, context)
@@ -121,6 +129,7 @@ class PromptBuilder:
     def _build_messages(self, asset_ids: list[str], context: Dict[str, Any]) -> list[Message]:
         """
         Build messages from asset IDs with placeholder substitution.
+        System prompt is prepended to all LLM calls.
 
         Args:
             asset_ids: List of asset IDs to assemble
@@ -134,11 +143,16 @@ class PromptBuilder:
 
         messages = []
 
+        # Always prepend system prompt to all Stage 2/3 calls
+        system_asset = self.registry.get("system")
+        system_content = self._substitute_placeholders(system_asset.text, context)
+        messages.append({"role": "user", "content": system_content.strip()})
+
         for i, asset_id in enumerate(asset_ids):
             asset = self.registry.get(asset_id)
             content = self._substitute_placeholders(asset.text, context)
 
-            # All messages are user role (no separate system message)
+            # All messages are user role
             role = "user"
             messages.append({"role": role, "content": content.strip()})
 

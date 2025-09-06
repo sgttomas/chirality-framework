@@ -68,18 +68,43 @@ class LLMClient:
 
         try:
             # CRITICAL: Use responses.create, NOT chat.completions.create
-            response = self.client.responses.create(
-                model=config.model,
-                prompt=prompt,
-                temperature=config.temperature,
-                top_p=config.top_p,
-                max_tokens=config.max_tokens,
-                seed=config.seed,
-                response_format=config.response_format,
-            )
+            # Build parameters for Responses API
+            params = {
+                "model": config.model,
+                "input": prompt,  # Responses API expects 'input' not 'prompt'
+                "temperature": config.temperature,
+                "top_p": config.top_p,
+                # NOTE: response_format not supported by Responses API (as of SDK 1.106.1)
+                # Relying on System Prompt's JSON Output Contract instead
+            }
+            
+            # Only add seed if specified
+            if config.seed is not None:
+                params["seed"] = config.seed
+                
+            # Optional: add max_output_tokens if needed (not max_tokens)
+            # if config.max_tokens is not None:
+            #     params["max_output_tokens"] = config.max_tokens
+                
+            response = self.client.responses.create(**params)
 
-            # Extract response text
-            response_text = response.choices[0].text or ""
+            # Extract response text using correct Responses API format
+            response_text = getattr(response, "output_text", None)
+            if not response_text:
+                # Fallback: concatenate text from output items
+                try:
+                    parts = []
+                    for item in getattr(response, "output", []) or []:
+                        # message items usually have .content -> list with .text
+                        for c in getattr(item, "content", []) or []:
+                            if hasattr(c, "text") and c.text:
+                                parts.append(c.text)
+                    response_text = "".join(parts)
+                except Exception:
+                    response_text = ""
+            
+            if not response_text:
+                response_text = ""
 
             # Parse JSON response
             import json
@@ -87,7 +112,14 @@ class LLMClient:
             try:
                 response_dict = json.loads(response_text)
             except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid JSON response: {e}\\nResponse: {response_text}")
+                # Include a truncated preview to aid triage without flooding logs
+                preview = (response_text or "")
+                max_preview = 2000  # chars
+                if len(preview) > max_preview:
+                    preview = preview[:max_preview] + "... [truncated]"
+                raise ValueError(
+                    f"Invalid JSON response: {e}\nPreview (truncated): {preview}"
+                ) from e
 
             # Build metadata
             latency_ms = int((time.time() - start_time) * 1000)
