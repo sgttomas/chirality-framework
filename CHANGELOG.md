@@ -5,6 +5,34 @@ All notable changes to the Chirality Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.0.0] - 2025-09-05
+
+### Added
+-   **Asset-Based Prompt System**: Introduced a new `chirality/prompt_assets/` directory to externalize all semantic content (system prompts, station briefs, operator instructions) into maintainer-authored markdown files.
+-   **Prompt Assembly Engine**: Added a new `chirality/lib/` module containing:
+    -   `PromptRegistry`: Loads and validates all prompt assets against a `metadata.yml` manifest, checking versions and SHA256 checksums.
+    -   `PromptBuilder`: Assembles prompts from assets according to a canonical pipeline.
+    -   `Strategies`: Defines the fixed order of asset assembly for each pipeline stage.
+-   **Dedicated LLM Client**: Added `llm_client.py` and `llm_config.py` to create a single, exclusive wrapper for the OpenAI Responses API and centralize model configuration.
+
+### Changed
+-   **Major Architectural Refactoring**: The core semantic pipeline has been completely rewritten.
+    -   Replaced the old 3-step lensing process (column, row, synthesis) with a single, unified **Combined Lensing** call for all interpretations.
+    -   The `CellResolver` class was completely refactored with a new, canonical API (`run_stage2_multiply`, `run_combined_lens`, etc.).
+    -   All `compute_cell_*` functions in `operations.py` were updated to use the new canonical pipeline.
+-   **Semantic Update**: The axiomatic matrices `A`, `B`, and `J` were updated with new canonical definitions.
+-   **API Correction**: The OpenAI API client was updated to exclusively use the `Responses` API, as per maintainer directive.
+-   **Provenance Schema**: Simplified the provenance structure to reflect the new pipeline, replacing the separate lensing stages with a single `stage_3_combined_lensed` field.
+
+### Removed
+-   **`chirality/core/prompts.py`**: This file has been deleted. All prompt content now lives as assets in `chirality/prompt_assets/`.
+-   **Old Lensing Logic**: Removed the `_perform_three_step_lensing` helper function and all associated code for the separate column/row/synthesis steps from the codebase.
+
+### BREAKING CHANGES
+
+-   The internal Python API for cell computation (specifically the methods in `CellResolver` and the structure of `operations.py`) has been completely redesigned and is not backward-compatible.
+-   The detailed 5-stage provenance structure previously exported is now obsolete and has been replaced by a simpler 3-stage structure. Any tools that consume trace or provenance data will need to be updated.
+
 ## [16.2.0] - 2025-09-04
 
 ### Fixed

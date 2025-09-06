@@ -1,0 +1,361 @@
+name: Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 16.4.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  validate-release:
+    name: Validate Release Readiness
+    runs-on: ubuntu-latest
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    
+    - name: Determine version
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION=${GITHUB_REF#refs/tags/v}
+        fi
+        
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        
+        # Check if this is a prerelease (contains alpha, beta, rc)
+        if [[ "$VERSION" =~ (alpha|beta|rc) ]]; then
+          echo "is_prerelease=true" >> $GITHUB_OUTPUT
+        else
+          echo "is_prerelease=false" >> $GITHUB_OUTPUT
+        fi
+        
+        echo "Release version: $VERSION"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]" 
+        pip install pyyaml
+    
+    - name: Validate prompt system integrity for release
+      run: |
+        echo "Validating prompt system for release readiness..."
+        python -c "
+        from chirality.lib.prompt_registry import PromptRegistry
+        from chirality.lib.strategies import PromptStrategy
+        import sys
+        
+        try:
+            # Validate registry loads
+            registry = PromptRegistry()
+            registry.load()
+            assets = registry.list_assets()
+            print(f'✓ Prompt registry: {len(assets)} assets loaded')
+            
+            # Validate all components have complete pipelines
+            components = ['C', 'D', 'F', 'X', 'Z', 'E']
+            for component in components:
+                try:
+                    pipeline = PromptStrategy.get_pipeline_stages(component)
+                    station = PromptStrategy.get_station_brief_id(component)
+                    operator = PromptStrategy.get_stage2_operator(component)
+                    print(f'✓ Component {component}: pipeline={len(pipeline)} stages, station={station.split(\".\")[1]}, operator={operator or \"None\"}')
+                except Exception as e:
+                    print(f'✗ Component {component} validation failed: {e}')
+                    sys.exit(1)
+            
+            print('✓ All components validated for release')
+            
+        except Exception as e:
+            print(f'✗ Prompt system validation failed: {e}')
+            sys.exit(1)
+        "
+    
+    - name: Validate version consistency
+      run: |
+        echo "Validating version consistency across project files..."
+        VERSION="${{ steps.version.outputs.version }}"
+        
+        # Check if version exists in key files (if they have version info)
+        echo "Target version: $VERSION"
+        
+        # Validate that we can import the package
+        python -c "
+        import chirality
+        from chirality.lib.strategies import PromptStrategy
+        from chirality.lib.prompt_registry import PromptRegistry
+        print('✓ Package imports successfully')
+        print('✓ New prompt system components available')
+        "
+
+  run-tests:
+    name: Full Test Suite
+    runs-on: ubuntu-latest
+    needs: validate-release
+    
+    strategy:
+      matrix:
+        test-suite:
+          - "Architecture Tests"
+          - "Core Framework Tests"  
+          - "CLI Tests"
+          - "Integration Tests"
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install pytest pyyaml
+    
+    - name: Run Architecture Tests
+      if: matrix.test-suite == 'Architecture Tests'
+      run: |
+        pytest tests/lib/test_strategies.py -v
+        pytest tests/integration/test_prompt_system_integration.py -v
+    
+    - name: Run Core Framework Tests
+      if: matrix.test-suite == 'Core Framework Tests'
+      run: |
+        pytest tests/core/test_operations.py -v
+        pytest tests/exporters/ -v
+    
+    - name: Run CLI Tests
+      if: matrix.test-suite == 'CLI Tests'
+      run: |
+        pytest tests/test_cli.py -v
+        python -m chirality.cli info
+        python -m chirality.cli compute-cell C --i 0 --j 0 --resolver echo
+    
+    - name: Run Integration Tests
+      if: matrix.test-suite == 'Integration Tests'
+      run: |
+        pytest tests/test_api_compliance.py -v
+        # Additional integration tests as they're added
+
+  build-artifacts:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    needs: [validate-release, run-tests]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    
+    - name: Install build tools
+      run: |
+        python -m pip install --upgrade pip build twine
+    
+    - name: Build packages
+      run: |
+        python -m build
+    
+    - name: Verify build artifacts
+      run: |
+        echo "Built packages:"
+        ls -la dist/
+        
+        # Verify the wheel can be installed
+        pip install dist/*.whl
+        python -c "
+        import chirality
+        from chirality.lib.strategies import PromptStrategy
+        print('✓ Wheel installation successful')
+        print('✓ New prompt system available')
+        
+        # Test basic functionality
+        components = PromptStrategy.get_pipeline_stages('C')
+        print(f'✓ Component C pipeline: {components}')
+        "
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-${{ needs.validate-release.outputs.version }}
+        path: dist/
+
+  create-github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate-release, run-tests, build-artifacts]
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist-${{ needs.validate-release.outputs.version }}
+        path: dist/
+    
+    - name: Generate release notes
+      id: release-notes
+      run: |
+        VERSION="${{ needs.validate-release.outputs.version }}"
+        
+        cat > RELEASE_NOTES.md << EOF
+        # Chirality Framework v${VERSION}
+        
+        ## New Prompt System Architecture
+        
+        This release introduces a major refactoring of the prompt system architecture with the following key improvements:
+        
+        ### 🏗️ **Maintainer-Authored Prompt Assets**
+        - All semantic prompts now come from maintainer-authored assets in \`chirality/prompt_assets/\`
+        - Strong provenance tracking with SHA256 checksums and version control
+        - Immutable semantic content ensures consistent framework behavior
+        
+        ### 🔄 **Combined Lensing System**  
+        - Replaces three-stage lensing (column → row → synthesis) with unified combined lensing
+        - Single API call per lensing operation reduces complexity and improves performance
+        - Universal lensing approach works across all matrix operations (C, D, F, X, Z, E)
+        
+        ### 🎯 **Component-Station Architecture**
+        - Clean separation between framework components (C, D, F, X, Z, E) and semantic valley stations
+        - Components map deterministically to appropriate station briefs (Requirements, Objectives, Verification, Validation, Evaluation)
+        - Eliminates architectural confusion between artifacts and semantic locations
+        
+        ### ⚡ **OpenAI Responses API Integration**
+        - **CRITICAL**: Framework now uses OpenAI Responses API exclusively (not Chat Completions)  
+        - Direct prompt control without message role abstractions
+        - Consistent JSON response format for all LLM interactions
+        
+        ### 📊 **Enhanced Provenance & Tracing**
+        - Complete asset provenance tracking (ID, SHA256, version) for all LLM calls
+        - Combined lensing metadata includes both primary assets and inlined station briefs
+        - Improved observability for semantic operations
+        
+        ### 🧪 **Comprehensive Test Coverage**
+        - New integration tests validate complete prompt system architecture
+        - Strategy tests ensure correct component-to-station mappings  
+        - API compliance tests prevent regression to prohibited Chat Completions usage
+        
+        ### 🚀 **Semantic Sovereignty**
+        - Framework enforces that only maintainers can author semantic content
+        - AI assistants can modify prompt structuring but never semantic meaning
+        - Preserves the canonical nature of the Chirality Framework's interpretation pipeline
+        
+        ## Breaking Changes
+        
+        - **Prompt System**: Old \`chirality/core/prompts.py\` is deprecated in favor of asset-based system
+        - **API Changes**: CellResolver now uses \`run_combined_lens()\` instead of separate lensing methods
+        - **OpenAI Integration**: Must use Responses API - Chat Completions API calls will fail
+        
+        ## Migration Guide
+        
+        For users upgrading from previous versions:
+        
+        1. **API Keys**: Ensure your OpenAI API key supports Responses API
+        2. **Custom Resolvers**: Update any custom resolver implementations to use combined lensing
+        3. **Prompt Customization**: Use prompt assets in \`chirality/prompt_assets/\` instead of modifying prompts.py
+        
+        ## Installation
+        
+        \`\`\`bash
+        pip install chirality-framework==${VERSION}
+        \`\`\`
+        
+        ## Verification
+        
+        Test the new architecture:
+        \`\`\`bash
+        python -m chirality.cli info
+        python -m chirality.cli compute-cell C --i 0 --j 0 --resolver echo --verbose
+        \`\`\`
+        
+        ---
+        
+        **Full Changelog**: https://github.com/anthropics/chirality-framework/compare/v16.3.0...v${VERSION}
+        EOF
+        
+        echo "Generated release notes for version ${VERSION}"
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ needs.validate-release.outputs.version }}
+        name: Chirality Framework v${{ needs.validate-release.outputs.version }}
+        body_path: RELEASE_NOTES.md
+        prerelease: ${{ needs.validate-release.outputs.is_prerelease }}
+        files: |
+          dist/*.whl
+          dist/*.tar.gz
+        generate_release_notes: false
+        
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [validate-release, run-tests, build-artifacts, create-github-release]
+    environment: release
+    
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist-${{ needs.validate-release.outputs.version }}
+        path: dist/
+    
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        verbose: true
+        
+  post-release:
+    name: Post-Release Tasks
+    runs-on: ubuntu-latest
+    needs: [validate-release, publish-pypi]
+    if: always()
+    
+    steps:
+    - name: Release Summary
+      run: |
+        VERSION="${{ needs.validate-release.outputs.version }}"
+        IS_PRERELEASE="${{ needs.validate-release.outputs.is_prerelease }}"
+        
+        echo "## 🎉 Release Summary"
+        echo "Version: v${VERSION}"
+        echo "Prerelease: ${IS_PRERELEASE}"
+        echo "PyPI: ${{ needs.publish-pypi.result }}"
+        
+        if [[ "${{ needs.publish-pypi.result }}" == "success" ]]; then
+          echo "✅ Successfully published to PyPI"
+          echo "📦 Install with: pip install chirality-framework==${VERSION}"
+        else
+          echo "❌ PyPI publication failed"
+        fi

@@ -10,6 +10,7 @@ from .types import Cell, Matrix
 
 class FrameworkValidationError(ValueError):
     """Raised when framework validation rules are violated."""
+
     pass
 
 
@@ -59,9 +60,13 @@ def validate_matrix(matrix: Matrix) -> List[str]:
         errors.append("Matrix missing station")
 
     # Labels
-    if not isinstance(matrix.row_labels, list) or not all(isinstance(x, str) for x in matrix.row_labels):
+    if not isinstance(matrix.row_labels, list) or not all(
+        isinstance(x, str) for x in matrix.row_labels
+    ):
         errors.append("row_labels must be list[str]")
-    if not isinstance(matrix.col_labels, list) or not all(isinstance(x, str) for x in matrix.col_labels):
+    if not isinstance(matrix.col_labels, list) or not all(
+        isinstance(x, str) for x in matrix.col_labels
+    ):
         errors.append("col_labels must be list[str]")
 
     rows, cols = matrix.shape
@@ -74,7 +79,9 @@ def validate_matrix(matrix: Matrix) -> List[str]:
     else:
         for r, row in enumerate(matrix.cells):
             if not isinstance(row, list) or len(row) != cols:
-                errors.append(f"row {r} length mismatch: expected {cols}, got {len(row) if isinstance(row, list) else 'not a list'}")
+                errors.append(
+                    f"row {r} length mismatch: expected {cols}, got {len(row) if isinstance(row, list) else 'not a list'}"
+                )
                 break
 
     # Label vs shape coherence
@@ -93,68 +100,72 @@ def validate_matrix(matrix: Matrix) -> List[str]:
             # Validate individual cell
             cell_errors = validate_cell(cell)
             errors.extend([f"Cell ({i},{j}): {e}" for e in cell_errors])
-            
+
             # Check that cell position matches its array indices
             if cell.row != i or cell.col != j:
-                errors.append(f"Cell at [{i}][{j}] has mismatched position: ({cell.row}, {cell.col})")
-            
+                errors.append(
+                    f"Cell at [{i}][{j}] has mismatched position: ({cell.row}, {cell.col})"
+                )
+
             # Check bounds (redundant but thorough)
             if cell.row >= rows or cell.col >= cols:
                 errors.append(f"Cell ({i},{j}) out of bounds: ({cell.row}, {cell.col})")
-            
+
             # Check duplicates
             pos = (cell.row, cell.col)
             if pos in cell_positions:
                 errors.append(f"Duplicate cell at position {pos}")
             cell_positions.add(pos)
-    
-    return errors
 
+    return errors
 
 
 def validate_provenance(cell: Cell) -> List[str]:
     """
     Validate provenance tracking for a cell.
-    
+
     Validates strictly against the canonical provenance schema.
-    
+
     Args:
         cell: Cell to validate
-    
+
     Returns:
         List of validation errors
     """
     errors = []
-    
+
     if not cell.provenance:
         errors.append("Cell missing provenance")
         return errors
-    
+
     # Check required provenance fields (canonical schema)
     if "operation" not in cell.provenance:
         errors.append("Provenance missing operation type")
-    
+
     if "sources" not in cell.provenance:
         errors.append("Provenance missing sources list")
     elif not isinstance(cell.provenance["sources"], list):
         errors.append("Provenance sources must be a list")
-    
+
     if "timestamp" not in cell.provenance:
         errors.append("Provenance missing timestamp")
-    
+
     # Validate operation-specific fields if operation is known
     operation = cell.provenance.get("operation")
-    # Universal provenance validation for all matrices
+    # Combined lensing provenance validation for all matrices (new architecture)
     if operation in ["compute_C", "compute_F", "compute_D", "compute_X", "compute_E"]:
-        required_fields = ["stage_1_construct", "stage_2_semantic", "stage_3_column_lensed", "stage_4_row_lensed", "stage_5_final_synthesis"]
+        required_fields = ["stage_1_construct", "stage_2_semantic", "stage_3_combined_lensed"]
         for field in required_fields:
             if field not in cell.provenance:
                 errors.append(f"{operation} provenance missing {field}")
     elif operation == "compute_Z":
         # Matrix Z uses lean 2-stage provenance structure
-        required_fields = ["stage_1_construct", "stage_2_semantic"]
+        required_fields = ["stage_1_construct", "stage_2_semantic", "stage_3_combined_lensed"]
         for field in required_fields:
             if field not in cell.provenance:
                 errors.append(f"{operation} provenance missing {field}")
-    
+        # Z should have empty stage_3_combined_lensed
+        if cell.provenance.get("stage_3_combined_lensed") != {}:
+            errors.append("compute_Z should have empty stage_3_combined_lensed")
+
     return errors

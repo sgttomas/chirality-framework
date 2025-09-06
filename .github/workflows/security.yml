@@ -1,0 +1,350 @@
+name: Security Audit
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Mondays at 6 AM UTC
+  push:
+    branches: [ main ]
+    paths:
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/security.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-audit:
+    name: Dependency Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    
+    - name: Install audit tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety pip-audit bandit[toml]
+    
+    - name: Install project dependencies
+      run: |
+        pip install -e ".[dev]"
+    
+    - name: Run Safety (PyUp.io vulnerability database)
+      run: |
+        echo "## Safety Security Audit" >> security-report.md
+        safety check --json > safety-report.json || true
+        
+        if [[ -s safety-report.json ]]; then
+          echo "⚠️ Safety found potential vulnerabilities:" >> security-report.md
+          python -c "
+          import json
+          with open('safety-report.json') as f:
+              data = json.load(f)
+          for vuln in data:
+              print(f\"- {vuln['package']}: {vuln['advisory']}\")
+          " >> security-report.md
+        else
+          echo "✅ No known vulnerabilities found by Safety" >> security-report.md
+        fi
+    
+    - name: Run pip-audit (OSV vulnerability database)
+      run: |
+        echo "" >> security-report.md
+        echo "## pip-audit Security Scan" >> security-report.md
+        pip-audit --format=json --output=pip-audit-report.json || true
+        
+        if [[ -s pip-audit-report.json && "$(cat pip-audit-report.json)" != "[]" ]]; then
+          echo "⚠️ pip-audit found vulnerabilities:" >> security-report.md
+          python -c "
+          import json
+          with open('pip-audit-report.json') as f:
+              data = json.load(f)
+          for item in data:
+              print(f\"- {item['package']}: {item['description']}\")
+          " >> security-report.md
+        else
+          echo "✅ No vulnerabilities found by pip-audit" >> security-report.md
+        fi
+    
+    - name: Upload security report
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-audit-dependencies
+        path: |
+          security-report.md
+          safety-report.json
+          pip-audit-report.json
+
+  code-security-scan:
+    name: Code Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    
+    - name: Install Bandit
+      run: pip install bandit[toml]
+    
+    - name: Run Bandit security linter
+      run: |
+        echo "Running Bandit security analysis..."
+        bandit -r chirality/ -f json -o bandit-report.json || true
+        bandit -r chirality/ -f txt > bandit-report.txt || true
+        
+        echo "## Bandit Code Security Scan" > code-security-report.md
+        
+        if [[ -s bandit-report.json ]]; then
+          # Check if there are actual issues (not just empty results)
+          ISSUES=$(python -c "
+          import json
+          with open('bandit-report.json') as f:
+              data = json.load(f)
+          print(len(data.get('results', [])))
+          ")
+          
+          if [[ "$ISSUES" -gt 0 ]]; then
+            echo "⚠️ Bandit found $ISSUES potential security issues:" >> code-security-report.md
+            echo '```' >> code-security-report.md
+            cat bandit-report.txt >> code-security-report.md
+            echo '```' >> code-security-report.md
+          else
+            echo "✅ No security issues found by Bandit" >> code-security-report.md
+          fi
+        else
+          echo "✅ Bandit scan completed successfully" >> code-security-report.md
+        fi
+    
+    - name: Upload code security report
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-audit-code
+        path: |
+          code-security-report.md
+          bandit-report.json
+          bandit-report.txt
+
+  semantic-integrity-audit:
+    name: Semantic Integrity Security
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install pyyaml
+    
+    - name: Audit prompt asset integrity
+      run: |
+        echo "# Semantic Integrity Security Audit" > semantic-security-report.md
+        echo "" >> semantic-security-report.md
+        
+        python -c "
+        from chirality.lib.prompt_registry import PromptRegistry
+        from pathlib import Path
+        import hashlib
+        import sys
+        
+        print('## Prompt Asset Integrity Check')
+        print('')
+        
+        try:
+            registry = PromptRegistry()
+            registry.load()
+            assets = registry.list_assets()
+            
+            print(f'✅ Successfully loaded {len(assets)} prompt assets')
+            print('')
+            
+            # Verify checksums
+            print('### Asset Checksum Verification')
+            for asset_id in assets:
+                asset = registry.get(asset_id)
+                computed_hash = hashlib.sha256(asset.text.encode('utf-8')).hexdigest()
+                if computed_hash == asset.sha256:
+                    print(f'✅ {asset_id}: checksum verified ({asset.sha256[:8]}...)')
+                else:
+                    print(f'❌ {asset_id}: CHECKSUM MISMATCH!')
+                    print(f'   Expected: {asset.sha256}')
+                    print(f'   Computed: {computed_hash}')
+                    sys.exit(1)
+            
+            print('')
+            print('### Asset Content Security')
+            
+            # Check for potential injection patterns in assets
+            suspicious_patterns = [
+                ('eval(', 'Python code execution'),
+                ('exec(', 'Python code execution'), 
+                ('__import__', 'Dynamic imports'),
+                ('subprocess', 'System command execution'),
+                ('os.system', 'System command execution'),
+                ('<script', 'JavaScript injection'),
+                ('javascript:', 'JavaScript protocol'),
+                ('data:text/html', 'HTML data URI')
+            ]
+            
+            security_issues = []
+            for asset_id in assets:
+                asset = registry.get(asset_id)
+                content_lower = asset.text.lower()
+                
+                for pattern, description in suspicious_patterns:
+                    if pattern in content_lower:
+                        security_issues.append(f'{asset_id}: {description} ({pattern})')
+            
+            if security_issues:
+                print('❌ Security Issues Found:')
+                for issue in security_issues:
+                    print(f'  - {issue}')
+                sys.exit(1)
+            else:
+                print('✅ No security issues found in prompt assets')
+            
+        except Exception as e:
+            print(f'❌ Semantic integrity audit failed: {e}')
+            sys.exit(1)
+        " >> semantic-security-report.md
+        
+        echo "" >> semantic-security-report.md
+    
+    - name: Check for API key exposure
+      run: |
+        echo "## API Key Exposure Check" >> semantic-security-report.md
+        echo "" >> semantic-security-report.md
+        
+        # Check for potential API key patterns
+        if grep -r -i "sk-[a-zA-Z0-9]" . --exclude-dir=.git --exclude="*.pyc" --exclude-dir=__pycache__ || \
+           grep -r -i "api[_-]key.*=" . --exclude-dir=.git --exclude="*.pyc" --exclude-dir=__pycache__ || \
+           grep -r -i "openai[_-]api[_-]key" . --exclude-dir=.git --exclude="*.pyc" --exclude-dir=__pycache__; then
+          echo "❌ Potential API keys or secrets found in repository!" >> semantic-security-report.md
+          echo "⚠️ Please review and remove any exposed credentials." >> semantic-security-report.md
+        else
+          echo "✅ No exposed API keys detected" >> semantic-security-report.md
+        fi
+    
+    - name: Validate OpenAI API compliance
+      run: |
+        echo "" >> semantic-security-report.md
+        echo "## OpenAI API Compliance Check" >> semantic-security-report.md
+        echo "" >> semantic-security-report.md
+        
+        # Check for prohibited Chat Completions API usage
+        if grep -r "chat\.completions\.create" chirality/ --include="*.py"; then
+          echo "❌ CRITICAL: Prohibited Chat Completions API usage found!" >> semantic-security-report.md
+          echo "This violates the Chirality Framework's architectural requirements." >> semantic-security-report.md
+          exit 1
+        else
+          echo "✅ No prohibited Chat Completions API usage found" >> semantic-security-report.md
+        fi
+        
+        # Verify correct Responses API usage
+        if grep -r "responses\.create" chirality/ --include="*.py"; then
+          echo "✅ Correct Responses API usage confirmed" >> semantic-security-report.md
+        else
+          echo "ℹ️ No Responses API usage found (may be expected)" >> semantic-security-report.md
+        fi
+    
+    - name: Upload semantic security report
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-audit-semantic
+        path: semantic-security-report.md
+
+  security-summary:
+    name: Security Audit Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, code-security-scan, semantic-integrity-audit]
+    if: always()
+    
+    steps:
+    - name: Download all security reports
+      uses: actions/download-artifact@v4
+    
+    - name: Generate security summary
+      run: |
+        echo "# 🔒 Security Audit Summary" > SECURITY_SUMMARY.md
+        echo "" >> SECURITY_SUMMARY.md
+        echo "**Date:** $(date -u)" >> SECURITY_SUMMARY.md
+        echo "**Repository:** ${{ github.repository }}" >> SECURITY_SUMMARY.md
+        echo "**Commit:** ${{ github.sha }}" >> SECURITY_SUMMARY.md
+        echo "" >> SECURITY_SUMMARY.md
+        
+        echo "## 📊 Audit Results" >> SECURITY_SUMMARY.md
+        echo "" >> SECURITY_SUMMARY.md
+        echo "| Audit Type | Status |" >> SECURITY_SUMMARY.md
+        echo "|------------|--------|" >> SECURITY_SUMMARY.md
+        echo "| Dependencies | ${{ needs.dependency-audit.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> SECURITY_SUMMARY.md
+        echo "| Code Security | ${{ needs.code-security-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> SECURITY_SUMMARY.md
+        echo "| Semantic Integrity | ${{ needs.semantic-integrity-audit.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> SECURITY_SUMMARY.md
+        echo "" >> SECURITY_SUMMARY.md
+        
+        # Include individual reports if they exist
+        if [[ -f security-audit-dependencies/security-report.md ]]; then
+          echo "## 📦 Dependency Audit" >> SECURITY_SUMMARY.md
+          cat security-audit-dependencies/security-report.md >> SECURITY_SUMMARY.md
+          echo "" >> SECURITY_SUMMARY.md
+        fi
+        
+        if [[ -f security-audit-code/code-security-report.md ]]; then
+          echo "## 🔍 Code Security Analysis" >> SECURITY_SUMMARY.md
+          cat security-audit-code/code-security-report.md >> SECURITY_SUMMARY.md
+          echo "" >> SECURITY_SUMMARY.md
+        fi
+        
+        if [[ -f security-audit-semantic/semantic-security-report.md ]]; then
+          echo "## 🧠 Semantic Integrity Audit" >> SECURITY_SUMMARY.md
+          cat security-audit-semantic/semantic-security-report.md >> SECURITY_SUMMARY.md
+          echo "" >> SECURITY_SUMMARY.md
+        fi
+        
+        echo "## 🔧 Recommended Actions" >> SECURITY_SUMMARY.md
+        echo "" >> SECURITY_SUMMARY.md
+        
+        if [[ "${{ needs.dependency-audit.result }}" != "success" ]]; then
+          echo "- 🚨 Review dependency vulnerabilities and update affected packages" >> SECURITY_SUMMARY.md
+        fi
+        
+        if [[ "${{ needs.code-security-scan.result }}" != "success" ]]; then
+          echo "- 🚨 Address code security issues identified by static analysis" >> SECURITY_SUMMARY.md
+        fi
+        
+        if [[ "${{ needs.semantic-integrity-audit.result }}" != "success" ]]; then
+          echo "- 🚨 Fix semantic integrity violations in prompt assets" >> SECURITY_SUMMARY.md
+        fi
+        
+        if [[ "${{ needs.dependency-audit.result }}" == "success" && "${{ needs.code-security-scan.result }}" == "success" && "${{ needs.semantic-integrity-audit.result }}" == "success" ]]; then
+          echo "✅ All security audits passed - no immediate action required" >> SECURITY_SUMMARY.md
+        fi
+        
+        echo "" >> SECURITY_SUMMARY.md
+        echo "---" >> SECURITY_SUMMARY.md
+        echo "*This report was generated automatically by the Chirality Framework Security Pipeline*" >> SECURITY_SUMMARY.md
+        
+        cat SECURITY_SUMMARY.md
+    
+    - name: Upload comprehensive security summary
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-audit-summary
+        path: SECURITY_SUMMARY.md

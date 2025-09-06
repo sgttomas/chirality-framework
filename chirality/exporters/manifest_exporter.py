@@ -130,4 +130,3 @@ class ManifestExporter:
             f.write("\n")
         os.replace(tmp, manifest_path)
         return manifest_path
-

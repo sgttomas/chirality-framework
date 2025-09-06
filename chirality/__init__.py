@@ -12,6 +12,7 @@ for computing the entire pipeline and visualizing the results.
 
 # Read version from VERSION.md (single source of truth)
 from pathlib import Path
+
 try:
     version_path = Path(__file__).parent.parent / "VERSION.md"
     with open(version_path, "r") as f:

@@ -1,84 +1,168 @@
 """
-Clean resolvers for Chirality Framework v16.0.0 semantic calculator.
+Clean resolvers for Chirality Framework with new prompt system architecture.
 
 Contains only the essential EchoResolver for testing purposes.
 All production semantic resolution goes through the CellResolver.
 """
 
-from .context import SemanticContext
+from typing import List
 from .types import RichResult
 
 
 class EchoResolver:
     """
     Deterministic, zero-LLM resolver for testing.
-    
-    Returns predictable outputs that match the CellResolver interface.
-    Perfect for testing the 3-stage pipeline without LLM calls.
+
+    Returns predictable outputs that match the new CellResolver interface.
+    Perfect for testing the prompt system architecture without LLM calls.
     """
-    
-    def resolve_semantic_pair(self, pair: str, context: SemanticContext) -> RichResult:
+
+    def run_stage2_multiply(self, terms: List[str], component_id: str = "C") -> RichResult:
         """
-        Mock semantic multiplication - reverses the order of terms.
-        
+        Mock Stage 2 semantic multiplication.
+
         Args:
-            pair: String like "term1 * term2"
-            context: Full semantic context (ignored in mock)
-            
+            terms: List of terms for multiplication (typically 2 items)
+            component_id: Matrix component for strategy selection
+
         Returns:
-            Reversed terms as mock resolution
+            RichResult with mock multiplication result
         """
-        if " * " in pair:
-            left, right = pair.split(" * ", 1)
-            text = f"{right} {left}"
-            terms = [left, right]
+        if len(terms) >= 2:
+            # Reverse order as deterministic mock behavior
+            text = f"{terms[1]} × {terms[0]}"
+            used_terms = terms[:2]
         else:
-            text = f"Resolved({pair})"
-            terms = [pair]
-        
+            text = f"MULTIPLY({', '.join(terms)})"
+            used_terms = terms
+
         return RichResult(
             text=text,
-            terms_used=terms,
+            terms_used=used_terms,
             warnings=[],
-            metadata={"modelId": "echo_resolver"}
+            metadata={
+                "resolver": "echo",
+                "operation": "stage2_multiply",
+                "component": component_id,
+            },
         )
-    
-    def apply_column_lens(self, content: str, context: SemanticContext) -> RichResult:
-        """Mock column lens - adds column label."""
-        return RichResult(
-            text=f"COL[{context.col_label}]: {content}",
-            terms_used=[content],
-            warnings=[],
-            metadata={"modelId": "echo_resolver"}
-        )
-    
-    def apply_row_lens(self, content: str, context: SemanticContext) -> RichResult:
-        """Mock row lens - adds row label."""  
-        return RichResult(
-            text=f"ROW[{context.row_label}]: {content}",
-            terms_used=[content],
-            warnings=[],
-            metadata={"modelId": "echo_resolver"}
-        )
-    
-    def synthesize_lensed_perspectives(self, column_perspective: str, row_perspective: str, context: SemanticContext) -> RichResult:
-        """Mock final synthesis - combines both perspectives."""
-        return RichResult(
-            text=f"SYN[{column_perspective} | {row_perspective}]",
-            terms_used=[column_perspective, row_perspective],
-            warnings=[],
-            metadata={"modelId": "echo_resolver"}
-        )
-    
-    def shift_station_context(self, content: str, context: SemanticContext) -> RichResult:
+
+    def run_stage2_elementwise(self, terms: List[str], component_id: str = "F") -> RichResult:
         """
-        Mock station shift - transforms verification to validation context.
-        
-        Following colleague_1's guidance for clear Validation-oriented output with coordinates.
+        Mock Stage 2 element-wise multiplication.
+
+        Args:
+            terms: List of terms for element-wise operation
+            component_id: Matrix component for strategy selection
+
+        Returns:
+            RichResult with mock element-wise result
         """
+        if len(terms) >= 2:
+            text = f"{terms[0]} ⊙ {terms[1]}"
+            used_terms = terms[:2]
+        else:
+            text = f"ELEMENTWISE({', '.join(terms)})"
+            used_terms = terms
+
         return RichResult(
-            text=f"VALIDATION[{context.row_label},{context.col_label}]: {content}",
+            text=text,
+            terms_used=used_terms,
+            warnings=[],
+            metadata={
+                "resolver": "echo",
+                "operation": "stage2_elementwise",
+                "component": component_id,
+            },
+        )
+
+    def run_stage2_addition(self, parts: List[str], component_id: str = "D") -> str:
+        """
+        Mock Stage 2 mechanical addition (Matrix D).
+
+        This is mechanical string construction, no LLM call.
+
+        Args:
+            parts: List of parts to concatenate
+            component_id: Matrix component (should be 'D')
+
+        Returns:
+            Constructed sentence string
+        """
+        if len(parts) == 2:
+            return f"{parts[0]} applied to frame the problem; {parts[1]} to resolve the problem."
+        else:
+            return f"ADDITION({' + '.join(parts)})"
+
+    def run_combined_lens(
+        self, content: str, component_id: str, row_label: str, col_label: str
+    ) -> RichResult:
+        """
+        Mock combined ontological lensing (row × col × station).
+
+        This replaces the old three-step lensing process with a single
+        unified semantic operation.
+
+        Args:
+            content: Stage 2 content to interpret
+            component_id: Matrix component ('C', 'D', 'F', 'X', 'Z', 'E')
+            row_label: Row ontology name
+            col_label: Column ontology name
+
+        Returns:
+            RichResult with mock combined lensing result
+        """
+        # Map components to stations for mock output
+        station_map = {
+            "C": "Requirements",
+            "D": "Objectives",
+            "F": "Objectives",
+            "X": "Verification",
+            "Z": "Validation",
+            "E": "Evaluation",
+        }
+
+        station = station_map.get(component_id, "Unknown")
+
+        # Generate deterministic mock combined lensing output
+        text = f"[{station}] {row_label} × {col_label}: {content}"
+
+        return RichResult(
+            text=text,
             terms_used=[content],
             warnings=[],
-            metadata={"modelId": "echo_resolver"}
+            metadata={
+                "resolver": "echo",
+                "operation": "combined_lens",
+                "component": component_id,
+                "station": station,
+                "row_label": row_label,
+                "col_label": col_label,
+            },
+        )
+
+    def run_shift(self, content: str, component_id: str = "Z") -> RichResult:
+        """
+        Mock station context shift (Verification → Validation).
+
+        Used for Matrix Z transformation.
+
+        Args:
+            content: Verification content to transform
+            component_id: Matrix component (should be 'Z')
+
+        Returns:
+            RichResult with mock shifted content
+        """
+        if component_id != "Z":
+            raise ValueError(f"Shift operation only valid for component Z, got {component_id}")
+
+        # Mock shift from verification to validation context
+        text = f"VALIDATION_SHIFT: {content}"
+
+        return RichResult(
+            text=text,
+            terms_used=[content],
+            warnings=[],
+            metadata={"resolver": "echo", "operation": "shift", "component": component_id},
         )

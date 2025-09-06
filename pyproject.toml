@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chirality-framework"
-version = "16.3.0"
+version = "17.0.0"
 description = "A semantic calculator for executing a canonical, multi-stage pipeline for structured problem-solving and knowledge generation."
 readme = "README.md"
 keywords = ["llm", "ontology", "semantic computing", "pipeline orchestration", "static site generator", "knowledge generation"]
@@ -31,7 +31,8 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     "click>=8.0.0",
-    "python-dotenv>=1.0.0"
+    "python-dotenv>=1.0.0",
+    "PyYAML>=6.0"
 ]
 
 [project.optional-dependencies]

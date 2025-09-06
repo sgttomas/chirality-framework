@@ -13,12 +13,14 @@ The Chirality Framework is a "semantic calculator" designed to execute a fixed, 
 
 The value of this project is in the unique, insightful **output** of the calculation and the **observability** of the process, not in the flexibility of the code.
 
-## Core Concept: The Semantic Valley Pipeline
+## Core Concept: The Canonical Pipeline
 
 The framework computes a sequence of matrices, each representing a station in the semantic valley. The primary operations involve:
-1.  **Semantic Dot Product:** A multi-stage process involving mechanical term combination, LLM-driven semantic resolution, and ontological lensing.
-2.  **Station Shifting:** An LLM-driven transformation of a matrix from one context (e.g., Verification) to another (e.g., Validation).
-3.  **Structural Operations:** Standard matrix operations like transposing and slicing.
+1.  **Semantic Dot Product:** A two-stage LLM process involving:
+    a.  **Semantic Resolution:** Raw terms are resolved into a concise conceptual summary.
+    b.  **Combined Ontological Lensing:** The conceptual summary is interpreted through a unified lens of the cell's row, column, and station context in a single, powerful LLM call.
+2.  **Station Shifting:** An LLM-driven transformation of a matrix from one context (e.g., Verification) to another (e.g., Validation), also performed using the Combined Lensing pipeline.
+3.  **Structural Operations:** Standard matrix operations like transposing and slicing, which do not involve an LLM.
 
 For a complete technical description, see the **[Canonical Algorithm Documentation](docs/ALGORITHM.md)**.
 
@@ -134,7 +136,7 @@ python3 -m chirality.cli compute-matrix A --snapshot-jsonl
 ```
 
 ### Inspecting a Single Cell
-For detailed debugging, the `compute-cell` command lets you observe the full multi-stage pipeline for any single cell in a matrix.
+For detailed debugging, the `compute-cell` command lets you observe the new canonical pipeline for any single cell in a matrix.
 
 ```bash
 # Observe the computation of cell C[0,0] with verbose output

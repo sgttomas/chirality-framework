@@ -35,4 +35,3 @@ def test_write_matrix_cells_jsonl(tmp_path: Path):
     assert first["text"] == "v00"
     assert first["citations"] == [] and first["refs"] == []
     assert isinstance(first["meta"].get("order"), int)
-

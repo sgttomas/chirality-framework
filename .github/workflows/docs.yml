@@ -1,0 +1,376 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'chirality/prompt_assets/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  validate-docs:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install pyyaml markdown
+    
+    - name: Validate README structure
+      run: |
+        echo "Validating README.md structure..."
+        if [[ ! -f README.md ]]; then
+          echo "❌ README.md not found!"
+          exit 1
+        fi
+        
+        # Check for required sections
+        REQUIRED_SECTIONS=(
+          "# Chirality Framework"
+          "## Installation"
+          "## Quick Start"
+          "## New Prompt System Architecture"
+        )
+        
+        for section in "${REQUIRED_SECTIONS[@]}"; do
+          if ! grep -q "$section" README.md; then
+            echo "❌ Missing required section: $section"
+            exit 1
+          fi
+        done
+        
+        echo "✅ README.md structure validated"
+    
+    - name: Check documentation links
+      run: |
+        echo "Checking internal documentation links..."
+        
+        # Find all markdown files
+        find docs/ -name "*.md" -type f > doc_files.txt || true
+        
+        if [[ -s doc_files.txt ]]; then
+          # Check for broken internal links
+          while read -r doc_file; do
+            echo "Checking links in $doc_file..."
+            
+            # Extract markdown links
+            grep -o '\[.*\](.*\.md)' "$doc_file" | while read -r link; do
+              # Extract the file path from the link
+              filepath=$(echo "$link" | sed -n 's/.*(\(.*\.md\)).*/\1/p')
+              
+              # Check if it's a relative path and if file exists
+              if [[ "$filepath" != http* && "$filepath" != "#"* ]]; then
+                full_path="docs/$filepath"
+                if [[ ! -f "$full_path" ]]; then
+                  echo "⚠️ Potentially broken link in $doc_file: $filepath"
+                fi
+              fi
+            done
+          done < doc_files.txt
+        fi
+        
+        echo "✅ Documentation links checked"
+    
+    - name: Validate prompt asset documentation consistency
+      run: |
+        echo "Validating prompt asset documentation consistency..."
+        
+        python -c "
+        from chirality.lib.prompt_registry import PromptRegistry
+        from pathlib import Path
+        import sys
+        
+        try:
+            registry = PromptRegistry()
+            registry.load()
+            assets = registry.list_assets()
+            
+            print(f'Found {len(assets)} prompt assets')
+            
+            # Check if documentation mentions the asset system
+            readme_path = Path('README.md')
+            if readme_path.exists():
+                readme_content = readme_path.read_text().lower()
+                
+                key_terms = [
+                    'prompt assets',
+                    'maintainer-authored',
+                    'combined lensing',
+                    'station brief'
+                ]
+                
+                missing_terms = []
+                for term in key_terms:
+                    if term not in readme_content:
+                        missing_terms.append(term)
+                
+                if missing_terms:
+                    print(f'⚠️ README.md missing documentation for: {missing_terms}')
+                    print('Consider updating README.md to document the new prompt system')
+                else:
+                    print('✅ README.md documents key prompt system concepts')
+            
+        except Exception as e:
+            print(f'⚠️ Could not validate prompt asset documentation: {e}')
+        "
+
+  generate-api-docs:
+    name: Generate API Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install pdoc3 pyyaml
+    
+    - name: Generate API documentation
+      run: |
+        echo "Generating API documentation..."
+        
+        # Create docs/api directory
+        mkdir -p docs/api
+        
+        # Generate documentation for key modules
+        python -c "
+        import pdoc
+        import sys
+        from pathlib import Path
+        
+        # Key modules to document
+        modules = [
+            'chirality.lib.strategies',
+            'chirality.lib.prompt_registry', 
+            'chirality.lib.prompt_builder',
+            'chirality.core.cell_resolver',
+            'chirality.core.llm_client',
+            'chirality.core.operations'
+        ]
+        
+        for module_name in modules:
+            try:
+                # Generate HTML documentation
+                doc = pdoc.Module(module_name)
+                html_content = doc.html()
+                
+                # Save to file
+                output_file = Path(f'docs/api/{module_name.replace(\".\", \"_\")}.html')
+                output_file.write_text(html_content)
+                
+                print(f'✅ Generated documentation for {module_name}')
+                
+            except Exception as e:
+                print(f'⚠️ Could not generate docs for {module_name}: {e}')
+        "
+    
+    - name: Generate prompt system architecture docs
+      run: |
+        echo "Generating prompt system architecture documentation..."
+        
+        python -c "
+        from chirality.lib.strategies import PromptStrategy
+        from chirality.lib.prompt_registry import PromptRegistry
+        from pathlib import Path
+        import json
+        
+        # Generate component mapping documentation
+        components = ['C', 'D', 'F', 'X', 'Z', 'E']
+        
+        doc_content = '''# Prompt System Architecture
+        
+        ## Component-Station Mappings
+        
+        | Component | Station | Stage 2 Operator | Pipeline Stages |
+        |-----------|---------|------------------|-----------------|
+        '''
+        
+        for component in components:
+            station = PromptStrategy.get_station_brief_id(component).replace('station.', '')
+            operator = PromptStrategy.get_stage2_operator(component) or 'None'
+            pipeline = ', '.join(PromptStrategy.get_pipeline_stages(component))
+            
+            doc_content += f'| {component} | {station} | {operator} | {pipeline} |\\n'
+        
+        doc_content += '''
+        ## Asset Registry
+        
+        The following prompt assets are managed by the framework:
+        
+        '''
+        
+        try:
+            registry = PromptRegistry()
+            registry.load()
+            assets = registry.list_assets()
+            
+            doc_content += '| Asset ID | Version | Size (bytes) |\\n'
+            doc_content += '|----------|---------|--------------|\\n'
+            
+            for asset_id, version in assets.items():
+                asset = registry.get(asset_id)
+                doc_content += f'| {asset_id} | {version} | {asset.size_bytes} |\\n'
+                
+        except Exception as e:
+            doc_content += f'*Could not load asset registry: {e}*\\n'
+        
+        doc_content += '''
+        ## Architecture Principles
+        
+        1. **Maintainer Semantic Authority**: All semantic content comes from maintainer-authored assets
+        2. **Component-Station Separation**: Components (C,D,F,X,Z,E) map to semantic valley stations
+        3. **Combined Lensing**: Single unified lensing operation replaces three-stage process
+        4. **OpenAI Responses API**: Exclusive use of Responses API (not Chat Completions)
+        5. **Asset Provenance**: Complete tracking of SHA256, versions, and asset IDs
+        '''
+        
+        # Write to file
+        Path('docs/api/prompt_architecture.md').write_text(doc_content)
+        print('✅ Generated prompt system architecture documentation')
+        "
+    
+    - name: Upload generated documentation
+      uses: actions/upload-artifact@v4
+      with:
+        name: api-documentation
+        path: docs/api/
+
+  build-docs-site:
+    name: Build Documentation Site
+    runs-on: ubuntu-latest
+    needs: [validate-docs, generate-api-docs]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download generated API docs
+      uses: actions/download-artifact@v4
+      with:
+        name: api-documentation
+        path: docs/api/
+    
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+    
+    - name: Build documentation site
+      run: |
+        echo "Building documentation site..."
+        
+        # Create a simple index page
+        cat > docs/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Chirality Framework Documentation</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 2rem; }
+                .header { border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 2rem; }
+                .section { margin-bottom: 2rem; }
+                .api-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+                .api-link { border: 1px solid #ddd; padding: 1rem; border-radius: 8px; }
+                .api-link h3 { margin-top: 0; color: #0066cc; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🧬 Chirality Framework Documentation</h1>
+                <p>Meta-ontological framework for structured problem-solving with semantic operations</p>
+            </div>
+            
+            <div class="section">
+                <h2>📚 Documentation Sections</h2>
+                <ul>
+                    <li><a href="../README.md">README</a> - Getting started guide</li>
+                    <li><a href="api/prompt_architecture.md">Prompt System Architecture</a> - New architecture overview</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h2>🔧 API Reference</h2>
+                <div class="api-links">
+                    <div class="api-link">
+                        <h3>Prompt System</h3>
+                        <ul>
+                            <li><a href="api/chirality_lib_strategies.html">PromptStrategy</a></li>
+                            <li><a href="api/chirality_lib_prompt_registry.html">PromptRegistry</a></li>
+                            <li><a href="api/chirality_lib_prompt_builder.html">PromptBuilder</a></li>
+                        </ul>
+                    </div>
+                    <div class="api-link">
+                        <h3>Core Framework</h3>
+                        <ul>
+                            <li><a href="api/chirality_core_cell_resolver.html">CellResolver</a></li>
+                            <li><a href="api/chirality_core_operations.html">Operations</a></li>
+                            <li><a href="api/chirality_core_llm_client.html">LLMClient</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>🏗️ New Architecture Highlights</h2>
+                <ul>
+                    <li><strong>Maintainer-Authored Assets</strong>: All semantic prompts from versioned assets</li>
+                    <li><strong>Combined Lensing</strong>: Single unified lensing operation</li>
+                    <li><strong>Component-Station Architecture</strong>: Clean separation of concerns</li>
+                    <li><strong>OpenAI Responses API</strong>: Exclusive use of Responses API</li>
+                    <li><strong>Asset Provenance</strong>: Complete SHA256 and version tracking</li>
+                </ul>
+            </div>
+        </body>
+        </html>
+        EOF
+        
+        echo "✅ Built documentation site"
+    
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: docs/
+
+  deploy-docs:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: build-docs-site
+    if: github.ref == 'refs/heads/main'
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4

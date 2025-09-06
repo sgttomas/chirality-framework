@@ -33,7 +33,11 @@ def test_compute_pipeline_app_mode_success(tmp_path: Path):
     assert len(out) == 1
     payload = json.loads(out[0])
     assert payload["run_id"] == "test-run-1"
-    manifest_path = Path(payload["manifest"]) if payload["manifest"].startswith(str(tmp_path)) else out_dir / "index.json"
+    manifest_path = (
+        Path(payload["manifest"])
+        if payload["manifest"].startswith(str(tmp_path))
+        else out_dir / "index.json"
+    )
     # Make sure manifest exists at expected path
     assert (out_dir / "index.json").exists()
     data = json.loads((out_dir / "index.json").read_text(encoding="utf-8"))
@@ -46,4 +50,3 @@ def test_compute_pipeline_app_mode_success(tmp_path: Path):
         # Paths are run-dir relative
         p = out_dir / meta["path"]
         assert p.exists()
-
