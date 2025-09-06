@@ -64,7 +64,12 @@ include = ["chirality*"]
 exclude = ["tests*", "docs*", "scripts*"]
 
 [tool.setuptools.package-data]
-chirality = ["normative_spec.txt"]
+chirality = [
+    "normative_spec.txt",
+    "prompt_assets/metadata.yml",
+    "prompt_assets/*.md",
+    "prompt_assets/station_briefs/*.md",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

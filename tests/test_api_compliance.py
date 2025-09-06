@@ -40,10 +40,10 @@ def test_responses_api_only():
                 # This is correct!
                 pass
 
-    # Ensure responses.create exists
-    assert "responses.create" in source, (
-        "REQUIRED: cell_resolver.py must use 'client.responses.create()'. "
-        "This is the ONLY allowed OpenAI API."
+    # Ensure we use our Responses API wrapper
+    assert "call_responses_api" in source, (
+        "REQUIRED: cell_resolver.py must use 'call_responses_api()' wrapper. "
+        "This ensures Responses API compliance."
     )
 
     print("✓ API Compliance Test Passed: Using Responses API correctly")

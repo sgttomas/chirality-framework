@@ -142,7 +142,7 @@ def setup_resolver(resolver_name: str, api_key: Optional[str], verbose: bool = F
         if verbose:
             click.echo(click.style("Using OpenAI resolver...", **INFO_STYLE))
 
-        return CellResolver(api_key=api_key)
+        return CellResolver()
     else:
         # Smoke banner
         if verbose:

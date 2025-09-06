@@ -54,8 +54,8 @@ class TestMatrixSnapshotWriter:
             assert snapshot["matrix_name"] == "A"
             assert snapshot["station"] == "Problem Statement"
             assert snapshot["shape"] == [3, 4]
-            assert snapshot["row_labels"] == ["Normative", "Operative", "Evaluative"]
-            assert snapshot["col_labels"] == ["Guiding", "Applying", "Judging", "Reviewing"]
+            assert snapshot["row_labels"] == ["normative", "operative", "iterative"]
+            assert snapshot["col_labels"] == ["guiding", "applying", "judging", "reflecting"]
             assert snapshot["run_id"] == run_id
             assert snapshot["resolver"] == "echo"
             assert "timestamp" in snapshot
@@ -68,9 +68,9 @@ class TestMatrixSnapshotWriter:
             first_cell = snapshot["cells"][0]
             assert first_cell["row"] == 0
             assert first_cell["col"] == 0
-            assert first_cell["value"] == "Values"
-            assert first_cell["row_label"] == "Normative"
-            assert first_cell["col_label"] == "Guiding"
+            assert first_cell["value"] == "objectives"
+            assert first_cell["row_label"] == "normative"
+            assert first_cell["col_label"] == "guiding"
             assert "provenance" in first_cell
 
     def test_filename_format(self):
