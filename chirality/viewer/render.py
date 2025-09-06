@@ -9,9 +9,8 @@ import json
 import tempfile
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional
 import html
-import os
 from datetime import datetime
 
 # Canonical matrix order for consistent display
@@ -405,7 +404,7 @@ def render_page(
     Returns:
         Complete HTML page as a string
     """
-    page_title = title if title else f"Chirality Framework - Matrix Viewer"
+    page_title = title if title else "Chirality Framework - Matrix Viewer"
 
     html_parts = []
     html_parts.append("<!DOCTYPE html>")
@@ -516,7 +515,7 @@ def render_elements_page(
     Returns:
         Complete HTML page as a string with Elements styling
     """
-    page_title = title if title else f"Chirality Framework - Elements View"
+    page_title = title if title else "Chirality Framework - Elements View"
 
     html_parts = []
     html_parts.append("<!DOCTYPE html>")
@@ -746,7 +745,7 @@ def _render_elements_grid(snapshot_data: Dict, matrix_name: str, sanitize: bool 
                 elements_lines.append(f'    <span class="cell-value">"{escaped_value}"</span>,')
             else:
                 elements_lines.append(f'    <span class="col-header"># {col_label}</span>')
-                elements_lines.append(f'    <span class="not-found">null</span>,')
+                elements_lines.append('    <span class="not-found">null</span>,')
 
         elements_lines.append("  ],")
 
@@ -862,7 +861,7 @@ def load_snapshots_for_run(
     for matrix_name, snapshot_path in snapshot_files.items():
         try:
             snapshot_data[matrix_name] = load_matrix_snapshot(snapshot_path)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
+        except (FileNotFoundError, json.JSONDecodeError):
             # Skip matrices with invalid snapshots
             continue
 

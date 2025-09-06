@@ -10,7 +10,6 @@ import os
 import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
-from typing import Optional
 
 from ..core.types import Matrix
 

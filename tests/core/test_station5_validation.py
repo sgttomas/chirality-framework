@@ -7,7 +7,6 @@ This module tests:
 3. Validation enforcement and compatibility
 """
 
-from chirality.core.types import Matrix, Cell
 from chirality.core.matrices import MATRIX_A, MATRIX_B, MATRIX_J
 from chirality.core.operations import (
     compute_matrix_C,

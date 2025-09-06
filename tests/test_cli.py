@@ -7,9 +7,7 @@ focusing on the resolve_run_settings precedence logic.
 
 import os
 import pytest
-import sys
-from unittest.mock import patch, MagicMock
-from click.testing import CliRunner
+from unittest.mock import patch
 
 from chirality.cli import resolve_run_settings, setup_resolver
 

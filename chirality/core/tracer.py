@@ -9,7 +9,7 @@ import json
 import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Set
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, asdict, field
 from collections import deque
 import threading
@@ -259,7 +259,7 @@ class JSONLTracer:
                     del self._file_handles[matrix]
                     del self._file_paths[matrix]
                     self._open_new_file(matrix)
-            except:
+            except (FileNotFoundError, KeyError):
                 pass  # File might not exist yet
 
     def _open_new_file(self, matrix: str):
@@ -312,7 +312,7 @@ class JSONLTracer:
             for handle in self._file_handles.values():
                 try:
                     handle.close()
-                except:
+                except (OSError, ValueError):
                     pass
             self._file_handles.clear()
             self._file_paths.clear()

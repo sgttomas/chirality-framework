@@ -4,7 +4,7 @@ Validation rules for Chirality Framework v16.0.0 semantic structures.
 Enforces dimensional constraints and operation sequencing.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List
 from .types import Cell, Matrix
 
 

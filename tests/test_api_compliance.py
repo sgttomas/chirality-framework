@@ -4,7 +4,6 @@ This test MUST pass or the framework is using the wrong API.
 """
 
 import ast
-import inspect
 from pathlib import Path
 
 

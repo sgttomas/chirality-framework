@@ -14,7 +14,6 @@ import os
 import uuid
 import webbrowser
 from datetime import datetime, timezone
-import json
 import sys
 from pathlib import Path
 from typing import Optional
@@ -51,7 +50,6 @@ load_dotenv(override=True)
 from .core.types import Cell, Matrix
 from .core.context import SemanticContext
 from .core.matrices import MATRIX_A, MATRIX_B, MATRIX_J
-from .core.constants import CANONICAL_PROBLEM
 from .core.operations import (
     compute_cell_C,
     compute_cell_F,
@@ -725,7 +723,7 @@ def _show_c_computation_verbose(
     click.echo()
     click.echo(click.style("FINAL RESULT:", **SUCCESS_STYLE))
     click.echo(click.style("-" * 40, **DIM_STYLE))
-    click.echo(f"  {cell.value}")
+    click.echo("  [Cell computation completed]")
 
 
 def _show_cell_result(cell: Cell, row_label: str, col_label: str):
@@ -1612,7 +1610,7 @@ def compute_pipeline(
         click.echo(f"  Matrices computed: {len(matrices_to_compute)}")
 
         if final_trace:
-            click.echo(f"  Trace files: traces/")
+            click.echo("  Trace files: traces/")
         if snapshot_jsonl:
             snapshot_dir = (
                 snapshot_writer.get_snapshot_directory()
@@ -1818,7 +1816,7 @@ def render_viewer(
         if open_browser:
             try:
                 webbrowser.open(f"file://{html_file_path.absolute()}")
-                click.echo(click.style(f"✓ Opened in default web browser", **SUCCESS_STYLE))
+                click.echo(click.style("✓ Opened in default web browser", **SUCCESS_STYLE))
             except Exception as e:
                 click.echo(click.style(f"Warning: Could not open browser: {e}", **INFO_STYLE))
 
@@ -1872,63 +1870,63 @@ def info():
     # Explicit axes for derived matrices (without computing them)
     # F axes mirror J's rows × J's columns
     click.echo("    F Axes:")
-    click.echo(f"      Station: Solution Objectives")
+    click.echo("      Station: Solution Objectives")
     click.echo(f"      Rows:   {', '.join(MATRIX_J.row_labels)}")
     click.echo(
         f"      Columns:{' ' if MATRIX_J.col_labels else ''}{', '.join(MATRIX_J.col_labels)}"
     )
     # D axes mirror A's rows × A's columns (station is Objectives)
     click.echo("    D Axes:")
-    click.echo(f"      Station: Solution Objectives")
+    click.echo("      Station: Solution Objectives")
     click.echo(f"      Rows:   {', '.join(MATRIX_A.row_labels)}")
     click.echo(
         f"      Columns:{' ' if MATRIX_A.col_labels else ''}{', '.join(MATRIX_A.col_labels)}"
     )
     # K axes are transposed D
     click.echo("    K Axes:")
-    click.echo(f"      Station: Pre-Verification Transform")
+    click.echo("      Station: Pre-Verification Transform")
     click.echo(f"      Rows:   {', '.join(MATRIX_A.col_labels)}")  # Transposed from D columns
     click.echo(
         f"      Columns:{' ' if MATRIX_A.row_labels else ''}{', '.join(MATRIX_A.row_labels)}"
     )  # Transposed from D rows
     # X axes are K rows × J columns
     click.echo("    X Axes:")
-    click.echo(f"      Station: Verification")
+    click.echo("      Station: Verification")
     click.echo(f"      Rows:   {', '.join(MATRIX_A.col_labels)}")  # K row labels
     click.echo(
         f"      Columns:{' ' if MATRIX_J.col_labels else ''}{', '.join(MATRIX_J.col_labels)}"
     )  # J column labels
     # Z axes mirror X (station shift preserves dimensions)
     click.echo("    Z Axes:")
-    click.echo(f"      Station: Validation")
+    click.echo("      Station: Validation")
     click.echo(f"      Rows:   {', '.join(MATRIX_A.col_labels)}")  # Same as X
     click.echo(
         f"      Columns:{' ' if MATRIX_J.col_labels else ''}{', '.join(MATRIX_J.col_labels)}"
     )  # Same as X
     # G axes are first 3 rows of Z
     click.echo("    G Axes:")
-    click.echo(f"      Station: Evaluation Input")
+    click.echo("      Station: Evaluation Input")
     click.echo(f"      Rows:   {', '.join(MATRIX_A.col_labels[:3])}")  # First 3 from Z
     click.echo(
         f"      Columns:{' ' if MATRIX_J.col_labels else ''}{', '.join(MATRIX_J.col_labels)}"
     )  # Same as Z
     # T axes are transposed first 3 rows of B
     click.echo("    T Axes:")
-    click.echo(f"      Station: Evaluation Criteria")
+    click.echo("      Station: Evaluation Criteria")
     click.echo(f"      Rows:   {', '.join(MATRIX_B.col_labels)}")  # B columns become T rows
     click.echo(
         f"      Columns:{' ' if MATRIX_B.row_labels[:3] else ''}{', '.join(MATRIX_B.row_labels[:3])}"
     )  # First 3 B rows become T columns
     # P axes are fourth row of Z as 1x4
     click.echo("    P Axes:")
-    click.echo(f"      Station: Evaluation Context")
+    click.echo("      Station: Evaluation Context")
     click.echo(f"      Rows:   {MATRIX_A.col_labels[3]}")  # Fourth label from Z
     click.echo(
         f"      Columns:{' ' if MATRIX_J.col_labels else ''}{', '.join(MATRIX_J.col_labels)}"
     )  # Same as Z
     # E axes are G rows × T columns
     click.echo("    E Axes:")
-    click.echo(f"      Station: Evaluation")
+    click.echo("      Station: Evaluation")
     click.echo(
         f"      Rows:   {', '.join(MATRIX_A.col_labels[:3])}"
     )  # G row labels (first 3 from Z)

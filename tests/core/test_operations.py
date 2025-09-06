@@ -6,7 +6,6 @@ using mock resolvers to ensure fast, deterministic, offline testing.
 """
 
 import pytest
-from typing import List
 
 # Add parent directory to path for imports
 import sys
@@ -23,7 +22,7 @@ from chirality.core.operations import (
     compute_matrix_D,
 )
 from chirality.core.context import SemanticContext
-from tests.mocks import MockCellResolver, MockTracer, MockMatrix, create_test_matrices
+from tests.mocks import MockCellResolver, MockTracer, create_test_matrices
 
 
 class TestStage1Combinatorial:

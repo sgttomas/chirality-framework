@@ -10,7 +10,6 @@ This module tests the MatrixSnapshotWriter functionality including:
 import json
 import tempfile
 from pathlib import Path
-import shutil
 
 from chirality.exporters.snapshot_exporter import MatrixSnapshotWriter
 from chirality.core.types import Matrix, Cell

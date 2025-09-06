@@ -7,18 +7,14 @@ This module tests the HTML rendering functionality for matrix snapshots.
 import json
 import tempfile
 from pathlib import Path
-import pytest
 
 from chirality.viewer.render import (
-    load_matrix_snapshot,
     render_matrix_table,
-    render_page,
     render_elements_page,
     write_assets,
     get_latest_run_dir,
     load_snapshots_for_run,
     sanitize_value,
-    CANONICAL_ORDER,
 )
 
 
