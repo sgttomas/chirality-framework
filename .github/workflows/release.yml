@@ -139,8 +139,8 @@ jobs:
     - name: Run Architecture Tests
       if: matrix.test-suite == 'Architecture Tests'
       run: |
-        pytest tests/lib/test_strategies.py -v
-        pytest tests/integration/test_prompt_system_integration.py -v
+        pytest tests/test_combined_lensing_architecture.py -v
+        pytest tests/test_api_compliance.py -v
     
     - name: Run Core Framework Tests
       if: matrix.test-suite == 'Core Framework Tests'
@@ -320,7 +320,13 @@ jobs:
     name: Publish to PyPI
     runs-on: ubuntu-latest
     needs: [validate-release, run-tests, build-artifacts, create-github-release]
-    environment: release
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+    environment:
+      name: pypi
+      # PyPI project URL for deployment status
+      url: https://pypi.org/project/chirality-framework/
     
     steps:
     - name: Download build artifacts
@@ -332,9 +338,7 @@ jobs:
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
-        verbose: true
+        packages-dir: dist/
         
   post-release:
     name: Post-Release Tasks
