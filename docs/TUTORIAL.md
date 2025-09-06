@@ -29,7 +29,7 @@ export OPENAI_API_KEY="sk-..."
 ## 3. Compute the Full Semantic Pipeline
 
 The easiest way to get started is to compute all matrices in the semantic valley at once using the `compute-pipeline` command. This command will:
-- Compute all matrices from C through E, including all prerequisites.
+- Compute all matrices from C through E using the canonical pipeline, which features a single-call "Combined Lensing" step for all semantic interpretations.
 - Create JSONL "snapshot" files for each matrix, which are clean summaries of the final state.
 - Create detailed "trace" files for debugging every computation step.
 

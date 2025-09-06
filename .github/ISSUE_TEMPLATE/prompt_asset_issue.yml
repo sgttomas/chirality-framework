@@ -1,0 +1,144 @@
+name: Prompt Asset Issue
+description: Report an issue with prompt assets or semantic content
+title: "[ASSETS] "
+labels: ["prompt-assets", "semantic-integrity", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **Important**: Prompt assets contain the semantic core of the Chirality Framework. Issues with these assets require maintainer review as they affect semantic integrity.
+
+  - type: dropdown
+    id: asset-type
+    attributes:
+      label: Asset Type
+      description: Which type of prompt asset is affected?
+      options:
+        - "System prompt (system.md)"
+        - "Station brief (station/*.md)"
+        - "Operator (ops/operators/*.md)" 
+        - "Lensing (ops/lensing/*.md)"
+        - "Asset registry (metadata.yml)"
+        - "Multiple assets"
+        - "Unknown/Not sure"
+    validations:
+      required: true
+
+  - type: input
+    id: asset-id
+    attributes:
+      label: Asset ID(s)
+      description: Which specific asset(s) are affected?
+      placeholder: "e.g., station.requirements, ops.multiply, lens.combined"
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue Type
+      description: What kind of issue are you reporting?
+      options:
+        - "Asset loading/registry error"
+        - "Checksum validation failure"
+        - "Placeholder substitution not working"
+        - "Semantic content concern"
+        - "Asset metadata inconsistency"
+        - "Missing required asset"
+        - "Performance issue with asset loading"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue Description
+      description: Describe the issue you're experiencing with the prompt asset(s)
+      placeholder: "When using [asset], I encountered..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this asset-related issue?
+      placeholder: |
+        1. Load asset registry...
+        2. Access asset 'X'...
+        3. Observe error/issue...
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error Output
+      description: Include any error messages or unexpected output
+      render: shell
+      placeholder: "Paste error messages here"
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What should happen with the asset(s)?
+      placeholder: "The asset should..."
+
+  - type: checkboxes
+    id: asset-integrity
+    attributes:
+      label: Asset Integrity Check
+      description: Help us verify the asset integrity issue
+      options:
+        - label: "I have verified the asset file exists in chirality/prompt_assets/"
+        - label: "I have not manually modified any prompt asset files"
+        - label: "This issue occurs with a fresh installation of the framework"
+
+  - type: dropdown
+    id: component-affected
+    attributes:
+      label: Component Using Asset
+      description: Which framework component is trying to use the affected asset?
+      options:
+        - "PromptRegistry (loading)"
+        - "PromptBuilder (message assembly)"
+        - "CellResolver (combined lensing)"
+        - "Stage 2 operations (multiply/elementwise/add)"
+        - "CLI (compute-cell command)"
+        - "Tests"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: semantic-impact
+    attributes:
+      label: Semantic Impact
+      description: "If this is a semantic content concern: How does this affect the framework's semantic interpretation? (Maintainer-only field)"
+      placeholder: "This issue affects semantic interpretation by..."
+
+  - type: checkboxes
+    id: maintainer-review
+    attributes:
+      label: Maintainer Review Required
+      description: Asset issues that require maintainer attention
+      options:
+        - label: "This issue affects semantic content (requires maintainer review)"
+        - label: "This is a technical asset loading/registry issue only"
+        - label: "I'm not sure if this affects semantic content"
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Have you found any temporary workarounds?
+      placeholder: "I can temporarily work around this by..."
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other context about the asset issue
+      placeholder: "This issue started when... / This might be related to..."

@@ -1,229 +1,100 @@
-# Prompt Engineering Guide for Chirality Framework Semantic Calculator
+# Prompt Engineering Guide for the Chirality Framework
 
-**Version: See VERSION.md** | **Updated: August 2025**
+**Version: 2.0 (Asset-Based Architecture)**
 
-This guide provides practical methodology for refining the prompts that drive the Three-Stage Interpretation Pipeline. Since semantic quality directly determines the value of the calculator's output, prompt engineering is critical for optimal performance.
+This guide provides the official methodology for authoring and managing the semantic assets that drive the Chirality Framework. In the current architecture, all semantic content is externalized into version-controlled markdown files, giving the maintainer full control over the framework's reasoning and voice.
 
-## Overview: The Prompt Architecture
+## Overview: The Prompt Asset Architecture
 
-The Chirality Framework semantic calculator uses **fragment composition** rather than static templates. The prompt builders in `chirality/core/prompts.py` dynamically construct prompts from configurable fragments, allowing for systematic refinement and testing.
+The framework's semantic engine has been refactored to separate semantic content from code. All prompts are now assembled from immutable, maintainer-authored assets.
 
-### Core Prompt Components
+-   **Source of Truth:** The `chirality/prompt_assets/` directory.
+-   **Integrity and Versioning:** The `chirality/prompt_assets/metadata.yml` file, which registers every asset, its version, and its checksum.
+-   **Assembly:** The `PromptBuilder` code reads these assets and assembles them according to a fixed, canonical pipeline. It only substitutes placeholders; it does not alter semantic content.
 
-1. **System Prompt** (`chirality/core/prompts.py::SYSTEM_PROMPT`)
-   - Sets the semantic engine's identity and mission
-   - Defines output contract (JSON format requirements)
-   - Establishes voice and style guidelines
+---
 
-2. **Operation-Specific Fragments**
-   - `build_stage2_prompt()`: Constructs Stage 2 semantic resolution prompts
-   - `build_column_lensing_prompt()`: Constructs column lens prompts
-   - `build_row_lensing_prompt()`: Constructs row lens prompts
-  - `build_final_lensing_prompt()`: Constructs final synthesis prompts
-   - All builders in `chirality/core/prompts.py`
+## The Core Assets and Their Roles
 
-3. **Context Injection**
-   - Valley position and station context
-   - Row and column ontological lenses
-   - Operation type and term details
+The entire semantic output of the framework is controlled by the interplay of the following assets.
 
-## Stage-Specific Prompt Engineering
+### 1. The System Prompt (`system.md`)
 
-### Stage 2: Semantic Resolution (`resolve_semantic_pair`)
+-   **Purpose:** This is the global frame for all LLM interactions. It sets the persona of the LLM (e.g., "a semantic interpreter"), its core mission (e.g., "to generate reliable knowledge"), and the fundamental rules of engagement (e.g., "prioritize semantics over mechanics").
+-   **Usage:** This asset is included at the beginning of every LLM call.
 
-**Purpose**: Transform raw word pairs into coherent concepts
+### 2. Station Briefs (`station/*.md`)
 
-**Current Strategy**:
-```
-"Values * Necessary" → "Essential Values"
-"Actions * Contingent" → "Conditional Actions"
-```
+-   **Purpose:** This is a critical new concept. Each file (e.g., `evaluation.md`, `objectives.md`) provides the specific semantic context for a **Station** in the semantic valley. It tells the LLM the *purpose* of the work it is about to perform.
+-   **Authoring Tip:** A good station brief describes the station's goal, its relationship to the previous station, and the kind of thinking the LLM should adopt (e.g., for "Evaluation," the brief would focus on establishing frameworks for judging quality and reliability).
 
-**Key Prompt Elements**:
-- Clear instruction to find **semantic intersection**
-- Preserve both term identities
-- Aim for **concise expression** (1-3 words preferred)
-- Use ontological context (row/column labels)
+### 3. Operator Assets (`ops/operators/*.md`)
 
-**Common Issues and Solutions**:
+-   **Purpose:** These assets define the exact instructions for a specific Stage 2 semantic operation.
+    -   `multiply.md`: Defines how to find the "semantic intersection" of multiple terms.
+    -   `elementwise.md`: A variant of multiplication for Matrix F.
+    -   `shift.md`: Defines the context shift from Verification to Validation for Station Z.
+-   **Authoring Tip:** The quality of the examples in `multiply.md` is crucial for guiding the LLM to the correct level of abstraction.
 
-| Problem | Example | Solution |
-|---------|---------|----------|
-| **Concatenation instead of intersection** | "Values * Necessary" → "Values and Necessary" | Emphasize "semantic intersection" and "fusion of meanings" |
-| **Loss of term identity** | "Actions * Contingent" → "Flexibility" | Require that both source concepts remain recognizable |
-| **Over-abstraction** | "Benchmarks * Fundamental" → "Measurement Philosophy" | Guide toward concrete, actionable concepts |
-| **Inconsistent style** | Mixed formal/informal outputs | Establish clear voice guidelines in system prompt |
+### 4. The Lensing Asset (`ops/lensing/combined.md`)
 
-### Stage 3: Universal Ontological Lensing (`apply_column_lens`, `apply_row_lens`, `synthesize_lensed_perspectives`)
+-   **Purpose:** This is the template for the unified, single-call combined lensing operation. It is the heart of the Stage 3 interpretation pipeline.
+-   **Placeholders:** This asset uses placeholders to orchestrate the interpretation:
+    -   `{{station_brief}}`: Where the full text of the relevant Station Brief is injected.
+    -   `{{content}}`: The input text from Stage 2 that needs to be interpreted.
+    -   `{{row_label}}` & `{{col_label}}`: The specific ontological lenses to apply.
 
-**Purpose**: Apply deep contextual interpretation through row/column coordinates
+---
 
-**Current Strategy**:
-- **Row lens**: Provides the **perspective** (how to approach)
-- **Column lens**: Provides the **focus** (what to emphasize)
-- **Station context**: Provides the **purpose** (why this matters)
+## The Canonical Assembly Pipeline
 
-Note on the canonical problem string:
-- The canonical problem statement ("generating reliable knowledge") is NOT a lensing input.
-- It appears only in Matrix D as part of the mechanical sentence construction; lensing then interprets that sentence based solely on the ontological coordinates (row/column) and the station context.
+The `PromptBuilder` assembles these assets in a fixed order.
 
-**Effective Lensing Patterns**:
-```
-Input: "Essential Values, Conditional Actions, Foundational Benchmarks"
-Row: "Normative" (establishing standards)
-Col: "Necessity" (vs Contingency)
-Station: "Requirements"
+1.  **For Stage 2 Operations (e.g., Multiplication):**
+    -   `system.md`
+    -   `ops/operators/multiply.md` (with the `{{terms}}` placeholder substituted)
 
-Output: "To establish normative standards for necessity requirements, we must identify essential values that define quality standards, implement conditional actions that respond to required circumstances, and establish foundational benchmarks that set measurable necessity criteria."
-```
+2.  **For Stage 3 (Combined Lensing):**
+    -   `system.md`
+    -   `ops/lensing/combined.md` (with `{{station_brief}}`, `{{content}}`, `{{row_label}}`, and `{{col_label}}` placeholders substituted)
+    -   For Validation (Z), include `ops/operators/shift.md` as part of the assembly before the combined template if your template relies on it.
 
-**Lensing Quality Indicators**:
-- ✅ **Integrates all resolved concepts** from Stage 2
-- ✅ **Applies both row and column ontological perspectives**
-- ✅ **Provides actionable insight** rather than mere description
-- ✅ **Maintains semantic coherence** across the transformation
-- ✅ **Appropriate length** (2-3 sentences for stakeholder clarity)
+**Note:** The Station Brief is **inlined** into the lensing prompt via the `{{station_brief}}` placeholder; it is not sent as a separate message. This creates a single, powerful, context-rich prompt for the most critical interpretation step.
 
-## Manual Refinement Methodology
+---
 
-### 1. **Baseline Testing**
-```bash
-# Test current prompts with echo resolver (deterministic baseline)
-python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver echo --verbose
+## Authoring Guide for Maintainers
 
-# Test with OpenAI resolver (live semantic resolution)
-python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose
-```
+### Writing Effective Station Briefs
 
-### 2. **Systematic Testing Matrix**
-Test key cells that represent different semantic challenges:
+Your goal is to ground the LLM. A good brief should:
+-   Clearly state the name and purpose of the Station (e.g., "You are at the Station of Verification.").
+-   Explain what kind of cognitive work is done here (e.g., "Your goal is not to create new ideas, but to check the internal consistency of existing objectives.").
+-   Describe how this station relates to the one before it.
 
-| Cell | Challenge Type | Expected Pattern |
-|------|----------------|------------------|
-| C[0,0] | Abstract/Concrete combination | Values + Necessity concepts |
-| C[1,2] | Process/Outcome integration | Methods + Completeness concepts |
-| C[2,3] | Evaluation/Standard alignment | Assessment + Consistency concepts |
-| F[0,0] | Element-wise reinforcement | Judgment ⊙ Requirement alignment |
-| D[1,1] | Synthesis formula application | Axiom + Function combination |
+### Authoring the `combined.md` Lensing Template
 
-### 3. **Quality Assessment Criteria**
+This is the most important asset for controlling the quality of the framework's output. A successful template will weave the placeholders into a narrative that guides the LLM.
 
-**Stage 2 Resolution Quality**:
-- **Semantic Preservation**: Both input terms recognizable in output
-- **Conceptual Coherence**: Result makes intuitive sense
-- **Conciseness**: 1-3 words preferred, avoid verbose explanations
-- **Consistency**: Similar inputs produce similar output patterns
+**Example Structure:**
 
-**Stage 3 Lensing Quality**:
-- **Ontological Integration**: Row and column perspectives clearly applied
-- **Actionable Insight**: Result provides guidance, not just description
-- **Complete Integration**: All Stage 2 concepts meaningfully incorporated
-- **Stakeholder Clarity**: Understandable to someone unfamiliar with the Chirality Framework
+> You are an expert semantic interpreter. Your task is to synthesize a final narrative for a cell in a matrix.
+>
+> **Your Goal:**
+> {{station_brief}}
+>
+> **The Content to Interpret:**
+> "{{content}}"
+>
+> **Apply the following ontological lenses:**
+> 1.  **Column Perspective:** Interpret the content through the lens of `{{col_label}}`.
+> 2.  **Row Perspective:** Interpret the content through the lens of `{{row_label}}`.
+>
+> **Final Synthesized Narrative:**
+> Now, combine the content and both perspectives into a final, integrated narrative that fulfills the goal of the station. The narrative should be clear, concise, and directly address the station's purpose.
 
-### 4. **Iterative Refinement Process**
+### Managing Assets and Ensuring Integrity
 
-**Step 1: Identify Problem Pattern**
-```bash
-# Run same cell multiple times to check consistency
-python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose
-python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose
-python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose
-```
-
-**Step 2: Modify Prompt Fragments**
-Edit prompt builders in `chirality/core/prompts.py`:
-- Adjust system context
-- Refine operation instructions
-- Enhance ontological context
-
-**Step 3: Test and Compare**
-```bash
-# Test modified prompts
-python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose --trace
-
-# Compare trace files for quality improvements
-```
-
-**Step 4: Document Changes**
-- Record what was changed and why
-- Note impact on semantic quality
-- Update this guide with new patterns
-
-## Using Neo4j for Prompt Analysis
-
-The working memory graph enables powerful analysis of prompt performance:
-
-### Query Semantic Resolution Patterns
-```cypher
-// Find all Stage 2 semantic resolutions
-MATCH (c:Cell)-[:HAS_STAGE]->(s:Stage:Semantic)
-RETURN s.concepts, count(*) as frequency
-ORDER BY frequency DESC
-```
-
-### Compare Prompt Versions
-```cypher
-// Find cells computed on different dates (different prompt versions)
-MATCH (c:Cell {id: 'C-0-0'})-[:HAS_STAGE]->(s)
-RETURN s, s.timestamp
-ORDER BY s.timestamp
-```
-
-### Identify Resolution Quality Issues
-```cypher
-// Find very short or very long resolutions (potential quality issues)
-MATCH (s:Stage:Semantic)
-WHERE size(s.concepts[0]) < 10 OR size(s.concepts[0]) > 100
-RETURN s.concepts, count(*) as frequency
-```
-
-## Advanced Prompt Patterns
-
-### Context Window Optimization
-- **Front-load critical context**: Place ontological coordinates early
-- **Use semantic anchors**: Reference specific valley station and position
-- **Minimize token waste**: Remove unnecessary explanations from system prompt
-
-### Consistency Techniques
-- **Establish semantic rules**: Clear definitions for multiplication vs addition
-- **Use concrete examples**: "sufficient * reason = justification"  
-- **Maintain voice consistency**: Same style and tone across operations
-
-### Quality Control
-- **JSON validation**: Ensure strict output format compliance
-- **Term preservation**: Require exact echoing of input terms in `terms_used`
-- **Warning system**: Use warnings for edge cases and missing inputs
-
-## Prompt Evolution Strategy
-
-### Version Control Approach
-1. **Baseline**: Establish current prompt performance with test matrix
-2. **Hypothesis**: Identify specific improvement target
-3. **Implementation**: Modify specific prompt fragments
-4. **Validation**: Test against same cells, compare quality
-5. **Integration**: Deploy if improvements are consistent
-
-### Measurement Approach
-Since semantic quality is subjective, use multiple indicators:
-- **Consistency**: Same inputs → similar outputs
-- **Coherence**: Outputs make intuitive sense
-- **Completeness**: All input concepts represented
-- **Conciseness**: Appropriate length for purpose
-- **Actionability**: Results provide useful guidance
-
-## Getting Started with Refinement
-
-### Immediate Next Steps
-1. **Run baseline test matrix** across key cells with current prompts
-2. **Document current output patterns** for comparison
-3. **Identify one specific improvement target** (e.g., "reduce over-abstraction in Stage 2")
-4. **Make targeted prompt modifications**
-5. **Test and iterate**
-
-### Tools for Manual Refinement
-- **`--verbose` flag**: See stage-by-stage transformation
-- **`--trace` flag**: Generate machine-readable logs
-- **`--neo4j-export` flag**: Build corpus of results for analysis
-- **Echo resolver**: Test pipeline mechanics without LLM variability
-
-The prompt engineering process is where the semantic calculator evolves from functional to truly insightful. This manual refinement will establish the patterns for future automated optimization.
+The `chirality/prompt_assets/metadata.yml` file is the manifest for all semantic assets.
+-   **Workflow:** When you edit any `.md` asset file, you **must** update its corresponding entry in `metadata.yml` with the new `sha256` checksum, `size_bytes`, `last_modified` timestamp, and an updated `version` number.
+-   **Integrity:** The `PromptRegistry` will fail to initialize if any asset does not match its checksum in the metadata file. This guarantees that the executed semantics are always the version-controlled, intended semantics.

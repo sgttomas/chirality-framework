@@ -2,56 +2,30 @@
 
 **Status Last Updated**: August 28, 2025
 
-## Current Status: Refactoring Complete
+## Current Status: Prompt Architecture Refactoring Complete
 
-The project has recently undergone a major architectural refactoring. The previous goal of building a flexible, extensible "framework" has been replaced with a much clearer and more focused objective: to create a direct, observable implementation of the canonical Chirality Framework algorithm.
+The project has completed a major architectural refactoring to externalize all semantic content and streamline the core pipeline. The old three-stage lensing process has been replaced with a more powerful and coherent **Combined Lensing** pipeline.
 
-This transformation into a **"semantic calculator"** is now complete. The core logic, centered around the **Three-Stage Interpretation Pipeline**, is stable, tested, and consistent.
+This transformation into a fully asset-based, canonical algorithm is now complete. The core logic is stable, and the semantic content is now fully owned and version-controlled by the maintainer in the `chirality/prompt_assets/` directory.
 
-## Current Status: Core Implementation Complete ✅
 
-The refactoring to a "semantic calculator" is **complete**! All core functionality has been implemented and tested:
-
-✅ **CLI Implementation (`Phase 7`)** - **COMPLETE**
-- `click`-based CLI with professional UX
-- `compute-cell` command provides cell-first debugging
-- `--verbose` flag shows all 3 stages step-by-step  
-- Full integration with core operations tested
-
-✅ **Testing Pipeline (`Phase 8`)** - **COMPLETE**
-- Comprehensive test infrastructure in `/tests/`
-- MockCellResolver for fast, offline testing
-- All 3 stages tested independently and end-to-end
-- 100% test coverage of core pipeline
-
-✅ **Documentation (`Phase 9`)** - **COMPLETE**
-- All documentation updated for semantic calculator philosophy
-- Technical algorithm documentation complete
-- CLI usage examples working and tested
 
 ## Next Development Priorities
 
-With the core semantic calculator fully implemented and tested, future work can focus on extending capabilities and optimizing performance:
+With the new asset-based architecture in place, future work can focus on improving semantic quality and extending the pipeline.
 
 ### High Priority
-*   **Online Testing Suite**: Add `@pytest.mark.online` tests that validate against real OpenAI API calls
-*   **Performance Optimization**: Profile the 3-stage pipeline and optimize `CellResolver` for speed and cost
-*   **Enhanced Error Handling**: Improve robustness for edge cases and API failures
-*   **Problem-Aware Prompting (Planned)**: Thread problem metadata into prompts when provided via `--problem-file` in app mode. Scope:
-    - Extend `SemanticContext` to carry `problem_title` and `problem_statement`.
-    - Update prompt builders (`build_stage2_prompt`, `build_column_lensing_prompt`, `build_row_lensing_prompt`, `build_final_lensing_prompt`) to include concise problem framing.
-    - Gate behavior behind a flag (e.g., `--problem-context`) or automatically enable in app mode; document versioning impact.
-    - Add tests to assert problem fragments appear in constructed prompts and influence outputs deterministically with the Echo resolver.
+*   **Semantic Asset Tuning**: Iteratively refine the content of the `.md` files in `chirality/prompt_assets/` (especially the Station Briefs and the `combined.md` lensing template) to improve the coherence and insight of the final output.
+*   **Online Testing Suite**: Add `@pytest.mark.online` tests that validate against the live OpenAI Responses API to catch any regressions in semantic quality.
+*   **Extended Semantic Valley**: Implement the next matrices in the canonical sequence (M, W, U, N), which will involve implementing the "Semantic Cross Product" operation.
 
 ### Medium Priority  
-*   **Extended Semantic Valley**: Implement next matrices in the canonical sequence (X, Z, etc.)
-*   **LLM Experimentation**: Test different language models for optimal semantic resolution
-*   **Tracing Analytics**: Build tools to analyze and visualize `JSONLTracer` output
+*   **Performance Optimization**: Profile the new `PromptBuilder` and `llm_client` to identify any performance bottlenecks.
+*   **Tracing Analytics**: Build tools to analyze and visualize `JSONLTracer` output to better understand the new pipeline's behavior.
 
 ### Low Priority
-*   **Additional Export Formats**: CSV, Excel, or other matrix export options
-*   **Advanced CLI Features**: Batch processing, configuration files
-*   **Integration Adapters**: Additional database or API integrations
+*   **Additional Export Formats**: CSV, Excel, or other matrix export options.
+*   **Advanced CLI Features**: Batch processing or other usability enhancements.
 
 The core algorithm is stable and production-ready. All future work builds on this solid foundation.
 
@@ -78,11 +52,8 @@ This plan captures the remaining work to move from a robust prototype to a produ
 - **Provenance Warnings**: Ensure any model/output validation issues are recorded in `warnings` and optionally highlighted in CLI.
 
 ### 3) Configuration & Resilience
-- ✅ **Centralized Config**: Extract model, timeouts, retry counts, token limits, and tracer/export flags into a single config module.
-  - **DONE (Partial):** Version number has been centralized into `VERSION.md` and is read dynamically by the CLI. This removes hardcoded versions from the codebase.
-  - Load from env vars with sane defaults; allow CLI overrides.
-- **Documentation of Defaults**: Update README/API docs to list default knobs and recommended production settings.
-- **Backoff & Limits**: Make retry/backoff configurable; add guards for oversized prompts/results.
+- ✅ **Centralized Config**: All LLM configuration (model, temperature, etc.) is now centralized and hardcoded in `chirality/core/llm_config.py`. This aligns with the principle of a single, canonical implementation.
+- **Backoff & Limits**: The retry logic in `llm_client.py` should be reviewed for production readiness.
 
 ### 4) CI/CD & Packaging
 - **CI Pipeline**: GitHub Actions workflow to run lint, type-check, and tests on PRs and main.

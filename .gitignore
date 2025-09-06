@@ -11,6 +11,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!chirality/lib/
 lib64/
 parts/
 sdist/
@@ -93,6 +94,7 @@ output/
 results/
 artifacts/
 dumps/
+runs/
 
 # Temporary files
 *.tmp

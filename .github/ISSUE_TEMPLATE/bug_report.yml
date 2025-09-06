@@ -1,0 +1,119 @@
+name: Bug Report
+description: Report a bug or issue with the Chirality Framework
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please provide as much detail as possible to help us reproduce and fix the issue.
+
+  - type: input
+    id: version
+    attributes:
+      label: Chirality Framework Version
+      description: What version of the Chirality Framework are you using?
+      placeholder: "16.4.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: Tell us what happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Run command '...'
+        2. Set parameters '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened instead
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which component of the framework is affected?
+      options:
+        - "Prompt System (new architecture)"
+        - "CLI"
+        - "Core Operations (C, D, F, X, Z, E matrices)"
+        - "LLM Integration (OpenAI Responses API)"
+        - "Asset Registry"
+        - "Combined Lensing"
+        - "Exporters (Neo4j, JSONL)"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs
+      description: Include relevant error messages, stack traces, or log output
+      render: shell
+      placeholder: Paste error logs here
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Information
+      description: Provide details about your environment
+      placeholder: |
+        - OS: [e.g., macOS 14, Ubuntu 22.04, Windows 11]
+        - Python version: [e.g., 3.13.0]
+        - Installation method: [e.g., pip, conda, source]
+        - OpenAI API access: [yes/no]
+
+  - type: dropdown
+    id: resolver
+    attributes:
+      label: Resolver Used
+      description: Which resolver were you using when the bug occurred?
+      options:
+        - "echo (default/testing)"
+        - "openai (GPT-4)"
+        - "Not applicable"
+        - "Other"
+
+  - type: checkboxes
+    id: api-compliance
+    attributes:
+      label: API Compliance Check
+      description: Help us identify potential API-related issues
+      options:
+        - label: "I confirm this issue is NOT related to using Chat Completions API (framework uses Responses API exclusively)"
+        - label: "I have verified my OpenAI API key has Responses API access"
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here, including workarounds you've tried

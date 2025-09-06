@@ -1,0 +1,84 @@
+version: 2
+updates:
+  # Enable version updates for pip
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "maintainers"
+    assignees:
+      - "maintainers"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "dev-deps"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+    
+    # Group related dependency updates
+    groups:
+      testing:
+        patterns:
+          - "pytest*"
+          - "coverage*"
+          - "mock*"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      linting:
+        patterns:
+          - "black"
+          - "ruff" 
+          - "mypy*"
+          - "bandit*"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      security:
+        patterns:
+          - "safety"
+          - "pip-audit"
+        update-types:
+          - "patch"
+          - "minor"
+          - "major"
+      
+      openai:
+        patterns:
+          - "openai*"
+        update-types:
+          - "patch"
+          - "minor"
+    
+    # Ignore certain dependencies that require manual review
+    ignore:
+      - dependency-name: "openai"
+        update-types: ["version-update:semver-major"]
+      # Don't auto-update Python version constraints
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "maintainers"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "github-actions"
+      - "ci"
+      - "automated"

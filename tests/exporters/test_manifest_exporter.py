@@ -32,10 +32,10 @@ def test_manifest_exporter_writes_expected_index(tmp_path: Path):
     x = snaps / "X.jsonl"
     e = snaps / "E.jsonl"
 
-    _write_lines(c, ["{\"v\":1}", "{\"v\":2}"])
-    _write_lines(d, ["{\"v\":3}"])
-    _write_lines(x, ["{\"v\":4}", "{\"v\":5}", "{\"v\":6}"])
-    _write_lines(e, ["{\"v\":7}"])
+    _write_lines(c, ['{"v":1}', '{"v":2}'])
+    _write_lines(d, ['{"v":3}'])
+    _write_lines(x, ['{"v":4}', '{"v":5}', '{"v":6}'])
+    _write_lines(e, ['{"v":7}'])
 
     files = {
         "C": (c, "cells-jsonl-v1"),
@@ -44,7 +44,9 @@ def test_manifest_exporter_writes_expected_index(tmp_path: Path):
         "E": (e, "cells-jsonl-v1"),
     }
 
-    exporter = ManifestExporter(run_dir, "chirality-framework", "0.0-test", framework_schema_version="1.0.0")
+    exporter = ManifestExporter(
+        run_dir, "chirality-framework", "0.0-test", framework_schema_version="1.0.0"
+    )
     manifest_path = exporter.write_manifest(
         run_id="sample_run_001",
         problem={"title": "T", "statement": "S"},
@@ -66,4 +68,3 @@ def test_manifest_exporter_writes_expected_index(tmp_path: Path):
     assert cmeta["records"] == 2
     assert cmeta["bytes"] == c.stat().st_size
     assert cmeta["sha256"] == _sha256_text(c)
-

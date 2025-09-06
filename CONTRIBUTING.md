@@ -32,22 +32,35 @@ pytest
 
 ## How to Contribute
 
-The most valuable contributions will be those that improve the core algorithm, its tests, or its documentation.
+The most valuable contributions will be those that improve the core algorithm, its tests, or its documentation. It is critical to understand the separation between the framework's mechanics (code) and its meaning (semantic assets).
 
-### Code Contributions
+### Semantic Contributions (The "Why")
 
-The core logic lives in `chirality/core/`.
+The framework's reasoning, voice, and semantic interpretation are controlled exclusively by the maintainer through a series of version-controlled text files.
 
-*   **`operations.py`**: This is the heart of the calculator. It contains the `compute_cell_*` functions that implement the **Three-Stage Interpretation Pipeline**. If you are refining the algorithm, this is the primary file you will work in.
-*   **`cell_resolver.py`**: This class is the sole interface to the LLM. Prompt construction is handled by builders in `chirality/core/prompts.py` (e.g., `build_stage2_prompt`, `build_column_lensing_prompt`, `build_row_lensing_prompt`, `build_final_lensing_prompt`). Refinements to the prompting strategy happen there.
-*   **`matrices.py`**: This file contains the canonical, fixed matrices (A, B, J). These should only be changed if the underlying Normative Specification of the Chirality Framework is updated.
+-   **Location**: `chirality/prompt_assets/`
+-   **Content**: This directory contains the `system.md` prompt, the `station/*.md` briefs, and the `ops/**/*.md` operator and lensing templates.
+-   **Contribution Process**: As these files define the canonical semantics of the framework, they are not open to direct modification via pull requests. Contributions to the semantics should be proposed in GitHub Issues for discussion with the maintainer.
+
+### Code Contributions (The "How")
+
+Contributions to the code that orchestrates the semantic pipeline are welcome. The new architecture is modular:
+
+*   **`chirality/prompt_assets/metadata.yml`**: The manifest that registers all semantic assets and their checksums. The `PromptRegistry` uses this for validation.
+*   **`chirality/lib/`**: The home of the new prompt assembly system.
+    *   `prompt_registry.py`: Loads and validates the assets defined in the metadata file.
+    *   `strategies.py`: Defines the canonical order of assets to be used for each stage of the pipeline.
+    *   `prompt_builder.py`: Assembles the final prompt messages based on the strategy and substitutes the required placeholders.
+*   **`chirality/core/llm_client.py`**: The exclusive wrapper for the OpenAI Responses API.
+*   **`chirality/core/cell_resolver.py`**: The refactored resolver. Its role is to orchestrate the process, using the `PromptBuilder` to get messages and the `llm_client` to get a result. See its new, canonical API in `docs/API_REFERENCE.md`.
+*   **`chirality/core/operations.py`**: The high-level orchestration layer. The `compute_cell_*` functions here define the steps of the canonical pipeline (e.g., Stage 2 multiplication followed by Stage 3 Combined Lensing).
 
 ### Testing Contributions
 
 Our testing strategy is crucial for validating the calculator's correctness without making expensive LLM calls.
 
-*   **Mock Resolver:** All core logic is tested against a `MockCellResolver` located in `tests/mocks.py`. This mock provides predictable, deterministic outputs.
-*   **Adding Tests:** New tests for the core operations should be added to `tests/core/test_operations.py`. Please follow the existing structure, testing each stage of the pipeline independently before testing the end-to-end cell computation.
+*   **Mocking**: All core logic is tested against mock objects and a deterministic `echo` resolver. No new tests should make live network calls.
+*   **Adding Tests**: New tests for the core operations should be added to `tests/core/test_operations.py`. Tests for the prompt assembly system should go in `tests/lib/`.
 
 ### Documentation Contributions
 

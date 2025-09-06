@@ -12,6 +12,7 @@ for computing the entire pipeline and visualizing the results.
 
 # Read version from VERSION.md (single source of truth)
 from pathlib import Path
+
 try:
     version_path = Path(__file__).parent.parent / "VERSION.md"
     with open(version_path, "r") as f:
@@ -21,7 +22,6 @@ except Exception:
 __author__ = "Chirality Framework Team"
 
 from .core.types import Cell, Matrix
-from .core.context import SemanticContext
 from .core.cell_resolver import CellResolver
 from .core.resolvers import EchoResolver
 from .core.operations import (
@@ -50,7 +50,6 @@ __all__ = [
     # Core types
     "Cell",
     "Matrix",
-    "SemanticContext",
     # Canonical matrices
     "MATRIX_A",
     "MATRIX_B",

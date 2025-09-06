@@ -19,7 +19,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 
 def _sha256_file(path: Path) -> Tuple[str, int, int]:
@@ -130,4 +130,3 @@ class ManifestExporter:
             f.write("\n")
         os.replace(tmp, manifest_path)
         return manifest_path
-
