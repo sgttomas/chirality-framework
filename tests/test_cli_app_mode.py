@@ -33,7 +33,7 @@ def test_compute_pipeline_app_mode_success(tmp_path: Path):
     assert len(out) == 1
     payload = json.loads(out[0])
     assert payload["run_id"] == "test-run-1"
-    manifest_path = (
+    (
         Path(payload["manifest"])
         if payload["manifest"].startswith(str(tmp_path))
         else out_dir / "index.json"

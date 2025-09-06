@@ -81,7 +81,7 @@ class PromptStrategy:
         elif stage == "combined_lens":
             if component_id == "Z":
                 # Z uses station shift instead of combined lensing
-                raise ValueError(f"Component Z should use 'shift' stage, not combined_lens")
+                raise ValueError("Component Z should use 'shift' stage, not combined_lens")
             else:
                 # Standard combined lensing
                 return ["combined_lens"]

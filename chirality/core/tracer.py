@@ -175,7 +175,7 @@ class JSONLTracer:
 
                 # Write with correct byte tracking
                 line_with_newline = json_line + "\n"
-                bytes_to_write = line_with_newline.encode("utf-8")
+                line_with_newline.encode("utf-8")
 
                 file_handle.write(line_with_newline)
                 file_handle.flush()

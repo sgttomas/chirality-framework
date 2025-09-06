@@ -22,7 +22,6 @@ except Exception:
 __author__ = "Chirality Framework Team"
 
 from .core.types import Cell, Matrix
-from .core.context import SemanticContext
 from .core.cell_resolver import CellResolver
 from .core.resolvers import EchoResolver
 from .core.operations import (
@@ -51,7 +50,6 @@ __all__ = [
     # Core types
     "Cell",
     "Matrix",
-    "SemanticContext",
     # Canonical matrices
     "MATRIX_A",
     "MATRIX_B",

@@ -21,7 +21,6 @@ from chirality.core.operations import (
     compute_matrix_F,
     compute_matrix_D,
 )
-from chirality.core.context import SemanticContext
 from tests.mocks import MockCellResolver, MockTracer, create_test_matrices
 
 
@@ -94,18 +93,6 @@ class TestStage2SemanticResolution:
     def test_semantic_pair_resolution(self):
         """Test that word pairs are resolved into concepts."""
         resolver = MockCellResolver()
-        context = SemanticContext(
-            station_context="Requirements",
-            valley_summary="Test valley",
-            row_label="Normative",
-            col_label="Possibility",
-            operation_type="*",
-            terms={"pair": "Values * Necessary"},
-            matrix="C",
-            i=0,
-            j=0,
-        )
-
         result = resolver.run_stage2_multiply(["Values", "Necessary"], "C")
         assert result.text == "Essential Values"
 
@@ -125,18 +112,6 @@ class TestStage2SemanticResolution:
     def test_unknown_pair_handling(self):
         """Test resolution of pairs not in predefined patterns."""
         resolver = MockCellResolver(pattern_style="descriptive")
-        context = SemanticContext(
-            station_context="Requirements",
-            valley_summary="Test valley",
-            row_label="Operative",
-            col_label="Challenge",
-            operation_type="*",
-            terms={"pair": "Unknown * Concept"},
-            matrix="C",
-            i=1,
-            j=1,
-        )
-
         result = resolver.run_stage2_multiply(["Unknown", "Concept"], "C")
         assert result.text == "Concept Unknown"  # Descriptive style reverses order
 
@@ -147,18 +122,6 @@ class TestStage3OntologicalLensing:
     def test_ontological_lens_application(self):
         """Test that row/column context is applied for interpretation."""
         resolver = MockCellResolver()
-        context = SemanticContext(
-            station_context="Requirements",
-            valley_summary="Test valley",
-            row_label="Normative",
-            col_label="Determinacy",
-            operation_type="interpret",
-            terms={"content": "Essential Values, Conditional Actions"},
-            matrix="C",
-            i=0,
-            j=0,
-        )
-
         # Use combined lensing
         final_res = resolver.run_combined_lens(
             "Essential Values, Conditional Actions", "C", "Normative", "Determinacy"
@@ -207,7 +170,7 @@ class TestCompletePipeline:
         resolver = MockCellResolver()
         tracer = MockTracer()
 
-        cell = compute_cell_C(0, 0, A, B, resolver, "Test valley", tracer)
+        compute_cell_C(0, 0, A, B, resolver, "Test valley", tracer)
 
         # Verify tracer captured all stages
         assert tracer.verify_complete_pipeline()
@@ -315,7 +278,7 @@ class TestResolverCallCounts:
         resolver.reset_call_counts()
 
         # Compute one cell
-        cell = compute_cell_C(0, 0, A, B, resolver, "Test valley")
+        compute_cell_C(0, 0, A, B, resolver, "Test valley")
 
         counts = resolver.get_call_counts()
 
@@ -331,7 +294,7 @@ class TestResolverCallCounts:
         resolver = MockCellResolver()
         resolver.reset_call_counts()
 
-        matrix_C = compute_matrix_C(A, B, resolver, "Test valley")
+        compute_matrix_C(A, B, resolver, "Test valley")
 
         counts = resolver.get_call_counts()
 

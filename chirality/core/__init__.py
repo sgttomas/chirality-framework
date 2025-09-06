@@ -3,7 +3,6 @@ Core Chirality Framework semantic calculator modules.
 """
 
 from .types import Cell, Matrix
-from .context import SemanticContext
 from .cell_resolver import CellResolver
 from .resolvers import EchoResolver
 from .operations import (
@@ -22,7 +21,6 @@ __all__ = [
     # Core types
     "Cell",
     "Matrix",
-    "SemanticContext",
     # Resolvers
     "CellResolver",
     "EchoResolver",

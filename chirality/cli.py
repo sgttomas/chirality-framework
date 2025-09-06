@@ -47,10 +47,9 @@ def _get_version():
 load_dotenv(override=True)
 
 # Import core components
-from .core.types import Cell, Matrix
-from .core.context import SemanticContext
-from .core.matrices import MATRIX_A, MATRIX_B, MATRIX_J
-from .core.operations import (
+from .core.types import Cell, Matrix  # noqa: E402
+from .core.matrices import MATRIX_A, MATRIX_B, MATRIX_J  # noqa: E402
+from .core.operations import (  # noqa: E402
     compute_cell_C,
     compute_cell_F,
     compute_cell_D,
@@ -68,7 +67,7 @@ from .core.operations import (
     compute_array_P,
     compute_matrix_E,
 )
-from .core.resolvers import EchoResolver
+from .core.resolvers import EchoResolver  # noqa: E402
 
 # Conditional import for OpenAI resolver
 try:
@@ -78,10 +77,10 @@ try:
 except ImportError:
     OPENAI_AVAILABLE = False
     CellResolver = None
-from .exporters.working_memory_exporter import Neo4jWorkingMemoryExporter
-from .core.tracer import JSONLTracer
-from .exporters.snapshot_exporter import MatrixSnapshotWriter
-from .viewer.render import (
+from .exporters.working_memory_exporter import Neo4jWorkingMemoryExporter  # noqa: E402
+from .core.tracer import JSONLTracer  # noqa: E402
+from .exporters.snapshot_exporter import MatrixSnapshotWriter  # noqa: E402
+from .viewer.render import (  # noqa: E402
     load_snapshots_for_run,
     render_page,
     render_elements_page,
@@ -351,17 +350,7 @@ def compute_cell(
                 click.echo()
                 click.echo(click.style("STAGE 3: Ontological Lensing", **STAGE_STYLE))
                 click.echo(click.style("-" * 40, **DIM_STYLE))
-                ctx = SemanticContext(
-                    station_context="Solution Objectives",
-                    valley_summary=valley_summary,
-                    row_label=A.row_labels[row],
-                    col_label=A.col_labels[col],
-                    operation_type="interpret",
-                    terms={"content": synthesis},
-                    matrix="D",
-                    i=row,
-                    j=col,
-                )
+                # Note: Combined lensing now handled directly in operations.py
 
                 click.echo("  Applying unified row × col × station lens (Objectives)...")
 
@@ -1154,7 +1143,6 @@ def compute_pipeline(
         if app_mode:
             import json as _json
             import re as _re
-            import sys as _sys
             import time as _time
             from pathlib import Path as _Path
             from .exporters.manifest_exporter import ManifestExporter

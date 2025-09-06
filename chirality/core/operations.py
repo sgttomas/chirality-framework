@@ -18,7 +18,6 @@ from typing import List, Optional
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from .types import Cell, Matrix
-from .context import SemanticContext
 from .cell_resolver import CellResolver
 from .tracer import JSONLTracer
 from .provenance_schema import create_provenance
@@ -256,17 +255,17 @@ def compute_cell_D(
 
     # Trace Stage 1 (mechanical synthesis)
     if tracer:
-        stage1_context = SemanticContext(
-            station_context="Solution Objectives",
-            valley_summary=valley_summary,
-            row_label=A.row_labels[i],
-            col_label=A.col_labels[j],
-            operation_type="synthesis",
-            terms={"formula": synthesis_statement},
-            matrix="D",
-            i=i,
-            j=j,
-        )
+        stage1_context = {
+            "station_context": "Solution Objectives",
+            "valley_summary": valley_summary,
+            "row_label": A.row_labels[i],
+            "col_label": A.col_labels[j],
+            "operation_type": "synthesis",
+            "terms": {"formula": synthesis_statement},
+            "matrix": "D",
+            "i": i,
+            "j": j,
+        }
         tracer.trace_stage(
             "mechanical_synthesis",
             stage1_context,
@@ -475,17 +474,17 @@ def compute_cell_X(
 
     # Trace Stage 1 (combinatorial - no LLM call, just mechanical result)
     if tracer:
-        stage1_context = SemanticContext(
-            station_context="Verification",
-            valley_summary=valley_summary,
-            row_label=K.row_labels[i],
-            col_label=J.col_labels[j],
-            operation_type="combinatorial",
-            terms={"products": raw_products},
-            matrix="X",
-            i=i,
-            j=j,
-        )
+        stage1_context = {
+            "station_context": "Verification",
+            "valley_summary": valley_summary,
+            "row_label": K.row_labels[i],
+            "col_label": J.col_labels[j],
+            "operation_type": "combinatorial",
+            "terms": {"products": raw_products},
+            "matrix": "X",
+            "i": i,
+            "j": j,
+        }
         tracer.trace_stage(
             "product:combinatorial",
             stage1_context,
@@ -625,17 +624,17 @@ def compute_cell_Z(
 
     # Trace Stage 1
     if tracer:
-        stage1_context = SemanticContext(
-            station_context="Validation",
-            valley_summary=valley_summary,
-            row_label=X.row_labels[i],
-            col_label=X.col_labels[j],
-            operation_type="construct",
-            terms={"verification_content": verification_content},
-            matrix="Z",
-            i=i,
-            j=j,
-        )
+        stage1_context = {
+            "station_context": "Validation",
+            "valley_summary": valley_summary,
+            "row_label": X.row_labels[i],
+            "col_label": X.col_labels[j],
+            "operation_type": "construct",
+            "terms": {"verification_content": verification_content},
+            "matrix": "Z",
+            "i": i,
+            "j": j,
+        }
         tracer.trace_stage(
             "construct:direct_extract",
             stage1_context,
@@ -925,17 +924,17 @@ def compute_cell_E(
 
     # Trace Stage 1 (combinatorial - no LLM call, just mechanical result)
     if tracer:
-        stage1_context = SemanticContext(
-            station_context="Evaluation",
-            valley_summary=valley_summary,
-            row_label=G.row_labels[i],
-            col_label=T.col_labels[j],
-            operation_type="combinatorial",
-            terms={"products": raw_products},
-            matrix="E",
-            i=i,
-            j=j,
-        )
+        stage1_context = {
+            "station_context": "Evaluation",
+            "valley_summary": valley_summary,
+            "row_label": G.row_labels[i],
+            "col_label": T.col_labels[j],
+            "operation_type": "combinatorial",
+            "terms": {"products": raw_products},
+            "matrix": "E",
+            "i": i,
+            "j": j,
+        }
         tracer.trace_stage(
             "product:combinatorial",
             stage1_context,
@@ -951,19 +950,6 @@ def compute_cell_E(
     stage2_result = resolver.run_stage2_multiply(raw_products, "E")
 
     # Stage 3: Combined ontological lensing
-    combined_concepts = stage2_result.text
-    lensing_context = SemanticContext(
-        station_context="Evaluation",
-        valley_summary=valley_summary,
-        row_label=G.row_labels[i],
-        col_label=T.col_labels[j],
-        operation_type="interpret",
-        terms={"content": combined_concepts},
-        matrix="E",
-        i=i,
-        j=j,
-    )
-
     # Perform combined lensing instead of 3-step lensing
     final_result = resolver.run_combined_lens(
         content=stage2_result.text,

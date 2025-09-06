@@ -20,7 +20,6 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 
 from ..core.types import Cell
-from ..core.context import SemanticContext
 
 try:
     from neo4j import GraphDatabase, Driver
@@ -108,7 +107,7 @@ class Neo4jWorkingMemoryExporter:
         except Exception as e:
             self.logger.warning(f"Failed to create Neo4j schema: {e}")
 
-    def export_cell_computation(self, cell: Cell, context: SemanticContext):
+    def export_cell_computation(self, cell: Cell, context: Dict[str, Any]):
         """
         Exports the complete 5-stage semantic journey for a single cell.
 
@@ -122,7 +121,7 @@ class Neo4jWorkingMemoryExporter:
 
         Args:
             cell: Computed cell with rich provenance
-            context: SemanticContext with matrix position and ontological coordinates
+            context: Dict with matrix position and ontological coordinates
         """
         try:
             # Build parameters for the universal export
@@ -150,23 +149,23 @@ class Neo4jWorkingMemoryExporter:
             self.logger.error(f"Failed to export cell {cell_id} to Neo4j: {e}")
             # Don't re-raise - export failure shouldn't break computation
 
-    def _build_matrix_params(self, context: SemanticContext) -> Dict[str, Any]:
+    def _build_matrix_params(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Build matrix node parameters from context."""
         return {
-            "name": context.matrix,
-            "station": context.station_context,
-            "valley_summary": context.valley_summary,
+            "name": context["matrix"],
+            "station": context["station_context"],
+            "valley_summary": context["valley_summary"],
         }
 
-    def _build_cell_params(self, cell: Cell, context: SemanticContext) -> Dict[str, Any]:
+    def _build_cell_params(self, cell: Cell, context: Dict[str, Any]) -> Dict[str, Any]:
         """Build cell node parameters from cell and context."""
         return {
-            "id": f"{context.matrix}-{cell.row}-{cell.col}",
+            "id": f"{context['matrix']}-{cell.row}-{cell.col}",
             "row": cell.row,
             "col": cell.col,
             "value": cell.value,
-            "row_label": context.row_label,
-            "col_label": context.col_label,
+            "row_label": context["row_label"],
+            "col_label": context["col_label"],
             "operation": cell.provenance.get("operation"),
             "coordinates": cell.provenance.get("coordinates"),
             "sources": cell.provenance.get("sources", []),
@@ -184,7 +183,7 @@ class Neo4jWorkingMemoryExporter:
             "startedAt": self.run.get("startedAt"),
         }
 
-    def _build_stage_params(self, cell: Cell, context: SemanticContext) -> List[Dict[str, Any]]:
+    def _build_stage_params(self, cell: Cell, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Build stage parameters from the universal 5-stage provenance schema.
 

@@ -5,11 +5,10 @@ Loads and validates maintainer-authored prompt assets from metadata.yml.
 Provides access to versioned prompt assets with integrity checking.
 """
 
-import os
 import hashlib
 import yaml
 from pathlib import Path
-from typing import Dict, NamedTuple, Optional
+from typing import Dict, Optional
 from dataclasses import dataclass
 
 

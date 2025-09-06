@@ -6,12 +6,12 @@ Enforces the principle that only explicitly present placeholders are substituted
 """
 
 import re
-from typing import List, Dict, Any, Optional, Literal
+from typing import Dict, Any, Optional, Literal
 
 # Type alias for message compatibility
 Message = Dict[str, str]
-from .prompt_registry import get_registry, PromptRegistry
-from .strategies import PromptStrategy
+from .prompt_registry import get_registry, PromptRegistry  # noqa: E402
+from .strategies import PromptStrategy  # noqa: E402
 
 
 class PromptBuilder:
