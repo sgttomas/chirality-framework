@@ -5,6 +5,17 @@ All notable changes to the Chirality Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.1.1] - 2025-09-06
+
+### Fixed
+-   **Release Workflow Fixes**: Resolved PyPI publishing issues preventing automated releases
+    -   Fixed Architecture Tests to use existing test files instead of missing ones
+    -   Updated PyPI publishing to use correct 'pypi' environment (not 'release')
+    -   Switch to trusted publishing authentication instead of legacy token auth
+    -   Aligned with working python-publish.yml workflow configuration
+-   **CI Formatting Issues**: Applied Black formatting to all failing files
+-   **Prompt Asset Validation**: Fixed CI to check for correct asset name 'lens_shift_z'
+
 ## [17.1.0] - 2025-09-06
 
 ### Added

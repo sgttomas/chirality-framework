@@ -39,7 +39,7 @@ python3 -m chirality.cli compute-cell C --i 0 --j 0 --verbose
 # Live OpenAI testing (requires OPENAI_API_KEY env var + SDK >=1.50.0)
 python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose
 
-# FULL PIPELINE EXECUTION (v17.1.0 - Now Working!)
+# FULL PIPELINE EXECUTION (v17.1.1 - Now Working!)
 python3 -m chirality.cli compute-pipeline --resolver openai --snapshot-jsonl --include-base
 
 # Different matrix types
@@ -100,7 +100,7 @@ All matrix operations (C, F, D, X, E) follow the same universal pipeline:
 - The framework requires direct prompt control without message role abstractions.
 - ANY use of Chat Completions API must be immediately fixed.
 
-**CRITICAL API FIXES IMPLEMENTED (v17.1.0)**:
+**CRITICAL API FIXES IMPLEMENTED (v17.1.1)**:
 - Fixed parameter name: `input` instead of `prompt`
 - Removed unsupported parameters: `max_tokens`, `response_format`  
 - Implemented robust response parsing with fallback logic
@@ -139,7 +139,7 @@ All matrix operations (C, F, D, X, E) follow the same universal pipeline:
 
 #### Supporting Systems
 - **`exporters/working_memory_exporter.py`**: Neo4j export with universal provenance schema
-- **`tracer.py`**: JSONL tracing for complete observability - **RESTORED in v17.1.0**
+- **`tracer.py`**: JSONL tracing for complete observability - **RESTORED in v17.1.1**
   - Fixed to work without deprecated SemanticContext class
   - Extracts matrix info from extras dict for semantic journey tracking
   - Critical for diagnosing semantic incoherence and drift
@@ -196,7 +196,7 @@ All cells now use a simplified 3-stage provenance structure:
 - Neo4j export preserves both type distinctions (labels) and instance distinctions (unique IDs)
 - Never modify canonical matrices (A, B, J) unless updating the fundamental specification
 
-### CRITICAL INTEGRATION FIXES (v17.1.0)
+### CRITICAL INTEGRATION FIXES (v17.1.1)
 **MUST VERIFY THESE ARE WORKING**:
 1. **OpenAI Responses API**: `client.responses.create(input=...)` with robust response parsing
 2. **Semantic Tracing**: JSONL tracer operational for coherence diagnostics
@@ -210,9 +210,9 @@ All cells now use a simplified 3-stage provenance structure:
 4. Use `--trace` flag for detailed JSONL logs
 5. Use `--neo4j-export` for graph analysis of semantic journeys
 
-## Recent Architecture Changes (Combined Lensing Refactor + v17.1.0 Milestone)
+## Recent Architecture Changes (Combined Lensing Refactor + v17.1.1 Milestone)
 
-The framework underwent a major refactor to implement combined lensing architecture, culminating in **v17.1.0 achieving full semantic resolution operational status**.
+The framework underwent a major refactor to implement combined lensing architecture, culminating in **v17.1.1 achieving full semantic resolution operational status with reliable CI/CD infrastructure**.
 
 ### Major Changes (Combined Lensing)
 - **Old**: Three-stage lensing (column lens → row lens → synthesis) with 3 separate LLM calls
@@ -222,7 +222,7 @@ The framework underwent a major refactor to implement combined lensing architect
 - **Old**: Methods like `resolve_semantic_pair()`, `apply_column_lens()`, etc.
 - **New**: Unified methods like `run_stage2_multiply()`, `run_combined_lens()`
 
-### Critical Integration Fixes (v17.1.0)
+### Critical Integration Fixes (v17.1.1)
 - **OpenAI Responses API Fixed**: Corrected parameter names, response parsing, error handling
 - **Semantic Tracing Restored**: Fixed tracer to work without SemanticContext class
 - **Full Pipeline Validated**: Complete C→F→D→K→X→Z→E execution with authentic semantic transformations

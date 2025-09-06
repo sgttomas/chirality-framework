@@ -6,7 +6,7 @@
 
 The project has completed a major architectural refactoring to externalize all semantic content and streamline the core pipeline. The old three-stage lensing process has been replaced with a more powerful and coherent **Combined Lensing** pipeline.
 
-**Major Milestone Achieved (v17.1.0)**: The framework now successfully performs complete semantic resolution with the OpenAI Responses API. All critical integration issues have been resolved:
+**Major Milestone Achieved (v17.1.1)**: The framework now successfully performs complete semantic resolution with the OpenAI Responses API and reliable CI/CD infrastructure. All critical integration issues have been resolved:
 - ✅ OpenAI Responses API compatibility fixed (input parameter, response parsing)
 - ✅ Semantic tracing system restored (critical for coherence diagnostics)
 - ✅ Complete pipeline validation (C through E matrices) with authentic semantic transformation
