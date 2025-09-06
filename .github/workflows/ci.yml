@@ -68,15 +68,16 @@ jobs:
             # Test registry loads without errors
             registry = PromptRegistry()
             registry.load()
-            assets = registry.list_assets()
+            assets = list(registry._assets.keys())
             
             print(f'✓ Successfully loaded {len(assets)} prompt assets')
+            print(f'Available assets: {sorted(assets)}')
             
-            # Verify core assets exist
+            # Verify core assets exist (NEW ARCHITECTURE)
             required_assets = [
-                'system', 'ops.multiply', 'ops.elementwise', 'ops.add',
-                'lens.combined', 'station.requirements', 'station.objectives',
-                'station.verification', 'station.validation', 'station.evaluation'
+                'stage2_multiply', 'stage2_elementwise', 'combined_lens', 'station_shift',
+                'station_brief.requirements', 'station_brief.objectives',
+                'station_brief.verification', 'station_brief.validation', 'station_brief.evaluation'
             ]
             
             missing = []
@@ -97,15 +98,11 @@ jobs:
             sys.exit(1)
         "
     
-    - name: Test prompt system strategies
-      run: pytest tests/lib/test_strategies.py -v
+    - name: Test combined lensing architecture
+      run: pytest tests/test_combined_lensing_architecture.py -v
     
-    - name: Test prompt system integration
-      run: pytest tests/integration/test_prompt_system_integration.py -v
-    
-    - name: Test new resolver architecture
-      run: pytest tests/core/test_cell_resolver_new.py -v
-      continue-on-error: true  # May require OpenAI API key
+    - name: Run package verification
+      run: python verify_package.py
 
   test-core:
     name: Test Core Framework
@@ -301,6 +298,7 @@ jobs:
         pip install dist/*.whl
         python -c "import chirality; print('✓ Package imports successfully')"
         python -c "from chirality.lib.strategies import PromptStrategy; print('✓ New prompt system available')"
+        python -c "from chirality.lib.prompt_registry import PromptRegistry; r = PromptRegistry(); r.load(); print('✓ Prompt assets load successfully')"
 
   coverage-report:
     name: Test Coverage Report
@@ -324,9 +322,11 @@ jobs:
     - name: Run tests with coverage
       run: |
         pytest \
-          tests/lib/ \
-          tests/integration/ \
           tests/core/test_operations.py \
+          tests/core/test_station5_validation.py \
+          tests/core/test_station6_evaluation.py \
+          tests/test_combined_lensing_architecture.py \
+          tests/exporters/ \
           --cov=chirality \
           --cov-report=html \
           --cov-report=term-missing \
