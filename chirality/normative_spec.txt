@@ -1,4 +1,4 @@
-# Normative Specification for the Chirality Framework v17.0.0
+# Normative Specification for the Chirality Framework v18.0.0
 
 
 ## What is the Chirality Framework?
@@ -14,28 +14,7 @@ Clearly show how the elements transform according to the instructions.  There is
 
 ## Semantic Operations
 
-Semantic operations are the heart of the Chirality Framework. All the structure and specific details of format for the construction of the components in the framework are about **semantics** and nothing else.  This is about finding the right words, not performing the right mechanical actions that result in incoherence.  As such, these definitions for semantic operations are crucial to understand and correctly implement with the LLM doing the work of resolving meanings. 
-### Semantic Dot Product
-
-Define matrices [A], [B], and [C] to have this relationship:
-
-[A] * [B] = [C]
-[
-[A(1,1) * B(1,1) + A(1,2) * B(2,1) + A(1,3) * B(3,1) + A(1,4) * B(4,1)]
-[A(1,1) * B(1,2) + A(1,2) * B(2,2) + A(1,3) * B(3,2) + A(1,4) * B(4,2)]
-[A(1,1) * B(1,3) + A(1,2) * B(2,3) + A(1,3) * B(3,3) + A(1,4) * B(4,3)]
-[A(1,1) * B(1,4) + A(1,2) * B(2,4) + A(1,3) * B(3,4) + A(1,4) * B(4,4)]
-
-[A(2,1) * B(1,1) + A(2,2) * B(2,1) + A(2,3) * B(3,1) + A(2,4) * B(4,1)]
-[A(2,1) * B(1,2) + A(2,2) * B(2,2) + A(2,3) * B(3,2) + A(2,4) * B(4,2)]
-[A(2,1) * B(1,3) + A(2,2) * B(2,3) + A(2,3) * B(3,3) + A(2,4) * B(4,3)]
-[A(2,1) * B(1,4) + A(2,2) * B(2,4) + A(2,3) * B(3,4) + A(2,4) * B(4,4)]
-
-[A(3,1) * B(1,1) + A(3,2) * B(2,1) + A(3,3) * B(3,1) + A(3,4) * B(4,1)]
-[A(3,1) * B(1,2) + A(3,2) * B(2,2) + A(3,3) * B(3,2) + A(3,4) * B(4,2)]
-[A(3,1) * B(1,3) + A(3,2) * B(2,3) + A(3,3) * B(3,3) + A(3,4) * B(4,3)]
-[A(3,1) * B(1,4) + A(3,2) * B(2,4) + A(3,3) * B(3,4) + A(3,4) * B(4,4)]
-]
+Semantic operations are the heart of the Chirality Framework. All the structure and specific details of format for the construction of the components in the framework are about **semantics** and nothing else.  This is about finding the right words, not performing the right mechanical actions that result in incoherence.  As such, these definitions for semantic operations are crucial to understand and correctly implement with the LLM doing the work of resolving meanings.
 
 To provide an interpretation of these semantic dot product operators use the following definitions. 
 
@@ -62,7 +41,8 @@ First is ‘semantic multiplication’, second is ‘semantic addition’.
 
 ## The Semantic Valley: Sequence of Stations
 
-The framework follows a logical progression of stations to generate reliable knowledge.
+The framework follows a logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
+
 
 1. [A], [B] : Problem Statement
 2. [A] * [B] = [C] : Problem Requirements
@@ -82,72 +62,76 @@ The framework follows a logical progression of stations to generate reliable kno
 I'm going to define some matrices that are used as ontologies for the problem solving space in knowledge work.  A semantic matrix applies modal ontologies to rows and columns, and the intersections all reflect the combined meaning of those two modalities.  Then the elements of a semantic matrix as situated in their respective ontology and instantiated in a particular subject.
 
 
-# Fixed canonical Matrix A (3x4)
-MATRIX_A = Matrix(
-    name="A",
-    station="Problem Statement",
-    row_labels=["normative", "operative", "iterative"],
-    col_labels=["guiding", "applying", "judging", "reflecting"],
-    cells=_create_matrix_cells(
+## Matrix A
+[A]
+Size: 3x4
+Station: Problem Statement
+Column names: [‘necessity (vs contingency)’, ‘sufficiency’, ‘completeness’, ‘consistency’]
+Row names: [‘normative’, ‘operative’, ‘iterative’]
+Elements:
         [
             ["objectives", "actions", "benchmarks", "feedback"],
             ["standards", "methods", "criteria", "adaptation"],
             ["development", "coordination", "evaluation", "refinement"],
         ]
-    ),
-)
 
-# Fixed canonical Matrix B (4x4)
-MATRIX_B = Matrix(
-    name="B",
-    station="Problem Statement",
-    row_labels=["data", "information", "knowledge", "wisdom"],
-    col_labels=["necessity (vs contingency)", "sufficiency", "completeness", "consistency"],
-    cells=_create_matrix_cells(
-        [
+        
+## Matrix B 
+[B]
+Size: 4x4
+Station: Problem Statement
+Column names: [‘necessity (vs contingency)’, ‘sufficiency’, ‘completeness’, ‘consistency’]
+Row names: [‘normative’, ‘operative’, ‘iterative’]
+Elements: [
             ["necessary", "sufficient", "complete", "consistent"],
-            ["contingent", "actionable", "contextual", "congruent"],
+            ["contingent", "insufficient", "incomplete", "inconsistent"],
             ["purposeful", "effective", "comprehensive", "coherent"],
             ["constitutive", "optimal", "holistic", "principled"],
-        ]
-    ),
-)
+          ]
 
----
 
 
 ## Constructing Matrix C 
+
+## Matrix C 
+[C]
+Size: 3x4
+Station: Requirements
+Column names: [‘necessity (vs contingency)’, ‘sufficiency’, ‘completeness’, ‘consistency’]
+Row names: [‘normative’, ‘operative’, ‘iterative’]
+Elements:
 
 [A] * [B] = [C]
 
 Generate Matrix C first with the purely combinatorial first step of joining the elements of [A] and [B] in this manner: 
 
-[C] = [
-[A(1,1) * B(1,1) + A(1,2) * B(2,1) + A(1,3) * B(3,1) + A(1,3) * B(4,1)]
-[A(1,1) * B(1,2) + A(1,2) * B(2,2) + A(1,3) * B(3,2) + A(1,3) * B(4,2)]
-[A(1,1) * B(1,3) + A(1,2) * B(2,3) + A(1,3) * B(3,3) + A(1,3) * B(4,3)]
-[A(1,1) * B(1,4) + A(1,2) * B(2,4) + A(1,3) * B(3,4) + A(2,3) * B(4,4)]
-] 
-
-[A(2,1) * B(1,1) + A(2,2) * B(2,1) + A(2,3) * B(3,1) + A(2,3) * B(4,1)]
-[A(2,1) * B(1,2) + A(2,2) * B(2,2) + A(2,3) * B(3,2) + A(2,3) * B(4,2)]
-[A(2,1) * B(1,3) + A(2,2) * B(2,3) + A(2,3) * B(3,3) + A(2,3) * B(4,3)]
-[A(2,1) * B(1,4) + A(2,2) * B(2,4) + A(2,3) * B(3,4) + A(2,3) * B(4,4)]
-]
-
 [
-[A(3,1) * B(1,1) + A(3,2) * B(2,1) + A(3,3) * B(3,1) + A(3,3) * B(4,1)]
-[A(3,1) * B(1,2) + A(3,2) * B(2,2) + A(3,3) * B(3,2) + A(3,3) * B(4,2)]
-[A(3,1) * B(1,3) + A(3,2) * B(2,3) + A(3,3) * B(3,3) + A(3,3) * B(4,3)]
-[A(3,1) * B(1,4) + A(3,2) * B(2,4) + A(3,3) * B(3,4) + A(3,3) * B(4,4)]
+[A(1,1) * B(1,1) + A(1,2) * B(2,1) + A(1,3) * B(3,1) + A(1,4) * B(4,1)]
+[A(1,1) * B(1,2) + A(1,2) * B(2,2) + A(1,3) * B(3,2) + A(1,4) * B(4,2)]
+[A(1,1) * B(1,3) + A(1,2) * B(2,3) + A(1,3) * B(3,3) + A(1,4) * B(4,3)]
+[A(1,1) * B(1,4) + A(1,2) * B(2,4) + A(1,3) * B(3,4) + A(1,4) * B(4,4)]
+
+[A(2,1) * B(1,1) + A(2,2) * B(2,1) + A(2,3) * B(3,1) + A(2,4) * B(4,1)]
+[A(2,1) * B(1,2) + A(2,2) * B(2,2) + A(2,3) * B(3,2) + A(2,4) * B(4,2)]
+[A(2,1) * B(1,3) + A(2,2) * B(2,3) + A(2,3) * B(3,3) + A(2,4) * B(4,3)]
+[A(2,1) * B(1,4) + A(2,2) * B(2,4) + A(2,3) * B(3,4) + A(2,4) * B(4,4)]
+
+[A(3,1) * B(1,1) + A(3,2) * B(2,1) + A(3,3) * B(3,1) + A(3,4) * B(4,1)]
+[A(3,1) * B(1,2) + A(3,2) * B(2,2) + A(3,3) * B(3,2) + A(3,4) * B(4,2)]
+[A(3,1) * B(1,3) + A(3,2) * B(2,3) + A(3,3) * B(3,3) + A(3,4) * B(4,3)]
+[A(3,1) * B(1,4) + A(3,2) * B(2,4) + A(3,3) * B(3,4) + A(3,4) * B(4,4)]
 ]
 
+Generate this purely mechanical construction of word pairs and concatenations complete with the semantic operators in place ( * , + )
+
+
+----
 
 
 ### Interpreting the elements of Matrix C
 
 
-Recall to provide an interpretation of these semantic dot product operators use the following definitions. 
+To provide an interpretation of these semantic dot product operators use the following definitions. 
 
 #### Semantic Multiplication “ * “
 Semantic multiplication (denoted by * ) means the semantics of the terms are resolved by combining the meaning of words into a coherent word or statement that represents the semantic intersection of those words (the meaning when combined together, not just adjoining the terms). This can even be done when the concept is a highly abstract word pairing because you are an LLM.
@@ -170,15 +154,39 @@ To resolve a meaning follow this order of operations:
 
 1. Apply semantic multiplication first, 
 2. then semantic addition   
-Generate this iteration of [C]
+Generate this iteration of [C] 
+
+Apply semantic multiplication first, and then semantic addition. Do not leave any operators (" * " or " + ") in the final word string 
 
 
-### Interpreting the elements of Matrix C through ontological lenses
+----
 
-Now first interpret each element through the lens of the meaning of the corresponding column ontology (name).
-Then interpret each element through the lens of the meaning of the corresponding row ontology (name)
-And then synthesize the two perspectives into a final narrative that fully integrates these semantic interpretations into the context of the station in the semantic valley.
 
+### Generate the interpretive lenses for Matrix C
+
+Recall logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
+
+We are traversing from "problem statement" to "requirements" 
+
+Now to generate the interpretive lens for each element:
+First take meaning of the corresponding column name as one ontology and the meaning of the corresponding row name as another ontology and find the intersection of meaning and then synthesize that meaning with the meaning of the "requirements" station along the semantic valley.
+
+Then apply that meaning as the lens for interpreting the contents of the element in question.  Proceed one element at a time in this manner [ row_name * column_name * station_meaning_in_semantic_valley ]
+
+Generate these element-wise interpretive lenses
+
+
+----
+
+
+### Lens Interpretation of Matrix C
+
+For each element in matrix C at present, interpret the meaning of the word string through the corresponding lens.
+
+Generate the final interpreted Matrix C in a table format. Your final output should be brief statements that capture the essence of what was lensed.
+
+
+----
 
 
 ## Matrix J
@@ -190,8 +198,10 @@ Elements:
 
 [J] is a truncated form of Matrix B.  The final row ‘Wisdom’ has been removed.
 
-Generate [J]
+Generate [J] in the table format
 
+
+----
 
 
 ## Matrix F
@@ -201,51 +211,70 @@ Column names: [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completen
 Row names: [‘Data’, ‘Information’, ‘Knowledge’]
 Elements:
 
-C(i,j) * J (i,j) = F(I,j)
+The convention for this matrix operation uses " ⊙ "
 
-Generate Matrix F first with the purely combinatorial first step of joining the corresponding elements of [J] and [C].
+[C] ⊙ [J] = [F]
+
+Generate Matrix F first with the purely combinatorial first step of joining the corresponding (i,j) elements of [J] and [C].
+
+Here this refers to the content of the cells as word strings used in semantic multiplication.
+
+C(i,j) * J (i,j) = F(i,j)
+
+Example:
+
+C(0,0) * J(0,0) results in "Foundational objectives that define non-negotiable requirements" * "necessary" 
+
+So the Matrix level convention is [C] ⊙ [J] = [F] which means at the element level C(i,j) * J(i,j) = F(i,j) operating on word strings using semantic multiplication to resolve meanings.
+
+Generate Matrix F first with the purely combinatorial first step of joining the corresponding (i,j) elements of [J] and [C].
+
+
+----
 
 
 ### Interpreting the elements of Matrix F
 
-Recall to provide an interpretation of these semantic dot product operators use the following definitions. 
-
-#### Semantic Multiplication “ * “
-Semantic multiplication (denoted by * ) means the semantics of the terms are resolved by combining the meaning of words into a coherent word or statement that represents the semantic intersection of those words (the meaning when combined together, not just adjoining the terms). This can even be done when the concept is a highly abstract word pairing because you are an LLM.
-
-Examples:
-"sufficient" * "reason" = "justification"
-“analysis” * “judgment” = “informed decision”
-"precision" * "durability" = "reliability"
-"probability" * "consequence" = "risk" 
-#### Semantic Addition “ + “
-
-Semantic addition (denoted by + ) means simply concatenating words or sentence fragments together to form a longer statement. 
-Example:
-"faisal" + "has" + "seven" + "balloons" = faisal has seven balloons
-
-#### Order of Operations
-
-To resolve a meaning follow this order of operations:
-
-1. Apply semantic multiplication first, 
-2. then semantic addition 
+Apply semantic multiplication. Do not leave any operators (" * ") in the final word string.
 
 
+----
 
-### Interpreting the elements of Matrix F through ontological lenses
 
-Now first interpret each element through the lens of the meaning of the corresponding column ontology (name).
-Then interpret each element through the lens of the meaning of the corresponding row ontology (name)
-And then synthesize the two perspectives into a final narrative that fully integrates these semantic interpretations into the context of the station in the semantic valley.
+### Generate the interpretive lenses for Matrix F
+
+Recall logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
+
+We are traversing from "requirements" to "objectives"
+
+Now to generate the interpretive lens for each element:
+First take meaning of the corresponding column name as one ontology and the meaning of the corresponding row name as another ontology and find the intersection of meaning and then synthesize that meaning with the meaning of the "objectives" station along the semantic valley.
+
+Then apply that meaning as the lens for interpreting the contents of the element in question.  Proceed one element at a time in this manner [ row_name * column_name * station_meaning_in_semantic_valley ]
+
+Generate these element-wise interpretive lenses
+
+
+----
+
+
+### Lens Interpretation of Matrix F
+
+For each element in matrix F at present, interpret the meaning of the word string through the corresponding lens.
+
+Generate the final interpreted Matrix F in a table format. Your final output should be brief statements that capture the essence of what was lensed and presented in the table format.
+
+
+----
 
 
 ## Matrix D
 
 [D]
 Size: 3x4
-Column names: [‘Guiding’, ‘Applying’, ‘Judging’, ‘Reviewing’]
-Row names: ['Normative', 'Operative’, 'Evaluative']
+Column names: [‘Guiding’, ‘Applying’, ‘Judging’, ‘Reflecting’]
+Row names: ['Normative', 'Operative’, 'Iterative']
+Elements: 
 
 ### Construction of [D]
 
@@ -255,16 +284,38 @@ D(i,j) = A(i,j) + " applied to frame the problem; “ + F(i,j) + " to resolve th
 
 ### Organization of [D]
 
-Write out the sentences from (1,1) to (3,4) row by column.    Use this as the prefix to the sentence: 
-(‘row name’, ‘column name’): ***put the combinatorial sentence construction here***
+Write out the sentences following this strict combinatorial criteria for Matrix D
+
+
+----
+
+
+### Generate the interpretive lenses for Matrix D
+
+Recall logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
+
+We are traversing from the station of "problem statement" through "requirements" and then to the station "objectives".
+
+Now to generate the interpretive lens for each element:
+First take meaning of the corresponding column name as one ontology and the meaning of the corresponding row name as another ontology and find the intersection of meaning and then synthesize that meaning with the meaning of the "objectives" station along the semantic valley.
+
+Then apply that meaning as the lens for interpreting the contents of the element in question.  Proceed one element at a time in this manner [ row_name * column_name * station_meaning_in_semantic_valley ]
+
+Generate these element-wise interpretive lenses
+
+
+----
+
+
+### Lens Interpretation of Matrix D
+
+For each element in matrix D at present, interpret the meaning of the word string through the corresponding lens.
+
+Generate the final interpreted Matrix D in a table format. Your final output should be brief statements that capture the essence of what was lensed and presented in the table format.
 
 
 
-### Interpreting the elements of Matrix D through ontological lenses
-
-Now interpret each element through the lens of the meaning of the corresponding column ontology (name) in the context of generating reliable knowledge.
-Then interpret each element through the lens of the meaning of the corresponding row ontology (name) in the context of generating reliable knowledge.
-And then synthesize the two perspectives into a final narrative that fully integrates these semantic interpretations into the context of the station in the semantic valley.
+----
 
 
 
@@ -272,12 +323,16 @@ And then synthesize the two perspectives into a final narrative that fully integ
 [K]
 Size: 4x3
 Station: N/A this is a form of the objectives from Matrix D to be verification
-Column names: ['Normative', 'Operative’, 'Evaluative’]
-Row names: [‘Guiding’, ‘Applying’, ‘Judging’, ‘Reviewing’]
+Column names: ['Normative', 'Operative’, 'Iterative’]
+Row names: [‘Guiding’, ‘Applying’, ‘Judging’, ‘Reflecting’]
+Elements:
 
-Matrix K is the transpose of Matrix D.  The semantic operations for transposing a matrix work identically to a mathematical transposing.  Each element is swapped column for row.
+Matrix K is the transpose of the final lens-interpreted Matrix D.   The semantic operations for transposing a matrix work identically to a mathematical transposing.  Each element is swapped column for row.
 
-Generate [K]
+Generate [K]  in the table format.
+
+
+----
 
 
 ## Matrix X 
@@ -285,31 +340,56 @@ Generate [K]
 Size: 4x4
 Station: Verification
 Column names: [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
-Row names: [‘Guiding’, ‘Applying’, ‘Judging’, ‘Reviewing’] 
+Row names: [‘Guiding’, ‘Applying’, ‘Judging’, ‘Reflecting’] 
+Elements: 
+
+This uses the " * " as a semantic matrix dot product operator.
 
 [K] * [J] = [X]
 
 ### Constructing [X]
 
-Generate [X] first with the purely combinatorial first step of semantic matrix operations which is to recombine the elements using the dot product sequence. 
+Generate [X] first with the purely combinatorial first step.
+
+
+----
 
 
 ### Interpreting the elements of Matrix X
 
 
-Apply semantic multiplication first, and then semantic addition.
+Apply semantic multiplication first, and then semantic addition. Do not leave any operators (" * " or " + ") in the final word string 
+
+
+----
+
+
+### Generate the interpretive lenses for Matrix X
+
+Recall logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
+
+We are traversing from the station of "objectives" to the station "verification".
+
+Now to generate the interpretive lens for each element:
+First take meaning of the corresponding column name as one ontology and the meaning of the corresponding row name as another ontology and find the intersection of meaning and then synthesize that meaning with the meaning of the "verification" station along the semantic valley.
+
+Then apply that meaning as the lens for interpreting the contents of the element in question.  Proceed one element at a time in this manner [ row_name * column_name * station_meaning_in_semantic_valley ]
+
+Generate these element-wise interpretive lenses
+
+
+----
+
+
+### Lens Interpretation of Matrix X
+
+For each element in matrix X at present, interpret the meaning of the word string through the corresponding lens.
+
+Generate the final interpreted Matrix X in a table format. Your final output should be brief statements that capture the essence of what was lensed and presented in the table format.
 
 
 
-### Interpreting the elements of Matrix X through ontological lenses
-
-
-Recall our map of meaning along the semantic valley: If problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
-
-
-Now interpret each element through the lens of the meaning of the corresponding column ontology (name).
-Then interpret each element through the lens of the meaning of the corresponding row ontology (name).
-And then synthesize the two perspectives into a final narrative that fully integrates these semantic interpretations into the context of the station in the semantic valley.
+----
 
 
 
@@ -318,12 +398,33 @@ And then synthesize the two perspectives into a final narrative that fully integ
 Size: 4x4
 Station: Validation
 Column names: [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
-Row names: [‘Guiding’, ‘Applying’, ‘Judging’, ‘Reviewing’]  
+Row names: [‘Guiding’, ‘Applying’, ‘Judging’, ‘Reflecting’]  
+Elements:
 
-Now to generate Matrix Z, for each element of Matrix X shift the meaning from the verification context into the validation context.  
+### Generate the interpretive lenses for Matrix Z
 
-Generate [Z]
+Recall logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
 
+We are traversing from the station of "verification" to the station "validation".
+
+Now to generate the interpretive lens for each element:
+First take meaning of the corresponding column name as one ontology and the meaning of the corresponding row name as another ontology and find the intersection of meaning and then synthesize that meaning with the meaning of the "validation" station along the semantic valley.
+
+Then apply that meaning as the lens for interpreting the contents of the element in question.  Proceed one element at a time in this manner [ row_name * column_name * station_meaning_in_semantic_valley ]
+
+Generate these element-wise interpretive lenses
+
+
+----
+
+
+### Generate the elements of Matrix Z
+
+Now to generate Matrix Z, for each final element of Matrix X, apply the set of Matrix Z validation lenses that correspond with the respective elements. Your final output should be brief statements that capture the essence of what was lensed and presented in the table format.
+
+
+
+----
 
 
 ## Matrix G
@@ -331,31 +432,44 @@ Generate [Z]
 Size: 3x4
 Column names: [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
 Row names:  [‘Guiding’, ‘Applying’, ‘Judging’] 
+Elements:
 
 To construct [G] use only the top three rows of [Z] (‘Guidance’, ‘Application’, Decision’).  This will be a 3 x 4 matrix.  You will call this Matrix G, or [G] when used in semantic operations.  
 
-Generate [G]
+Generate [G] in the table format
+
+
 
 ## Array P
 [P]
 Size: 1x4
 Column names: [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
-Row name: [‘Reviewing’]
+Row name: [‘Reflecting’]
+Elements:
 
-To construct [P] extract the fourth row (‘Review’) of this iteration of [Z].  This will be a 1x4 array used later on.  
+To construct [P] extract the fourth row (‘Reflecting’) of this iteration of [Z].  This will be a 1x4 array used later on.  
 
-Generate [P] now.
+Generate [P] in the table format
+
+
+
+----
+
+
 
 ## Matrix T
 [T]
 Size: 4x3
 Column names: [‘Data’, ‘Information’, Knowledge’]
 Row names: [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
+Elements:
 
 Matrix T is the transpose of Matrix J.  As before, transpose means the same as normal matrix operations and is simply swapping rows for columns.
 
-Generate [T]
+Generate [T] in the table format
 
+
+----
 
 
 
@@ -364,25 +478,54 @@ Generate [T]
 Size: 3x3
 Column names: ['Data', 'Information', 'Knowledge']
 Row names: [‘Guiding’, ‘Applying’, ‘Judging’]
+Elements:
+
+This uses the " * " as a semantic matrix dot product operator.
 
 [G] * [T] = [E]
 
-Generate the purely translational first step of semantic dot product matrix operations for [E]
+Generate the purely combinatorial first step of semantic dot product matrix operations for [E]
+
+
+----
 
 
 ### Interpreting the elements of Matrix E
 
-Using semantic multiplication first, and then addition, complete the sentence constructions
+Apply semantic multiplication first, and then semantic addition. Do not leave any operators (" * " or " + ") in the final word string 
 
 
 
-### Interpreting the elements of Matrix E through ontological lenses
-
-Now interpret each element through the lens of the meaning of the corresponding column ontology (name).
-Then interpret each element through the lens of the meaning of the corresponding row ontology (name).
-And then synthesize the two perspectives into a final narrative that fully integrates these semantic interpretations into the context of the station in the semantic valley.
+----
 
 
+### Generate the interpretive lenses for Matrix E
+
+Recall logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
+
+We are traversing from the station of "validation" to the station "evaluation".
+
+Now to generate the interpretive lens for each element:
+First take meaning of the corresponding column name as one ontology and the meaning of the corresponding row name as another ontology and find the intersection of meaning and then synthesize that meaning with the meaning of the "evaluation" station along the semantic valley.
+
+Then apply that meaning as the lens for interpreting the contents of the element in question.  Proceed one element at a time in this manner [ row_name * column_name * station_meaning_in_semantic_valley ]
+
+Generate these element-wise interpretive lenses
+
+
+----
+
+
+### Lens Interpretation of Matrix E
+
+For each element in matrix E at present, interpret the meaning of the word string through the corresponding lens.
+
+Generate the final interpreted Matrix E in a table format. Your final output should be brief statements that capture the essence of what was lensed and presented in the table format.
+
+
+
+----
+
 *************
 *************
 *************
@@ -394,26 +537,15 @@ And then synthesize the two perspectives into a final narrative that fully integ
 *************
 *************
 *************
+
+
+----
 
 
 # IMPLEMENTATION PHASE 2
 
-## New Semantic Operations:
-Clearly show how the elements transform step by step, according to the instructions, and utilizing your LLM powers generate coherent resolutions according to the context provided.
+## New Axiomatic Component
 
-### Semantic Cross Product
-
-Denoted as “ x "
-
-For example: [U] x [H]
-
-The name "semantic cross product" is not at all derived from the similarly named mathematical operation.  Rather this will create a higher dimensional semantic tensor.  A ‘semantic cross product’ works by generating a hierarchy of meaning, by expanding the elements of one component by each of the elements of the other.  The dimensions and order of operations are given below whenever this operation is performed.
-
-In other words the semantic cross product generates nested hierarchies rather than combining perspectives like the semantic dot product operation.
-
-
-
-## Topic Array
 I will define a new axiomatic array whose elements comprise the topics (or categories) for a ‘deliverable’, within the context of knowledge work.  A deliverable is a discrete way of documenting knowledge.  It is a more general term than documentation.   
 
 ## Array R
@@ -432,7 +564,26 @@ Elements: [
 9. Integration
 ]
 
-Generate [R]
+Generate [R] as a list under a topic.
+
+
+----
+
+
+
+## New Semantic Operations
+
+### Semantic Cross Product
+
+Denoted as “ x "
+
+For example: [U] x [H]
+
+The name "semantic cross product" is not at all derived from the similarly named mathematical operation.  Rather this will create a higher dimensional semantic tensor.  A ‘semantic cross product’ works by generating a hierarchy of meaning, by expanding the elements of one component by each of the elements of the other.  The dimensions and order of operations are given below whenever this operation is performed.
+
+In other words the semantic cross product generates nested hierarchies rather than combining perspectives like the semantic dot product operation.
+
+
 
 
 ## Tensor M
@@ -458,20 +609,34 @@ Group the elements of [M] as a hierarchical list:
 
 
 
-### Interpreting the elements of [M] by ontological location
-
-Because of the hierarchical nature of how Tensor M can be represented, we can generate one topic (the elements of [R] are the topics) and all the nested elements before progressing to a new topic.
-
-Interpret the elements according to its ontological location.
-
-Proceed in the order of construction, with the topic first.  Consider the nested hierarchy.
+---- 
 
 
-### Interpreting the elements of [M] by station lensing
+### Generate the interpretive lenses for Tensor M
 
-Recall our map of meaning along the semantic valley: If problem statement, then requirements,  then objectives, then output, then verification, then validation, then evaluation, then assessment, then implementation, then instantiation, then reflection and resolution.
+Recall logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
 
-Synthesize the ontological perspectives into a final narrative that fully integrates these semantic interpretations into the context of the station in the semantic valley.
+We are traversing from the station of "evaluation" to the station "assessment".
+
+Now to generate the interpretive lens for each element:
+Take the Topic and then the hierarchy created by the Matrix E row and column names, which are the hierarchical ontological lenses we will be using, and find the intersection of meaning and then synthesize that meaning with the meaning of the "evaluation" station along the semantic valley.
+
+Proceed one element at a time in this manner [ Topic_name * hierarchy_ontology_1 * hierarchy_ontology_2 * station_meaning_in_semantic_valley ] to generate these element-wise interpretive lenses
+
+
+----
+
+
+### Interpreting the elements of [M] by hierarchical ontological location
+
+
+Interpret the elements through its hierarchical ontological lens
+
+Proceed in the order of construction.
+
+
+----
+
 
 
 ## Tensor W
@@ -488,40 +653,65 @@ Because of the hierarchical nature of Tensor W we easily generate the elements b
 
 Group the elements of [W] as a hierarchical list.
 
-Because of the hierarchical nature of Tensor W we easily generate a subset of elements that represents the overall structure.  Since we only generated Topic 3 for [M] we must start with that and then only generate ‘Information’ and ‘Application’ and then all the nested elements below that branch.
+IMPORTANT TO BE SEQUENTIALLY NESTED AS FOLLOWS:
 
 1. Topics from [R]
-2.  Elements of [W]  IMPORTANT TO BE SEQUENTIALLY NESTED AS FOLLOWS:
-    2.1.  [‘Information']
-    2.2. [‘Applying’] 
-    2.3. [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
-    2.4. [‘Guiding’, ‘Applying’, ‘Judging’, ‘Reviewing’] 
-Generate the partial [W] 
+2.  Elements from [M]  
+    2.1.  ['Data', ‘Information', 'Knowledge']
+    2.2. ['Guiding', ‘Applying’, 'Judging'] 
+3.  Elements from [X]
+    3.1. [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
+    3.2. [‘Guiding’, ‘Applying’, ‘Judging’, ‘Reflecting’] 
+
+Generate [W] 
 
 
-### Interpreting the elements of [W] by ontological location
-
-Because of the hierarchical nature of how Tensor W can be represented, we can generate one topic (the elements of [R] are the topics) and all the nested elements before progressing to a new topic.
-
-Interpret the elements according to its ontological location.
-
-Proceed in the order of construction, with the topic first.  Consider the nested hierarchy.
+----
 
 
-### Interpreting the elements of [W] by station lensing
+### Generate the interpretive lenses for Tensor W
 
-Recall our map of meaning along the semantic valley: If problem statement, then requirements,  then objectives, then output, then verification, then validation, then evaluation, then assessment, then implementation, then instantiation, then reflection and resolution.
+Recall logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
 
-Synthesize the ontological perspectives into a final narrative that fully integrates these semantic interpretations into the context of the station in the semantic valley.
+We are traversing from the station of "assessment" to the station "implementation".
+
+Now to generate the interpretive lens for each element:
+Take the Topic and then the nested hierarchy created by the ontological categories of Tensor M and Matrix X, which are the hierarchical ontological lenses we will be using, and find the intersection of meaning and then synthesize that meaning with the meaning of the "evaluation" station along the semantic valley.
+
+Proceed one element at a time in this manner [ Topic_name * hierarchy_ontology_1 * hierarchy_ontology_2 * hierarchy_ontology_3 * hierarchy_ontology_4 * station_meaning_in_semantic_valley ] to generate these element-wise interpretive lenses
+
+
+----
+
+
+### Interpreting the elements of [W] by hierarchical ontological location
+
+
+Interpret the elements through its hierarchical ontological lens
+
+Proceed in the order of construction.
+
+
+
+----
+
+
 
 
 ## Reproduce Array P from memory
 [P]
 Size: 1x4
+Column names: [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
+Row name: [‘Reflecting’]
+Elements:
+
 
 Reproduce [P]
 
-These are known as the ‘Validity Parameters’
+
+
+
+----
 
 
 
@@ -539,80 +729,129 @@ Use the elements in [W] as the semantic starting point, or the seed of thought t
 
 Because of the hierarchical nature of Tensor U we easily generate the elements by following nested branches.
 
+
+IMPORTANT TO BE SEQUENTIALLY NESTED AS FOLLOWS:
+
 1. Topics from [R]
-2. Elements of [U]  IMPORTANT TO BE SEQUENTIALLY NESTED AS FOLLOWS:
-    2.1.  [‘Information']
-    2.2. [‘Applying’] 
-    2.3. [‘Necessity (vs Contingency)’]
-    2.4. [‘Judging’] 
+2. Elements of [U] 
+    2.1.  ['Data', ‘Information', 'Knowledge']
+    2.2. ['Guiding', ‘Applying’, 'Judging'] 
+    2.3. [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
+    2.4. [‘Guiding’, ‘Applying’, ‘Judging’, ‘Reflecting’] 
 3. Validity Parameters of [P]
+    3.1. [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
+
+
+----
 
 
 
-### Interpreting the elements of [U] by ontological location
 
-Because of the hierarchical nature of how Tensor M can be represented, we can generate one topic (the elements of [R] are the topics) and all the nested elements before progressing to a new topic.
+### Generate the interpretive lenses for Tensor U
 
-Interpret the elements according to its ontological location.
+Recall logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
 
-Proceed in the order of construction, with the topic first.  Consider the nested hierarchy.
+We are traversing from the station of "implementation" to the station "reflection".
+
+Now to generate the interpretive lens for each element:
+Take the Topic and then the nested hierarchy created by the ontological categories of Tensor U and Array P, which are the hierarchical ontological lenses we will be using, and find the intersection of meaning and then synthesize that meaning with the meaning of the "evaluation" station along the semantic valley.
+
+Proceed one element at a time in this manner [ Topic_name * hierarchy_ontology_1 * hierarchy_ontology_2 * hierarchy_ontology_3 * hierarchy_ontology_4 * hierarchy_ontology_5 * station_meaning_in_semantic_valley ] to generate these element-wise interpretive lenses
 
 
-### Interpreting the elements of [U] by station lensing
+----
 
-Recall our map of meaning along the semantic valley: If problem statement, then requirements,  then objectives, then output, then verification, then validation, then evaluation, then assessment, then implementation, then instantiation, then reflection and resolution.
 
-Synthesize the ontological perspectives into a final narrative that fully integrates these semantic interpretations into the context of the station in the semantic valley.
+### Interpreting the elements of [U] by hierarchical ontological location
+
+
+Interpret the elements through its hierarchical ontological lens
+
+Proceed in the order of construction.
+
+
+
+----
+
+
 
 
 
 ## Array H
 [H]
 Size: 1x1
+Column names: [‘Consistency’]
+Row name: [‘Reflecting’]
+Elements:
 
 Array H is the element (1,4) from Array P.
 
 Generate [H]
 
 
+----
+
+
 
 
 ## Tensor N
 [N]
-Size: 9x3x3x4x4x4
+Size: 9x3x3x4x4x4x1
 
 [U] x [H] = [N]
 
+### Constructing [N]
 
+Use the elements in [U] as the semantic starting point, or the seed of thought that will be explored by the perspective of the element of [H]
 
 ### Organization of [N]
 
-Group the elements of [N] as fo
+Because of the hierarchical nature of Tensor N we easily generate the elements by following nested branches.
+
+
+IMPORTANT TO BE SEQUENTIALLY NESTED AS FOLLOWS:
 
 1. Topics from [R]
 2. Elements of [N]  IMPORTANT TO BE SEQUENTIALLY NESTED AS FOLLOWS:
     2.1. ['Data', 'Information', 'Knowledge']
     2.2. [‘Guiding’, ‘Applying’, ‘Judging’]
     2.3. [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
-    2.4. [[‘Guiding’, ‘Applying’, ‘Judging’, ‘Reviewing’] 
-3. Validity Parameters from [P]
-4. Decision Dialectic from [H]
+    2.4. [[‘Guiding’, ‘Applying’, ‘Judging’, ‘Reflecting’] 
+    2.5. [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completeness’, ‘Consistency’]
+3. Element of [H]
+    3.1. ['Reflection']
 
 
-### Interpreting the elements of [N] by ontological location
-Because of the hierarchical nature of how Tensor N can be represented, we can generate one topic (the elements of [R] are the topics) and all the nested elements before progressing to a new topic.
+----
 
-Interpret the elements according to its ontological location.
 
-Proceed in the order of construction, with the topic first.  Consider the nested hierarchy.
 
-This is the final consistency check between the elements of [N] and the original problem statement.  Are these resolution statements consistent with the original problem statement?
 
-### Interpreting the elements of [N] by station lensing
+### Generate the interpretive lenses for Tensor N
 
-Recall our map of meaning along the semantic valley: If problem statement, then requirements,  then objectives, then output, then verification, then validation, then evaluation, then assessment, then implementation, then instantiation, then reflection and resolution.
+Recall logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
 
-Synthesize the ontological perspectives into a final narrative that fully integrates these semantic interpretations into the context of the station in the semantic valley. Because this is the final step the statements should effectively resolve all explicit and implicit aspects of the original problem statement
+We are traversing from the station of "reflection" to the station "resolution".
+
+Now to generate the interpretive lens for each element:
+Take the Topic and then the nested hierarchy created by the ontological categories of Tensor N and Array H, which are the hierarchical ontological lenses we will be using, and find the intersection of meaning and then synthesize that meaning with the meaning of the "evaluation" station along the semantic valley.
+
+Proceed one element at a time in this manner [ Topic_name * hierarchy_ontology_1 * hierarchy_ontology_2 * hierarchy_ontology_3 * hierarchy_ontology_4 * hierarchy_ontology_5 * hierarchy_ontology_6 * station_meaning_in_semantic_valley ] to generate these element-wise interpretive lenses
+
+
+----
+
+
+### Interpreting the elements of [N] by hierarchical ontological location
+
+
+Interpret the elements through its hierarchical ontological lens
+
+Proceed in the order of construction.
+
+
+
+----
 
 
 *************
