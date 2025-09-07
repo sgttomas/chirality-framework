@@ -90,7 +90,7 @@ class PromptStrategy:
         elif stage == "shift":
             if component_id != "Z":
                 raise ValueError(f"Shift operation only valid for component Z, got {component_id}")
-            return ["lens_shift_z"]
+            return ["station_shift"]
 
         else:
             raise ValueError(f"Invalid stage: {stage}")

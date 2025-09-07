@@ -1,75 +1,62 @@
-registry_version: "1.0"
+registry_version: '1.0'
 assets:
-  # System prompt
-  - id: system
-    path: system.md
-    sha256: 667d7a26818138a3d0737a5244f356079008379c5d19e23b86501e3582ff290d
-    version: "1.0.0"
-    size_bytes: 7082
-    last_modified: "2025-09-06T17:30:00Z"
-    
-  # Station briefs
-  - id: station_brief.requirements
-    path: station_briefs/requirements.md
-    sha256: 0719603f18ce5bb507b1b281ea5590d21f1ff7601368e55b032c9be471b39428
-    version: "1.0.0"
-    size_bytes: 467
-    last_modified: "2025-09-06T15:00:00Z"
-    
-  - id: station_brief.objectives
-    path: station_briefs/objectives.md
-    sha256: 1a5b2452f475b7b7a77639e1cac8f4b90f570ee85f9face9be3136d8005d2e12
-    version: "1.0.0"
-    size_bytes: 457
-    last_modified: "2025-09-06T15:00:00Z"
-    
-  - id: station_brief.verification
-    path: station_briefs/verification.md
-    sha256: 49d16a1983faae22cd6d9842197b31fcb3a59b77d78ec9852a883a91ec87b809
-    version: "1.0.0"
-    size_bytes: 469
-    last_modified: "2025-09-06T15:00:00Z"
-    
-  - id: station_brief.validation
-    path: station_briefs/validation.md
-    sha256: d16e58a04c7fd9466c0394e6bbab95dc5bf5e408812696d4444d1a148c621aea
-    version: "1.0.0"
-    size_bytes: 445
-    last_modified: "2025-09-06T15:00:00Z"
-    
-  - id: station_brief.evaluation
-    path: station_briefs/evaluation.md
-    sha256: 1be784d1031c94be1bc575b51e1c176eb60880bfc2cae0ae0cecc1288dd02438
-    version: "1.0.0"
-    size_bytes: 448
-    last_modified: "2025-09-06T15:00:00Z"
-    
-  # Stage 2 operators
-  - id: stage2_multiply
-    path: ops/operators/multiply.md
-    sha256: d3b72d76c2ae438e7a98a6b8758f5ce3a678fbf35f94e554d1b220fa50821a62
-    version: "1.0.0"
-    size_bytes: 2483
-    last_modified: "2025-09-06T15:00:00Z"
-    
-  - id: stage2_elementwise
-    path: ops/operators/elementwise.md
-    sha256: ae991838a33540269cbaf1b9f0b01e2697f1492144d1685b0f5182f3e3cda2f0
-    version: "1.0.0"
-    size_bytes: 2249
-    last_modified: "2025-09-06T15:00:00Z"
-    
-  # Stage 3 lensing
-  - id: combined_lens
-    path: ops/lensing/combined.md
-    sha256: e6f608076a63d73137460dd110d489c755450a7ce2a3c81e8698f0fa853e8cfb
-    version: "1.0.0"
-    size_bytes: 1516
-    last_modified: "2025-09-06T15:00:00Z"
-    
-  - id: lens_shift_z
-    path: ops/lensing/shift.md
-    sha256: b69236e40f3d2dc3297013b22d76181747811a4f906139c540ec3bda878b5295
-    version: "1.0.0"
-    size_bytes: 1672
-    last_modified: "2025-09-06T15:00:00Z"
+- id: system
+  path: system.md
+  sha256: 2e78b74a9e479b051847d6439ccd5c79dc5e211a7821f7930c0cf4ae815ebb91
+  version: 1.0.0
+  size_bytes: 2750
+  last_modified: '2025-09-07T23:36:49.350197+00:00'
+- id: station_brief.requirements
+  path: station_briefs/requirements.md
+  sha256: 087c0ffd06b855553cfb574ed26b539e0efae1bbdb3b9a6df5213b5a356964f1
+  version: 1.0.0
+  size_bytes: 428
+  last_modified: '2025-09-07T23:36:49.350484+00:00'
+- id: station_brief.objectives
+  path: station_briefs/objectives.md
+  sha256: 74395c482b8554fc28b7bb3a9fecbb341de34d11cc133d671e0e2e1a32262d75
+  version: 1.0.0
+  size_bytes: 412
+  last_modified: '2025-09-07T23:36:49.350680+00:00'
+- id: station_brief.verification
+  path: station_briefs/verification.md
+  sha256: d81add931e91020bfb50c3bf8a2598a24184a841390d8cdd548122256ac4dbc1
+  version: 1.0.0
+  size_bytes: 396
+  last_modified: '2025-09-07T23:36:49.351256+00:00'
+- id: station_brief.validation
+  path: station_briefs/validation.md
+  sha256: ba4a143e0102f1351bc67d06fae12edb040d735c340b1a3aea9afb39dacd39ad
+  version: 1.0.0
+  size_bytes: 388
+  last_modified: '2025-09-07T23:36:49.351328+00:00'
+- id: station_brief.evaluation
+  path: station_briefs/evaluation.md
+  sha256: 0292dec89bec6ee29170f0b68e19cd2d0c9bb4723016bcbe9f135298c0f536ef
+  version: 1.0.0
+  size_bytes: 390
+  last_modified: '2025-09-07T23:36:49.351391+00:00'
+- id: stage2_multiply
+  path: stage2_multiply.md
+  sha256: d323488b37e04e377cca15b59bfca74451c3720226ac12f96576f06fdcdd4075
+  version: 1.0.0
+  size_bytes: 2564
+  last_modified: '2025-09-07T23:36:49.351530+00:00'
+- id: stage2_elementwise
+  path: stage2_elementwise.md
+  sha256: b2d45aad29a4822ef980121b31755d53e3dd34cfa51af0ea4d5fcce9f5f7a023
+  version: 1.0.0
+  size_bytes: 2045
+  last_modified: '2025-09-07T23:36:49.351713+00:00'
+- id: combined_lens
+  path: combined_lens.md
+  sha256: 07be3f2a0f944d12c15a37f4922081521ab2f103aa505ae3ffa1db90bb33e238
+  version: 1.0.0
+  size_bytes: 494
+  last_modified: '2025-09-07T23:36:49.351908+00:00'
+- id: station_shift
+  path: station_shift.md
+  sha256: 3db27fb0cbb5646d084a53a143034b7ad318cee903f98d422962cdad2053c70c
+  version: 1.0.0
+  size_bytes: 1978
+  last_modified: '2025-09-07T23:36:49.352105+00:00'

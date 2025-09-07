@@ -27,7 +27,7 @@ class TestPromptSystemCore:
         # Should have our core assets
         assert "stage2_multiply" in registry._assets
         assert "combined_lens" in registry._assets
-        assert "lens_shift_z" in registry._assets
+        assert "station_shift" in registry._assets
 
         # Should have station briefs
         assert "station_brief.requirements" in registry._assets
@@ -46,7 +46,7 @@ class TestPromptSystemCore:
 
         # Z should use shift
         assets = PromptStrategy.plan("shift", "Z")
-        assert assets == ["lens_shift_z"]
+        assert assets == ["station_shift"]
 
 
 class TestCombinedLensingAPI:
