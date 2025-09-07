@@ -76,7 +76,7 @@ jobs:
             
             # Verify core assets exist (NEW ARCHITECTURE)
             required_assets = [
-                'stage2_multiply', 'stage2_elementwise', 'combined_lens', 'lens_shift_z',
+                'stage2_multiply', 'stage2_elementwise', 'combined_lens', 'station_shift',
                 'station_brief.requirements', 'station_brief.objectives',
                 'station_brief.verification', 'station_brief.validation', 'station_brief.evaluation'
             ]

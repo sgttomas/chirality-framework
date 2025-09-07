@@ -63,16 +63,16 @@ class PromptBuilder:
         """
         # Stage-2 elementwise uses the same assets regardless of component.
         asset_ids = PromptStrategy.plan("stage2_elementwise", "F")
-        
+
         # Map terms to element_a and element_b placeholders
         if len(terms) < 2:
             raise ValueError(f"Stage 2 elementwise expects at least 2 terms, got {len(terms)}")
-        
+
         context = {
             "element_a": terms[0],  # From Matrix J
             "element_b": terms[1],  # From Matrix C
         }
-        
+
         return self._build_messages(asset_ids, context)
 
     def build_stage2_addition(self, parts: list[str]) -> str:
