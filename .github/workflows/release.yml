@@ -316,34 +316,10 @@ jobs:
           dist/*.tar.gz
         generate_release_notes: false
         
-  publish-pypi:
-    name: Publish to PyPI
-    runs-on: ubuntu-latest
-    needs: [validate-release, run-tests, build-artifacts, create-github-release]
-    permissions:
-      # IMPORTANT: this permission is mandatory for trusted publishing
-      id-token: write
-    environment:
-      name: pypi
-      # PyPI project URL for deployment status
-      url: https://pypi.org/project/chirality-framework/
-    
-    steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: dist-${{ needs.validate-release.outputs.version }}
-        path: dist/
-    
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        packages-dir: dist/
-        
   post-release:
     name: Post-Release Tasks
     runs-on: ubuntu-latest
-    needs: [validate-release, publish-pypi]
+    needs: [validate-release, create-github-release]
     if: always()
     
     steps:
@@ -355,11 +331,7 @@ jobs:
         echo "## 🎉 Release Summary"
         echo "Version: v${VERSION}"
         echo "Prerelease: ${IS_PRERELEASE}"
-        echo "PyPI: ${{ needs.publish-pypi.result }}"
-        
-        if [[ "${{ needs.publish-pypi.result }}" == "success" ]]; then
-          echo "✅ Successfully published to PyPI"
-          echo "📦 Install with: pip install chirality-framework==${VERSION}"
-        else
-          echo "❌ PyPI publication failed"
-        fi
+        echo "📦 GitHub Release created"
+        echo ""
+        echo "Note: PyPI publishing is handled by the 'Upload Python Package' workflow"
+        echo "when the GitHub release is published."
