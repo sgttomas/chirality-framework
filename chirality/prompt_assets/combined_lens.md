@@ -1,8 +1,3 @@
-# Combined Lensing Operation
-
-## Task
-Apply unified row × column × station lensing to semantic content.
-
 ## Input
 - Content: {{content}}
 - Component: {{component_id}}
@@ -17,9 +12,4 @@ Apply unified row × column × station lensing to semantic content.
 4. Synthesize unified interpretation
 
 ## Output Format
-Return a single coherent semantic interpretation combining all three perspectives.
-
-## Example
-Content: "actionable objectives"
-Row: "normative", Column: "sufficiency", Station: "requirements"
-Output: "sufficient normative objectives for requirements definition"
+Return a single coherent semantic interpretation combining all three perspectives (row, column, and grounding in the station context).
