@@ -1,1 +1,1 @@
-19.1.0 — See full history in CHANGELOG.md
+19.2.0 — See full history in CHANGELOG.md

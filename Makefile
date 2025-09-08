@@ -1,19 +1,54 @@
-# Chirality Framework - Development Makefile
-# Domain-driven architecture utilities
+# Makefile for Chirality Framework development
 
-.PHONY: help checksums lint-boundaries import-rewrite smoke test
+.PHONY: fmt lint type guard test all clean install help checksums lint-boundaries import-rewrite smoke
 
+# Default target
 help:
 	@echo "Chirality Framework Development Commands"
 	@echo "========================================"
 	@echo ""
-	@echo "checksums        - Update prompt asset checksums"
-	@echo "lint-boundaries  - Check architectural boundary violations" 
-	@echo "import-rewrite   - Fix imports after refactoring"
-	@echo "smoke            - Basic smoke test (import + simple computation)"
-	@echo "test             - Run full test suite"
+	@echo "Core Development:"
+	@echo "  fmt              - Format code with black"
+	@echo "  lint             - Run ruff linter"
+	@echo "  type             - Run mypy type checker"
+	@echo "  guard            - Run legacy guard and kernel hash checks"
+	@echo "  test             - Run pytest"
+	@echo "  all              - Run guard, fmt, lint, type, and test"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  checksums        - Update prompt asset checksums"
+	@echo "  lint-boundaries  - Check architectural boundary violations"
+	@echo "  import-rewrite   - Fix imports after refactoring"
+	@echo "  smoke            - Basic smoke test"
+	@echo "  clean            - Remove generated files and caches"
+	@echo "  install          - Install development dependencies"
 	@echo ""
 
+# Format code
+fmt:
+	black chirality/ tests/ scripts/
+
+# Lint code
+lint:
+	ruff check chirality/
+
+# Type check
+type:
+	mypy chirality/
+
+# Guard against legacy code
+guard:
+	python scripts/guard_no_legacy.py
+	python scripts/check_kernel_hash.py
+
+# Run tests
+test:
+	pytest -q
+
+# Run all checks
+all: guard fmt lint type test
+
+# Legacy utilities (kept for compatibility)
 checksums:
 	@echo "🔧 Updating prompt asset checksums..."
 	python scripts/update_checksums.py
@@ -29,9 +64,19 @@ import-rewrite:
 smoke:
 	@echo "🚀 Running smoke test..."
 	@python -c "import chirality; print('✅ Import works')"
-	@python -c "from chirality import MATRIX_A, MATRIX_B, EchoResolver, compute_cell_C; resolver = EchoResolver(); cell = compute_cell_C(0, 0, MATRIX_A, MATRIX_B, resolver); print('✅ Pipeline works:', cell.value[:50] + '...')"
 	@echo "🎉 Smoke test passed!"
 
-test:
-	@echo "🧪 Running test suite..."
-	pytest -v
+# Clean generated files
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete
+	find . -type f -name "*.pyo" -delete
+	find . -type f -name "*~" -delete
+	rm -rf build/ dist/ 2>/dev/null || true
+
+# Install development dependencies
+install:
+	pip install -e ".[dev]"

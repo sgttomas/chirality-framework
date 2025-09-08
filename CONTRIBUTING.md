@@ -16,7 +16,7 @@ Contributions should respect this two-phase architecture and focus on improving 
 - Python 3.9+
 - An OpenAI API key (set as the `OPENAI_API_KEY` environment variable for live tests)
 - **Note**: The framework uses OpenAI's Responses API exclusively and requires OpenAI SDK >=1.50.0
-- **Version**: Currently at v19.1.0 with Phase 2 ready for implementation
+- **Version**: Currently at v19.2.0 with production-ready infrastructure
 
 ### Development Setup
 
@@ -35,6 +35,46 @@ pip install -e ".[dev]"
 # 4. Run the offline test suite to verify setup
 pytest
 ```
+
+## Architecture Guidelines
+
+### Domain-Driven Design Structure
+
+The codebase follows Domain-Driven Design (DDD) with clear separation of concerns:
+
+- **`chirality/domain/`**: Core business logic and entities
+- **`chirality/application/`**: Application services and use cases  
+- **`chirality/infrastructure/`**: External integrations (LLM, export, monitoring)
+- **`chirality/interfaces/`**: User interfaces (single CLI entry point)
+- **`chirality/lib/`**: **RESTRICTED** - Contains `logging.py` only for production infrastructure
+
+### Critical Architectural Rules
+
+1. **No Legacy Code**: The framework maintains a strict no-legacy invariant
+   - `chirality/core/` and legacy shims have been permanently deleted
+   - Guard scripts prevent reintroduction of legacy patterns
+
+2. **lib/ Directory Restriction**: 
+   - **ONLY** `chirality/lib/logging.py` is permitted for CLI output channel separation
+   - Any new utilities must go to the appropriate DDD layer (domain/application/infrastructure)
+   - This carve-out exists solely for production logging infrastructure
+
+3. **Single CLI Entry Point**: 
+   - Only `chirality.interfaces.cli:main` via `pyproject.toml [project.scripts]`
+   - No secondary CLI entry points or `--legacy` flags permitted
+
+4. **Guard Scripts**: Run these locally before commits:
+   ```bash
+   python scripts/guard_no_legacy.py      # Prevents legacy code drift
+   python scripts/check_kernel_hash.py    # Validates prompt asset integrity  
+   python scripts/codemod_legacy_imports.py  # Checks for banned imports
+   ```
+
+### Logging & Output Channels
+
+- **Logs → stderr**: All progress, status, and diagnostic messages  
+- **Data → stdout**: Only actual output data (for CI/CD pipeline consumption)
+- Use `chirality.lib.logging` functions: `log_info()`, `log_error()`, `log_success()`, `output_data()`
 
 ## How to Contribute
 

@@ -118,7 +118,7 @@ class SnapshotGenerator:
         meta = phase1_output.get("meta", {})
         return f"""---
 type: phase1_snapshot
-version: 19.1.0
+version: 19.2.0
 generated: {datetime.now(timezone.utc).isoformat()}
 kernel_hash: {meta.get('kernel_hash', 'unknown')}
 snapshot_hash: pending

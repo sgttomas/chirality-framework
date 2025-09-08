@@ -141,6 +141,14 @@ traces/
 snapshots/
 viewer-output/
 
+# Artifacts (only specific files allowed)
+artifacts/cache/
+artifacts/cell_traces/
+artifacts/phase1_dialogue.jsonl
+
+# Neo4j exports
+*.neo4j.csv
+
 # Backup files
 *.bak
 *.backup
