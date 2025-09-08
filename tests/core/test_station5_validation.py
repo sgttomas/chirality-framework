@@ -7,8 +7,8 @@ This module tests:
 3. Validation enforcement and compatibility
 """
 
-from chirality.core.matrices import MATRIX_A, MATRIX_B, MATRIX_J
-from chirality.core.operations import (
+from chirality.domain.matrices.canonical import MATRIX_A, MATRIX_B, MATRIX_J
+from chirality.application.services.pipeline_service import (
     compute_matrix_C,
     compute_matrix_F,
     compute_matrix_D,
@@ -17,7 +17,7 @@ from chirality.core.operations import (
     compute_cell_Z,
     compute_matrix_Z,
 )
-from chirality.core.validate import validate_provenance
+from chirality.domain.validation import validate_provenance
 from tests.mocks import MockCellResolver
 
 

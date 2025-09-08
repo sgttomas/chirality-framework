@@ -1,0 +1,18 @@
+old_path,new_path,notes
+core/types.py,domain/types.py,pure data models (Matrix Cell RichResult etc.)
+core/constants.py,domain/constants.py,no imports from infra/app
+core/stations.py,domain/stations.py,station enums labels
+core/validate.py,domain/validation.py,shape checks only
+core/matrices.py,domain/matrices/canonical.py,A B J etc. (replacing shim)
+core/provenance_schema.py,domain/provenance.py,schema only; persistence in infra
+core/operations.py,application/services/pipeline_service.py,orchestrates stages; no I/O
+core/cell_resolver.py,infrastructure/llm/resolver.py,calls Responses API; JSON-only
+core/llm_config.py,infrastructure/llm/config.py,model temperature timeouts
+core/resolvers.py,infrastructure/llm/mock_resolvers.py,Echo/Fake resolvers
+core/tracer.py,infrastructure/monitoring/tracer.py,JSONL/OTel hooks
+core/api_guards.py,infrastructure/api/guards.py,forbid Chat Completions
+core/llm_client.py,infrastructure/llm/openai_adapter.py,single entry to Responses API (replacing shim)
+infrastructure/prompts/builder.py,infrastructure/prompts/builder.py,keep existing (already moved)
+infrastructure/prompts/registry.py,infrastructure/prompts/registry.py,keep existing (already moved)
+infrastructure/prompts/strategies.py,infrastructure/prompts/strategies.py,keep existing (already moved)
+exporters/working_memory_exporter.py,infrastructure/exporters/working_memory_exporter.py,Neo4j export functionality

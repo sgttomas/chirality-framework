@@ -21,10 +21,10 @@ except Exception:
     __version__ = "0.0.0"  # Fallback version
 __author__ = "Chirality Framework Team"
 
-from .core.types import Cell, Matrix
-from .core.cell_resolver import CellResolver
-from .core.resolvers import EchoResolver
-from .core.operations import (
+from .domain.types import Cell, Matrix
+from .infrastructure.llm.resolver import CellResolver
+from .infrastructure.llm.mock_resolvers import EchoResolver
+from .application.services.pipeline_service import (
     compute_cell_C,
     compute_cell_F,
     compute_cell_D,
@@ -42,9 +42,9 @@ from .core.operations import (
     compute_array_P,
     compute_matrix_E,
 )
-from .core.matrices import MATRIX_A, MATRIX_B, MATRIX_J
-from .core.validate import FrameworkValidationError, validate_matrix, validate_cell
-from .core.tracer import JSONLTracer
+from .domain.matrices.canonical import MATRIX_A, MATRIX_B, MATRIX_J
+from .domain.validation import FrameworkValidationError, validate_matrix, validate_cell
+from .infrastructure.monitoring.tracer import JSONLTracer
 
 __all__ = [
     # Core types

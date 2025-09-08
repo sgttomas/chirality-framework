@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from chirality.core.types import Cell, Matrix
+from chirality.domain.types import Cell, Matrix
 from chirality.exporters.snapshot_exporter import MatrixSnapshotWriter
 
 

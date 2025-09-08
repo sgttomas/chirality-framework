@@ -11,8 +11,8 @@ Tests the core functionality that matters:
 import pytest
 from unittest.mock import patch
 from chirality.infrastructure.prompts import PromptRegistry, PromptStrategy
-from chirality.core.cell_resolver import CellResolver
-from chirality.core.types import RichResult
+from chirality.infrastructure.llm.resolver import CellResolver
+from chirality.domain.types import RichResult
 
 
 class TestPromptSystemCore:
@@ -105,9 +105,9 @@ class TestPipelineIntegration:
 
     def test_echo_resolver_pipeline(self):
         """Test that echo resolver works with new architecture."""
-        from chirality.core.matrices import MATRIX_A, MATRIX_B
-        from chirality.core.operations import compute_cell_C
-        from chirality.core.resolvers import EchoResolver
+        from chirality.domain.matrices.canonical import MATRIX_A, MATRIX_B
+        from chirality.application.services.pipeline_service import compute_cell_C
+        from chirality.infrastructure.llm.mock_resolvers import EchoResolver
 
         resolver = EchoResolver()
         cell = compute_cell_C(0, 0, MATRIX_A, MATRIX_B, resolver)
@@ -123,8 +123,8 @@ class TestPipelineIntegration:
 
     def test_matrix_z_uses_shift(self):
         """Test that Matrix Z uses shift instead of combined lensing."""
-        from chirality.core.matrices import MATRIX_A, MATRIX_B, MATRIX_J
-        from chirality.core.operations import (
+        from chirality.domain.matrices.canonical import MATRIX_A, MATRIX_B, MATRIX_J
+        from chirality.application.services.pipeline_service import (
             compute_matrix_C,
             compute_matrix_F,
             compute_matrix_D,
@@ -132,7 +132,7 @@ class TestPipelineIntegration:
             compute_matrix_X,
             compute_cell_Z,
         )
-        from chirality.core.resolvers import EchoResolver
+        from chirality.infrastructure.llm.mock_resolvers import EchoResolver
 
         resolver = EchoResolver()
 

@@ -14,8 +14,7 @@ try:
 except ImportError:
     OpenAI = None
 
-from ...core.llm_config import get_config
-from ...core.api_guards import ensure_responses_api
+from .config import get_config
 
 
 class LLMClient:
@@ -61,74 +60,55 @@ class LLMClient:
             Exception: For API errors
         """
         config = get_config()
-
-        # Convert messages to single prompt for Responses API
-        prompt = self._messages_to_prompt(messages)
-
         start_time = time.time()
 
         try:
-            # Guard against forbidden API usage
-            ensure_responses_api('responses.create')
+            # CRITICAL: Use responses.create with input= parameter (not prompt=)
+            # Convert messages to Responses API input format
+            input_messages = []
+            for msg in messages:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                input_messages.append({
+                    "role": role,
+                    "content": [{"type": "text", "text": content}]
+                })
             
-            # CRITICAL: Use responses.create, NOT chat.completions.create
-            # Build parameters for Responses API
-            params = {
-                "model": config.model,
-                "input": prompt,  # Responses API expects 'input' not 'prompt'
-                "temperature": config.temperature,
-                "top_p": config.top_p,
-                # NOTE: response_format not supported by Responses API (as of SDK 1.106.1)
-                # Relying on System Prompt's JSON Output Contract instead
-            }
+            response = self.client.responses.create(
+                model=config.model,
+                input=input_messages,
+                temperature=config.temperature,
+                top_p=config.top_p,
+                max_output_tokens=config.max_tokens,  # Correct parameter name
+                seed=config.seed,
+                response_format={"type": "json_object"},  # Correct format
+            )
 
-            # Only add seed if specified
-            if config.seed is not None:
-                params["seed"] = config.seed
-
-            # Optional: add max_output_tokens if needed (not max_tokens)
-            # if config.max_tokens is not None:
-            #     params["max_output_tokens"] = config.max_tokens
-
-            response = self.client.responses.create(**params)
-
-            # Extract response text using correct Responses API format
-            response_text = getattr(response, "output_text", None)
-            if not response_text:
-                # Fallback: concatenate text from output items
-                try:
-                    parts = []
-                    for item in getattr(response, "output", []) or []:
-                        # message items usually have .content -> list with .text
-                        for c in getattr(item, "content", []) or []:
-                            if hasattr(c, "text") and c.text:
-                                parts.append(c.text)
-                    response_text = "".join(parts)
-                except Exception:
-                    response_text = ""
-
-            if not response_text:
-                response_text = ""
-
-            # Parse JSON response
-            import json
-
+            # Extract JSON content safely from Responses API structure
             try:
-                response_dict = json.loads(response_text)
-            except json.JSONDecodeError as e:
-                # Include a truncated preview to aid triage without flooding logs
-                preview = response_text or ""
-                max_preview = 2000  # chars
-                if len(preview) > max_preview:
-                    preview = preview[:max_preview] + "... [truncated]"
-                raise ValueError(
-                    f"Invalid JSON response: {e}\nPreview (truncated): {preview}"
-                ) from e
+                # Try different response structures that Responses API might use
+                if hasattr(response, 'output_text'):
+                    content = response.output_text
+                elif hasattr(response, 'output') and response.output:
+                    content = response.output[0].content[0].text
+                elif hasattr(response, 'choices') and response.choices:
+                    content = response.choices[0].text or ""
+                else:
+                    raise ValueError("Could not extract content from Responses API response")
+                
+                # Parse JSON response
+                import json
+                response_dict = json.loads(content)
+                
+            except (json.JSONDecodeError, AttributeError, IndexError) as e:
+                # Provide truncated response for debugging
+                content_preview = str(content)[:200] + "..." if len(str(content)) > 200 else str(content)
+                raise ValueError(f"Invalid JSON response: {e}\\nResponse preview: {content_preview}")
 
             # Build metadata
             latency_ms = int((time.time() - start_time) * 1000)
             metadata = {
-                "model": response.model,
+                "model": getattr(response, "model", config.model),
                 "latency_ms": latency_ms,
                 "usage": getattr(response, "usage", None),
                 "created_at": int(time.time()),
@@ -140,44 +120,12 @@ class LLMClient:
         except Exception as e:
             # Add timing info to error metadata
             latency_ms = int((time.time() - start_time) * 1000)
-            {
+            error_metadata = {
                 "error": str(e),
                 "latency_ms": latency_ms,
                 "created_at": int(time.time()),
             }
             raise Exception(f"LLM API call failed: {e}") from e
-
-    def _messages_to_prompt(self, messages: List[Dict[str, str]]) -> str:
-        """
-        Convert messages format to single prompt for Responses API.
-
-        Args:
-            messages: List of message dicts
-
-        Returns:
-            Combined prompt string
-        """
-        prompt_parts = []
-
-        for msg in messages:
-            role = msg.get("role", "user")
-            content = msg.get("content", "")
-
-            if role == "system":
-                # System message goes first, no prefix
-                prompt_parts.append(content)
-            elif role == "user":
-                # User message with separator
-                if prompt_parts:  # Add separator if not first message
-                    prompt_parts.append("\\n\\n")
-                prompt_parts.append(content)
-            else:
-                # Unknown role, treat as user
-                if prompt_parts:
-                    prompt_parts.append("\\n\\n")
-                prompt_parts.append(content)
-
-        return "".join(prompt_parts)
 
 
 # Global client instance

@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from chirality.core.operations import (
+from chirality.application.services.pipeline_service import (
     compute_cell_C,
     compute_cell_F,
     compute_cell_D,

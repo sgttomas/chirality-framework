@@ -1,5 +1,10 @@
-"""Canonical matrices for the Chirality Framework."""
+"""
+Domain Matrices Module
 
-from .canonical import MATRIX_A, MATRIX_B, MATRIX_J, get_canonical_matrix
+Contains the canonical matrices (A, B, J) that define the framework's
+semantic ontology structure.
+"""
 
-__all__ = ["MATRIX_A", "MATRIX_B", "MATRIX_J", "get_canonical_matrix"]
+from .canonical import MATRIX_A, MATRIX_B, MATRIX_J
+
+__all__ = ["MATRIX_A", "MATRIX_B", "MATRIX_J"]
