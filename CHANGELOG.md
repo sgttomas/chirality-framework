@@ -5,6 +5,38 @@ All notable changes to the Chirality Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [19.1.0] - 2025-09-08
+
+### Added
+-   **Two-Phase Architecture**: Fundamental architectural insight separating Phase 1 and Phase 2 with distinct prompting strategies
+    -   Phase 1: Conversational dialogue history as system prompt to build semantic understanding
+    -   Phase 2: Complete Phase 1 implementation as system prompt for modular cell-by-cell tensor construction
+-   **Phase 2 Tensor Specifications**: Complete specification for hierarchical tensors M, W, U, N
+    -   Tensor M (9×3×3): Assessment through [R] × [E]
+    -   Tensor W (9×3×3×4×4): Implementation through [M] × [X]
+    -   Tensor U (9×3×3×4×4×4): Reflection through [W] × [P]
+    -   Tensor N (9×3×3×4×4×4×1): Resolution through [U] × [H]
+-   **Semantic Cross Product Operation**: New operation (×) for creating hierarchical semantic tensors
+-   **Array R Definition**: Topics for generating valid knowledge (9 elements)
+-   **Domain-Driven Design Migration**: Complete restructuring to DDD architecture
+    -   Domain layer: Core business logic and entities
+    -   Application layer: Use case implementations
+    -   Infrastructure layer: External integrations
+
+### Changed
+-   **Normative Specification**: Updated to v19.1.0 with complete Phase 2 instructions
+-   **Context Management Strategy**: 
+    -   Phase 1: Maintains rolling context through entire matrix computation
+    -   Phase 2: Stateless cell-by-cell computation beyond system prompt
+-   **Prompting Architecture**:
+    -   Phase 1: Conversational prompts build semantic state through dialogue
+    -   Phase 2: Normative implementation provides semantic foundation
+-   **Station Names**: Corrected station 9 from "Integration" to "Reflection" and station 10 to "Resolution"
+
+### Fixed
+-   **Semantic Operation Notation**: Consistent use of · for dot product and × for cross product
+-   **Matrix Operation Specifications**: Clarified all matrix relationships and dimensions
+
 ## [17.1.1] - 2025-09-06
 
 ### Fixed

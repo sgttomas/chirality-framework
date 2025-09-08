@@ -7,22 +7,26 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/tag/sgttomas/chirality-framework?sort=semver&label=release)](https://github.com/sgttomas/chirality-framework/tags)
 
-**Version: 17.1.1** | **Status: Active Development**
+**Version: 19.1.0** | **Status: Phase 2 Ready**
 
-The Chirality Framework is a "semantic calculator" designed to execute a fixed, canonical algorithm for structured problem-solving. It transforms a set of base matrices through a multi-stage semantic pipeline, producing a series of derived matrices that represent a complete traversal of a "semantic valley" from problem to evaluation.
+The Chirality Framework is a meta-ontological, system-agnostic methodology for mapping the solution space to a problem statement in the context of knowledge work. It creates structured semantic relationships that serve as "semantic anchors" to guide LLMs through problem-solving stages across a "semantic valley."
 
-The value of this project is in the unique, insightful **output** of the calculation and the **observability** of the process, not in the flexibility of the code.
+The framework employs two distinct phases with fundamentally different prompting strategies:
+- **Phase 1** (Matrices A-E): Uses conversational prompting to build semantic understanding
+- **Phase 2** (Tensors M-N): Uses Phase 1 implementation as system prompt for modular cell-by-cell construction
 
-## Core Concept: The Asset-Based Canonical Pipeline
+## Core Architecture: Two-Phase Semantic Computation
 
-The framework's logic is driven by a canonical pipeline that is orchestrated using a set of version-controlled, maintainer-authored text files called "prompt assets." All semantic interpretation is performed by an LLM guided by these assets.
+### Phase 1: Conversational Semantic Pipeline (Matrices A-E)
+Phase 1 uses a conversational dialogue history as the system prompt to create semantic understanding. The dialogue builds the concept of semantic multiplication through examples, develops key concepts organically, and establishes modal ontologies through iterative refinement. This creates a "semantic state" in the LLM that enables proper interpretation.
 
-The primary operations involve:
-1.  **Mechanical Construction (Stage 1):** The framework mechanically constructs the initial input for a cell, for example by creating term pairs for a semantic dot product. For Matrix D, this involves creating a sentence from a hard-coded formula. This stage does not use an LLM.
-2.  **Semantic Resolution (Stage 2):** For operations like semantic multiplication, an LLM, guided by an "operator" prompt asset, resolves the initial input into a single, concise concept.
-3.  **Combined Ontological Lensing (Stage 3):** The output from the previous stage is interpreted by an LLM guided by a "lensing" prompt asset. This single, powerful call synthesizes the content through the simultaneous perspectives of the cell's row, column, and the station's overall purpose (provided by a "station brief" asset).
+**Three-Stage Pipeline with Rolling Context:**
+1. **Mechanical Construction (Stage 1):** Framework mechanically constructs initial input (e.g., term pairs for semantic dot product)
+2. **Semantic Resolution (Stage 2):** LLM resolves concepts via operation-specific strategies
+3. **Combined Lensing (Stage 3):** Unified semantic operation combining row × column × station perspectives
 
-For a complete technical description, see the **[Canonical Algorithm Documentation](docs/ALGORITHM.md)**.
+### Phase 2: Modular Tensor Construction (Tensors M-N)
+Phase 2 uses the complete Phase 1 implementation (through Matrix E) as the system prompt, then constructs tensors cell-by-cell WITHOUT rolling context. The modular design of the tensors facilitates this approach, with each cell computed independently using semantic cross products to create hierarchical structures.
 
 For a complete technical description, see the **[Canonical Algorithm Documentation](docs/ALGORITHM.md)**.
 
@@ -33,16 +37,15 @@ The sequence of stations in the semantic valley is not arbitrary; it follows a d
 | Modality | Station | Operation |
 | :--- | :--- | :--- |
 | `Problem` | 1. Problem Statement | `[A], [B]` |
-| `Systematic` | 2. Requirements | `[C] = [A] * [B]` |
+| `Systematic` | 2. Requirements | `[C] = [A] · [B]` |
 | `Process` | 3. Objectives | `[D] = [A] + [F]` |
-| `Epistemic` | 4. Verification | `[K] = [D]^T, [X] = [K] * [J]` |
+| `Epistemic` | 4. Verification | `[K] = [D]^T, [X] = [K] · [J]` |
 | `Epistemic` | 5. Validation | `[Z] = shift([X])` |
-| `Process` | 6. Evaluation | `[G], [P], [T], [E]` |
-| `Alethic` | 7. Assessment | `[M] = [R] x [E]` |
-| `Epistemic` | 8. Implementation | `[W] = [M] x [X]` |
-| `Alethic` | 9. Integration | `[U] = [W] x [P]` |
-| `Alethic` | 10. Reflection | `[N] = [U] x [H]` |
-| `Resolution` | 11. Resolution | `Final = synth([N])` |
+| `Process` | 6. Evaluation | `[G], [P], [T], [E] = [G] · [T]` |
+| `Alethic` | 7. Assessment | `[M] = [R] × [E]` |
+| `Epistemic` | 8. Implementation | `[W] = [M] × [X]` |
+| `Alethic` | 9. Reflection | `[U] = [W] × [P]` |
+| `Alethic` | 10. Resolution | `[N] = [U] × [H]` |
 
 **Clarifications:**
 - **X/Z Modality:** Both Verification (S4) and Validation (S5) are `Epistemic`. S4 strictly precedes S5.
