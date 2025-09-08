@@ -7,6 +7,7 @@ All abstractions removed - this is a fixed algorithm, not a flexible framework.
 
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
+from .pricing import get_model_pricing
 
 
 @dataclass
@@ -119,3 +120,50 @@ class Matrix:
             col_labels=self.row_labels,
             cells=transposed_cells,
         )
+
+
+@dataclass 
+class Phase1Config:
+    """Configuration for Phase 1 operations."""
+    
+    token_budget: Optional[int] = None
+    cost_budget: Optional[float] = None
+    time_budget: Optional[int] = None
+    
+    # LLM inference parameters (updated defaults for gpt-5-nano)
+    model: str = "gpt-5-nano"
+    temperature: float = 0.7
+    top_p: float = 0.9  # Note: user requested "top-k 0.9" but OpenAI uses top_p
+
+
+@dataclass
+class Phase2Config:
+    """Configuration for Phase 2 operations."""
+    
+    token_budget: Optional[int] = None
+    cost_budget: Optional[float] = None 
+    time_budget: Optional[int] = None
+    parallel: int = 1
+    cache_enabled: bool = True
+    resume_enabled: bool = True
+    
+    # LLM inference parameters (updated defaults for gpt-5-nano)
+    model: str = "gpt-5-nano"
+    temperature: float = 0.7
+    top_p: float = 0.9  # Note: user requested "top-k 0.9" but OpenAI uses top_p
+    
+    # GPT-5 specific parameters
+    verbosity: str = "medium"  # "low", "medium", "high"
+    reasoning_effort: str = "medium"  # "minimal", "medium"
+
+
+@dataclass
+class ChiralityConfig:
+    """Overall Chirality Framework configuration."""
+    
+    phase1: Phase1Config = field(default_factory=Phase1Config)
+    phase2: Phase2Config = field(default_factory=Phase2Config)
+    prompt_version: str = "v1"
+    
+    # Model pricing (per-token; centralized from pricing module)
+    model_pricing: Dict[str, Dict[str, float]] = field(default_factory=get_model_pricing)
