@@ -47,7 +47,10 @@ def _get_version():
 load_dotenv(override=True)
 
 # Import core components
-from .core.types import Cell, Matrix  # noqa: E402
+from .domain.types import Cell, Matrix  # noqa: E402
+from .domain.budgets import BudgetConfig, BudgetTracker  # noqa: E402
+from .infrastructure.caching import ResumableRunner  # noqa: E402
+from .infrastructure.llm.budget_resolver import BudgetAwareResolver  # noqa: E402
 from .core.matrices import MATRIX_A, MATRIX_B, MATRIX_J  # noqa: E402
 from .core.operations import (  # noqa: E402
     compute_cell_C,
@@ -232,6 +235,12 @@ def cli():
     "--neo4j-export/--no-neo4j-export", default=False, help="Enable writing output to Neo4j."
 )
 @click.option("--trace-only", is_flag=True, help="Enable tracing and force-disable Neo4j export.")
+@click.option(
+    "--token-budget", type=int, help="Maximum tokens to use (stops execution if exceeded)"
+)
+@click.option(
+    "--cost-budget", type=float, help="Maximum cost in USD (stops execution if exceeded)"
+)
 def compute_cell(
     matrix: str,
     row: int,
@@ -242,6 +251,8 @@ def compute_cell(
     trace: bool,
     neo4j_export: bool,
     trace_only: bool,
+    token_budget: Optional[int],
+    cost_budget: Optional[float],
 ):
     """
     Compute a single cell through the 3-stage pipeline.
@@ -255,13 +266,28 @@ def compute_cell(
     resolver_obj = None
     tracer_obj = None
     exporter_obj = None
+    budget_tracker = None
 
     try:
+        # Setup budget tracking
+        if token_budget or cost_budget:
+            budget_config = BudgetConfig(
+                token_budget=token_budget,
+                cost_budget=cost_budget
+            )
+            budget_tracker = BudgetTracker(budget_config, phase="cell-computation")
+            if verbose:
+                click.echo(click.style(f"Budget tracking enabled (tokens: {token_budget}, cost: ${cost_budget})", **INFO_STYLE))
+
         # Use the helper to determine final trace and neo4j_export settings
         final_trace, final_neo4j_export = resolve_run_settings(trace, neo4j_export, trace_only)
 
         # Setup resolver with robust checking
         resolver_obj = setup_resolver(resolver, api_key, verbose=True)
+        
+        # Wrap resolver with budget tracking if needed
+        if budget_tracker:
+            resolver_obj = BudgetAwareResolver(resolver_obj, budget_tracker)
 
         # Setup tracer and exporter using final settings
         tracer_obj = JSONLTracer() if final_trace else None
@@ -672,13 +698,25 @@ def compute_cell(
             traceback.print_exc()
         sys.exit(1)
     finally:
+        # Show budget status if tracking was enabled
+        if budget_tracker and verbose:
+            status = budget_tracker.get_status()
+            click.echo()
+            click.echo(click.style("Budget Status:", **INFO_STYLE))
+            click.echo(f"  Operations: {status['operations']}")
+            click.echo(f"  Tokens: {status['tokens']['total']:,}")
+            if status['cost']['spent'] > 0:
+                click.echo(f"  Cost: ${status['cost']['spent']:.4f}")
+        
         # Safely close connections
         if tracer_obj:
             tracer_obj.close()
-            click.echo(click.style("✓ Trace file closed.", **DIM_STYLE))
+            if verbose:
+                click.echo(click.style("✓ Trace file closed.", **DIM_STYLE))
         if exporter_obj:
             exporter_obj.close()
-            click.echo(click.style("✓ Neo4j connection closed.", **DIM_STYLE))
+            if verbose:
+                click.echo(click.style("✓ Neo4j connection closed.", **DIM_STYLE))
 
 
 def _show_c_computation_verbose(
@@ -1026,6 +1064,15 @@ def compute_matrix(
 @click.option(
     "--max-seconds", type=int, help="App mode: best-effort hard timeout in seconds (e.g., 900)"
 )
+@click.option(
+    "--token-budget", type=int, help="Maximum tokens to use (stops execution if exceeded)"
+)
+@click.option(
+    "--cost-budget", type=float, help="Maximum cost in USD (stops execution if exceeded)"
+)
+@click.option(
+    "--resume", is_flag=True, help="Resume from previous incomplete run (requires --out)"
+)
 def compute_pipeline(
     resolver: str,
     api_key: Optional[str],
@@ -1037,6 +1084,9 @@ def compute_pipeline(
     out_dir: Optional[str],
     problem_file: Optional[str],
     max_seconds: Optional[int],
+    token_budget: Optional[int],
+    cost_budget: Optional[float],
+    resume: bool,
 ):
     """
     Compute multiple matrices through the pipeline with correlated tracing and snapshots.
@@ -1046,6 +1096,8 @@ def compute_pipeline(
         chirality compute-pipeline --trace-only --snapshot-jsonl --include-base
         chirality compute-pipeline --resolver openai --only "C,F,D" --verbose
         chirality compute-pipeline --include-base --snapshot-jsonl
+        chirality compute-pipeline --resolver openai --token-budget 100000
+        chirality compute-pipeline --out runs/my-run --resume
     """
     resolver_obj = None
     tracer_obj = None
@@ -1054,6 +1106,13 @@ def compute_pipeline(
 
     # App-integration mode is engaged when --out or --problem-file or --max-seconds provided
     app_mode = bool(out_dir or problem_file or max_seconds)
+    
+    # Validate resume flag
+    if resume and not out_dir:
+        click.echo(
+            click.style("Error: --resume requires --out to specify run directory", **ERROR_STYLE)
+        )
+        sys.exit(1)
 
     # If in app mode, suppress non-essential stdout (treat stdout as data channel)
     # We still respect --verbose (logs go to stderr via click.echo if needed)

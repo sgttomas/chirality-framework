@@ -92,7 +92,7 @@ def get_canonical_matrix(name: str) -> Matrix:
     return matrices[name]
 
 
-def validate_canonical_matrices():
+def validate_canonical_matrices() -> None:
     """
     Validate that the canonical matrices have the expected structure.
     

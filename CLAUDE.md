@@ -4,9 +4,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-The Chirality Framework is a "semantic calculator" that implements a fixed, canonical algorithm for structured problem-solving. It's NOT a general-purpose framework but a specific implementation of a three-stage interpretation pipeline that transforms mechanical combinations into meaningful semantic insights.
+The Chirality Framework is a meta-ontological, system-agnostic methodology for mapping the solution space to a problem statement in the context of knowledge work. It creates structured semantic relationships that serve as "semantic anchors" to guide LLMs through problem-solving stages across a "semantic valley."
 
 **Core Philosophy**: Fixed ontological structure + constrained stochastic processing = reproducible semantic computation.
+
+**Current Status**: 
+- Recently migrated to Domain-Driven Design (DDD) architecture
+- Phase 1 complete: Matrices A through E implemented with conversational prompting
+- Phase 2 ready for implementation: Tensors M, W, U, N with modular cell-by-cell construction
+- Version 19.1.0 per normative specification
+
+## Critical Architectural Insight: Two-Phase Prompting Strategy
+
+The framework uses fundamentally different prompting strategies for Phase 1 and Phase 2:
+
+### Phase 1: Conversational System Prompt
+- **Strategy**: Uses a dialogue history as the system prompt to create semantic understanding
+- **Key Elements**:
+  - Builds semantic multiplication concept through examples ("sufficient" * "reason" = "justification")
+  - Develops "developments" concept organically through multiple contexts
+  - Establishes modal ontologies through iterative refinement
+  - Creates a "semantic state" in the LLM that enables proper interpretation
+- **Context Management**: Maintains rolling context through the entire matrix computation
+- **Purpose**: Primes the LLM to understand semantic operations intuitively before formal application
+
+### Phase 2: Normative Implementation as System Prompt
+- **Strategy**: Uses the complete Phase 1 implementation (through Matrix E) as the system prompt
+- **Key Elements**:
+  - Provides full semantic context through completed Phase 1 matrices
+  - Includes all semantic operation definitions and examples
+  - Contains complete station progression and transformations
+- **Context Management**: Cell-by-cell construction WITHOUT rolling context window
+- **Purpose**: Enables modular tensor construction with each cell computed independently
+
+This two-phase approach is essential because:
+1. Phase 1 requires building semantic understanding from first principles
+2. Phase 2 can leverage the completed Phase 1 as semantic foundation
+3. Tensor hierarchies in Phase 2 are naturally modular, supporting isolated cell computation
 
 ## Development Commands
 
@@ -29,6 +63,9 @@ mypy chirality/
 
 # Code formatting
 black chirality/ tests/
+
+# Linting
+ruff check chirality/
 ```
 
 ### CLI Development & Testing
@@ -39,18 +76,11 @@ python3 -m chirality.cli compute-cell C --i 0 --j 0 --verbose
 # Live OpenAI testing (requires OPENAI_API_KEY env var + SDK >=1.50.0)
 python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose
 
-# FULL PIPELINE EXECUTION (v17.1.1 - Now Working!)
+# Full pipeline execution
 python3 -m chirality.cli compute-pipeline --resolver openai --snapshot-jsonl --include-base
-
-# Different matrix types
-python3 -m chirality.cli compute-cell F --i 1 --j 2 --verbose
-python3 -m chirality.cli compute-cell D --i 2 --j 1 --verbose
 
 # Full observability (tracing + Neo4j export)
 python3 -m chirality.cli compute-cell C --i 0 --j 0 --trace --neo4j-export --verbose
-
-# Framework info
-python3 -m chirality.cli info
 
 # App integration mode (manifest + cells-jsonl-v1 snapshots + final stdout JSON)
 python3 -m chirality.cli compute-pipeline \
@@ -58,185 +88,318 @@ python3 -m chirality.cli compute-pipeline \
   --out runs/dev-run-1 \
   --problem-file problem.json \
   --max-seconds 900
+
+# Render viewer for results
+python3 -m chirality.cli render-viewer --latest --open
 ```
 
-### Installation & Setup
+### Installation
 ```bash
 # Development setup
 pip install -e ".[dev]"
 
 # Optional dependencies
-pip install -e ".[openai]"    # For CellResolver
-pip install -e ".[neo4j]"     # For working memory export
+pip install -e ".[openai]"    # For OpenAI LLM resolver
+pip install -e ".[neo4j]"     # For graph export
 pip install -e ".[all]"       # All optional dependencies
 ```
 
 ## Architecture Overview
 
-### Core Algorithm: Three-Stage Interpretation Pipeline
-All matrix operations (C, F, D, X, E) follow the same universal pipeline:
+### DDD Structure (Post-Migration)
+The codebase follows Domain-Driven Design with clear separation of concerns:
+
+```
+chirality/
+├── domain/           # Core business logic and entities
+│   ├── matrices/     # Matrix entities and operations
+│   ├── pipeline/     # Pipeline orchestration
+│   ├── semantics/    # Semantic resolution logic
+│   └── types.py      # Core domain types
+├── application/      # Application services
+│   └── services/     # Use case implementations
+├── infrastructure/   # External integrations
+│   ├── llm/         # LLM provider implementations
+│   ├── prompts/     # Prompt management
+│   ├── exporters/   # Neo4j, JSONL exporters
+│   └── monitoring/  # Tracing and observability
+├── core/            # Legacy core (being refactored)
+└── lib/             # Shared libraries
+```
+
+## Semantic Operations
+
+### Core Operations (Phase 1)
+1. **Semantic Multiplication (*)**: Combines word meanings into coherent intersection
+   - Example: "sufficient" * "reason" = "justification"
+2. **Semantic Addition (+)**: Concatenates words/fragments into statements
+   - Example: "faisal" + "has" + "seven" + "balloons" = "faisal has seven balloons"
+3. **Semantic Dot Product (·)**: Matrix multiplication using semantic operations
+4. **Element-wise Product (⊙)**: Pairwise semantic multiplication
+5. **Semantic Shift (→)**: Station context transformation
+
+### New Operations (Phase 2)
+1. **Semantic Cross Product (×)**: Creates hierarchical semantic tensors
+   - Generates nested hierarchies rather than combining perspectives
+   - Used for tensors M, W, U, N
+   - Enables modular cell-by-cell computation
+
+### Order of Operations
+1. Apply semantic multiplication first
+2. Then semantic addition
+
+## The Semantic Valley
+
+The framework follows a logical progression of 10 stations:
+
+### Phase 1 (Implemented with Conversational Prompting)
+1. **Problem Statement**: [A] · [B] = [C]
+2. **Requirements**: [C] ⊙ [J] = [F]
+3. **Objectives**: [A] + [F] = [D]
+4. **Verification**: [K] · [J] = [X]
+5. **Validation**: [X] → [Z]
+6. **Evaluation**: [G] · [T] = [E]
+
+### Phase 2 (To Implement with Modular Construction)
+7. **Assessment**: [R] × [E] = [M]
+8. **Implementation**: [M] × [X] = [W]
+9. **Reflection**: [W] × [P] = [U]
+10. **Resolution**: [U] × [H] = [N]
+
+## Matrix/Tensor Specifications
+
+### Phase 1 Matrices (Conversational Context)
+
+#### Canonical Matrices (Axiomatic)
+- **[A]** (3×4): Problem space modalities (normative/operative/iterative × guiding/applying/judging/reflecting)
+- **[B]** (4×4): Epistemic levels (data/information/knowledge/wisdom × necessity/sufficiency/completeness/consistency)
+- **[J]** (3×4): Truncated [B] without wisdom row
+
+#### Derived Matrices
+- **[C]** (3×4): [A] · [B] - Problem statement synthesis
+- **[F]** (3×4): [C] ⊙ [J] - Requirements specification
+- **[D]** (3×4): [A] + [F] - Objectives formulation
+- **[K]** (4×3): transpose([D]) - Reoriented objectives
+- **[X]** (4×4): [K] · [J] - Verification matrix
+- **[Z]** (4×4): [X] → shift - Validation transformation
+- **[G]** (3×4): [Z][0:3, :] - First 3 rows of Z
+- **[P]** (1×4): [Z][3, :] - Fourth row of Z (Reflecting)
+- **[T]** (4×3): transpose([J]) - Reoriented epistemic levels
+- **[E]** (3×3): [G] · [T] - Evaluation matrix
+- **[H]** (1×1): [P][0, 3] - Consistency/Reflecting element
+
+### Phase 2 Tensors (Modular Cell Construction)
+
+#### New Axiomatic Component
+- **[R]** (1×9): Topics for generating valid knowledge
+  - Elements: Problem Statement, Requirements, Objectives, Methodology, Analysis, Evaluation, Assessment, Implementation, Integration
+
+#### Semantic Tensors (Hierarchical)
+- **[M]** (9×3×3): [R] × [E] - Assessment tensor
+  - Hierarchy: Topics → [Data/Information/Knowledge] → [Guiding/Applying/Judging]
+- **[W]** (9×3×3×4×4): [M] × [X] - Implementation tensor
+  - Adds: [Necessity/Sufficiency/Completeness/Consistency] → [Guiding/Applying/Judging/Reflecting]
+- **[U]** (9×3×3×4×4×4): [W] × [P] - Reflection tensor
+  - Adds: [Necessity/Sufficiency/Completeness/Consistency] from P
+- **[N]** (9×3×3×4×4×4×1): [U] × [H] - Resolution tensor
+  - Final synthesis through Consistency/Reflecting lens
+
+## Implementation Pipeline Architecture
+
+### Phase 1: Three-Stage Pipeline with Rolling Context
+All matrix operations follow this universal pipeline:
 
 1. **Stage 1 (Combinatorial)**: Mechanical generation of k-products or direct pairs
 2. **Stage 2 (Semantic Resolution)**: LLM resolves concepts via operation-specific strategies
-3. **Stage 3 (Combined Lensing)**: Single unified semantic operation combining row × column × station perspectives
+3. **Stage 3 (Combined Lensing)**: Unified semantic operation combining row × column × station perspectives
 
-**Special Case - Matrix Z**: Uses lean 2-stage pipeline with station shift instead of lensing
-
-**CRITICAL SEMANTIC RULES**:
-1. The file `chirality/normative_spec.txt` is the canonical semantic specification and must NEVER be modified. Only notify the user of suggested changes for them to implement - the semantics cannot be decided by AI.
-2. **All prompts are part of the normative spec** and as such should NOT be written by any LLM agent ever. Only the user should ever write or edit the semantic content of any prompt.
-3. AI assistants can only edit prompt **structuring** (not content) and only at the user's explicit direction.
-4. Station briefs provide station-specific context that grounds the LLM at each semantic valley station. These must be written by the user, not generated by AI.
-5. The semantic meaning and interpretation of the framework elements are sovereign decisions that belong exclusively to the human operator.
-
-### CRITICAL OpenAI API Requirements
-
-**MANDATORY**: The Chirality Framework uses OpenAI's **Responses API** exclusively.
-- **NEVER USE**: `client.chat.completions.create(messages=[...])` - Chat Completions API is FORBIDDEN
-- **ALWAYS USE**: `client.responses.create(input=..., ...)` - Responses API is REQUIRED
-- **CRITICAL**: Use `input` parameter, NOT `prompt` parameter
-- **SDK VERSION**: Requires OpenAI SDK >=1.50.0 for full Responses API compatibility
-- This has been incorrectly reverted multiple times. This is non-negotiable.
-- The framework requires direct prompt control without message role abstractions.
-- ANY use of Chat Completions API must be immediately fixed.
-
-**CRITICAL API FIXES IMPLEMENTED (v17.1.1)**:
-- Fixed parameter name: `input` instead of `prompt`
-- Removed unsupported parameters: `max_tokens`, `response_format`  
-- Implemented robust response parsing with fallback logic
-- Enhanced JSON error diagnostics with truncated response previews
-
-### Key Files & Their Roles
-
-#### Core Implementation (`chirality/core/`)
-- **`operations.py`**: The "secret sauce" - implements the 3-stage pipeline for all matrix types
-  - `compute_cell_C()`, `compute_cell_X()`, `compute_cell_E()`: Matrix multiplication with k-products
-  - `compute_cell_F()`: Element-wise multiplication  
-  - `compute_cell_D()`: Synthesis using canonical formula
-  - `compute_cell_Z()`: Lean 2-stage with station shift
-- **`cell_resolver.py`**: New unified LLM interface with combined operations
-  - `run_stage2_multiply()`: Semantic multiplication for k-products
-  - `run_stage2_elementwise()`: Element-wise semantic operations
-  - `run_stage2_addition()`: Mechanical addition for Matrix D
-  - `run_combined_lens()`: Single unified lensing operation
-  - `run_shift()`: Station context shift for Matrix Z
-- **`matrices.py`**: Fixed canonical matrices (A, B, J) - these are constants, not configurable
-- **`types.py`**: Core data structures (`Cell`, `Matrix`, `RichResult`, `SemanticContext`)
-
-#### New Prompt System Architecture (`chirality/lib/`)
-- **`strategies.py`**: Maps components to stations and operations
-  - Component-driven station selection (C→Requirements, D→Objectives, etc.)
-  - Operation strategies for each semantic operation type
-- **`prompt_registry.py`**: Manages maintainer-authored prompt assets
-  - Loads markdown files from `chirality/prompt_assets/`
-  - Tracks versioning and checksums for provenance
-- **`prompt_builder.py`**: Constructs messages with placeholder substitution
-  - `build_combined_lens_messages()`: Creates unified lensing prompts
-  - `build_stage2_multiply_messages()`: Creates multiplication prompts
-- **`llm_client.py`**: Unified OpenAI client using Responses API
-  - Enforces Responses API usage (never Chat Completions)
-  - Handles all LLM interactions with consistent interface
-
-#### Supporting Systems
-- **`exporters/working_memory_exporter.py`**: Neo4j export with universal provenance schema
-- **`tracer.py`**: JSONL tracing for complete observability - **RESTORED in v17.1.1**
-  - Fixed to work without deprecated SemanticContext class
-  - Extracts matrix info from extras dict for semantic journey tracking
-  - Critical for diagnosing semantic incoherence and drift
-- **`validate.py`**: Validation for framework structural integrity (updated for 3-stage)
-
-### Matrix Relationships
-```
-C = A * B        (3×4 = 3×4 dot 4×4, via k-products + combined lensing)
-F = J ⊙ C        (3×4 = 3×4 element-wise + combined lensing)  
-D = A + F        (3×4, canonical synthesis formula + combined lensing)
-K = transpose(D) (4×3, direct transpose)
-X = K * J        (4×4 = 4×3 dot 3×4, via k-products + combined lensing)
-Z = shift(X)     (4×4, station context shift from Verification to Validation)
-G = Z[0:3, :]    (3×4, first 3 rows of Z)
-T = B[0:3, :].T  (4×3, transpose of first 3 rows of B)
-P = Z[3, :]      (1×4, fourth row of Z)
-E = G * T        (3×3 = 3×4 dot 4×3, via k-products + combined lensing)
-```
-
-### Universal Provenance Schema (Updated for Combined Lensing)
-All cells now use a simplified 3-stage provenance structure:
-- `stage_1_construct`: Construction content (`texts` for k-products, `text` for direct values)
-- `stage_2_semantic`: Resolved concepts (`text` - single unified result from semantic operations)
-- `stage_3_combined_lensed`: Combined lensing result (`text` - unified row × column × station interpretation)
+**Context Management**: Maintains full conversation history through all stages
 
 **Special Cases**:
-- **Matrix Z**: Has empty `stage_3_combined_lensed` (uses station shift in stage 2 instead)
+- **Matrix Z**: Uses lean 2-stage pipeline with station shift instead of lensing
 - **Matrix D**: Stage 2 uses mechanical addition (no LLM call)
 
-### Testing Strategy
-- **`tests/mocks.py`**: `MockCellResolver` with new API methods (`run_stage2_multiply`, `run_combined_lens`, etc.)
-- **`tests/core/test_operations.py`**: Tests simplified 3-stage pipeline with combined lensing
-- **`tests/core/test_station5_validation.py`**: Tests Z matrix station shift operation
-- **`tests/core/test_station6_evaluation.py`**: Tests E matrix evaluation pipeline
-- **`tests/integration/test_prompt_system_integration.py`**: Tests new prompt system components
-- Use echo resolver for pipeline mechanics testing, OpenAI resolver for semantic validation
+### Phase 2: Modular Cell-by-Cell Construction
+Tensor operations use a different approach:
 
-### Key Design Principles (Updated)
-1. **RichResult Objects**: All resolver methods return structured objects with `text`, `terms_used`, `warnings`, `metadata`
-2. **Combined Lensing**: Single unified semantic operation (row × column × station) replacing 3-step lensing
-3. **Component-Driven Architecture**: Component ID (C, D, F, X, Z, E) drives station selection and operations
-4. **Maintainer-Authored Prompts**: All semantic prompts in `chirality/prompt_assets/` as markdown files
-5. **Canonical Problem**: Fixed to "generating reliable knowledge" for D matrix
-6. **Lean Z Pipeline**: Matrix Z uses 2-stage with station shift instead of lensing
-7. **Single API Call Per Stage**: Each semantic stage makes exactly one LLM call for efficiency
+1. **System Prompt Setup**: Load complete Phase 1 implementation as context
+2. **Hierarchical Decomposition**: Break tensor into individual cells
+3. **Independent Cell Computation**: Each cell computed without rolling context
+4. **Tensor Assembly**: Combine cells into complete tensor structure
 
-### Critical Development Notes
-- Always run tests after changes: `pytest`
-- Use echo resolver for development/testing (fast, deterministic)
-- OpenAI resolver requires `OPENAI_API_KEY` environment variable
-- **Prompt assets are in `chirality/prompt_assets/`** - only maintainer should edit these
-- **New resolver API**: Use `run_stage2_multiply()`, `run_combined_lens()`, etc. (not old methods)
-- **Provenance is now 3-stage**: `stage_1_construct`, `stage_2_semantic`, `stage_3_combined_lensed`
-- Neo4j export preserves both type distinctions (labels) and instance distinctions (unique IDs)
-- Never modify canonical matrices (A, B, J) unless updating the fundamental specification
+**Context Management**: Each cell computation is stateless beyond system prompt
 
-### CRITICAL INTEGRATION FIXES (v17.1.1)
-**MUST VERIFY THESE ARE WORKING**:
-1. **OpenAI Responses API**: `client.responses.create(input=...)` with robust response parsing
-2. **Semantic Tracing**: JSONL tracer operational for coherence diagnostics
-3. **Full Pipeline**: Complete C→F→D→K→X→Z→E semantic resolution validated
-4. **No Additional Context**: LLM calls use ONLY prompts, no extra context per user requirement
+## CRITICAL SEMANTIC RULES
 
-### Common Debugging Workflow
-1. Test with echo resolver first to verify pipeline mechanics
-2. Test with OpenAI resolver to verify semantic resolution
-3. Use `--verbose` flag to see all stage outputs
-4. Use `--trace` flag for detailed JSONL logs
-5. Use `--neo4j-export` for graph analysis of semantic journeys
+1. **The normative spec (`chirality/normative_spec.txt`) is canonical and immutable**. AI must NEVER modify it, only notify the user of suggested changes.
+2. **All prompts are part of the normative spec** - NEVER write or generate semantic prompts. Only the user writes semantic content.
+3. **Station briefs provide station-specific context** - these must be user-authored, not AI-generated.
+4. **Semantic meaning belongs to the human operator** - AI can only assist with code structure, not semantic decisions.
+5. **Phase 1 and Phase 2 are clearly delineated** - different prompting strategies, different context management.
+6. **Conversational prompts (Phase 1) build semantic state** - the dialogue IS the instruction.
+7. **Normative implementation (Phase 2) provides semantic foundation** - completed Phase 1 becomes the context.
 
-## Recent Architecture Changes (Combined Lensing Refactor + v17.1.1 Milestone)
+## CRITICAL OpenAI API Requirements
 
-The framework underwent a major refactor to implement combined lensing architecture, culminating in **v17.1.1 achieving full semantic resolution operational status with reliable CI/CD infrastructure**.
+**MANDATORY**: The framework uses OpenAI's **Responses API** exclusively.
+- **NEVER USE**: `client.chat.completions.create(messages=[...])` - FORBIDDEN
+- **ALWAYS USE**: `client.responses.create(input=..., ...)` - REQUIRED
+- **CRITICAL**: Use `input` parameter, NOT `prompt` parameter
+- **SDK VERSION**: Requires OpenAI SDK >=1.50.0
+- The framework requires direct prompt control without message role abstractions
+- ANY use of Chat Completions API must be immediately fixed
 
-### Major Changes (Combined Lensing)
-- **Old**: Three-stage lensing (column lens → row lens → synthesis) with 3 separate LLM calls
-- **New**: Single combined lensing operation with 1 LLM call per cell
-- **Old**: 5-stage provenance (`stage_3_column_lensed`, `stage_4_row_lensed`, `stage_5_final_synthesis`)
-- **New**: 3-stage provenance with `stage_3_combined_lensed` containing unified result
-- **Old**: Methods like `resolve_semantic_pair()`, `apply_column_lens()`, etc.
-- **New**: Unified methods like `run_stage2_multiply()`, `run_combined_lens()`
+## Key Files & Locations
 
-### Critical Integration Fixes (v17.1.1)
-- **OpenAI Responses API Fixed**: Corrected parameter names, response parsing, error handling
-- **Semantic Tracing Restored**: Fixed tracer to work without SemanticContext class
-- **Full Pipeline Validated**: Complete C→F→D→K→X→Z→E execution with authentic semantic transformations
-- **Asset Registry Corrections**: Fixed asset references ("lens_shift_z" not "ops.shift")
+### Domain Layer (`chirality/domain/`)
+- **`matrices/`**: Matrix entities and canonical values (A, B, J)
+- **`pipeline/`**: Pipeline orchestration logic
+- **`semantics/`**: Semantic resolution strategies
+- **`types.py`**: Core domain types (Cell, Matrix, RichResult)
+- **`validation.py`**: Framework structural integrity checks
+- **`stations.py`**: Station definitions and contexts
 
-### Why It Matters
-- **Efficiency**: Reduces LLM calls from 4+ per cell to 2 (one for Stage 2, one for Stage 3)
-- **Coherence**: Combined lensing produces more integrated interpretations
-- **Simplicity**: Cleaner API with fewer methods and simpler provenance structure
-- **Production Ready**: Full semantic resolution now operational with complete observability
+### Infrastructure Layer (`chirality/infrastructure/`)
+- **`llm/`**: LLM client implementations (OpenAI Responses API)
+- **`prompts/`**: Prompt registry and builder
+  - Phase 1: Conversational prompt management
+  - Phase 2: Normative implementation loader
+- **`exporters/`**: Neo4j graph export, JSONL tracing
+- **`monitoring/`**: Observability and tracing
 
-### Migration Notes
-- All tests have been updated to use new API (81 tests passing)
-- MockCellResolver and EchoResolver updated with new methods
-- Validation function updated to expect 3-stage provenance
-- OpenAI client hardened with robust response parsing and error diagnostics
-- Semantic tracing system fully restored for coherence diagnostics
+### Application Layer (`chirality/application/`)
+- **`services/`**: Application service implementations
+
+### Legacy Core (`chirality/core/`)
+- Being refactored as part of DDD migration
+- **`operations.py`**: Current 3-stage pipeline implementation
+- **`cell_resolver.py`**: LLM interface with combined operations
+
+### Prompt Assets (`chirality/prompt_assets/`)
+- Maintainer-authored markdown files
+- NEVER modify these programmatically
+- Only user should edit semantic content
+- Phase 1: Conversational dialogue templates
+- Phase 2: Normative implementation snapshots
+
+### Normative Specifications (`chirality/`)
+- **`normative_spec.txt`**: v19.1.0 canonical specification with Phase 2 instructions
+- **`normative_system_prompt.txt`**: System prompt for LLM operations
+- **`normative_implementation_chirality-framework_v*.txt`**: Implementation snapshots
+  - These become system prompts for Phase 2
+
+## Provenance Schema
+
+### Phase 1 (3-stage provenance with context)
+All cells maintain conversation history:
+- `stage_1_construct`: Mechanical construction
+- `stage_2_semantic`: Semantic resolution result
+- `stage_3_combined_lensed`: Combined lensing interpretation
+- `conversation_context`: Full dialogue history
+
+### Phase 2 (Hierarchical provenance without context)
+Tensors use modular provenance:
+- `hierarchical_path`: Location in tensor structure
+- `semantic_operation`: Cross-product transformation applied
+- `source_elements`: Input matrix/tensor elements
+- `resolved_value`: Final semantic result
+- No conversation context (stateless beyond system prompt)
+
+## Development Guidelines
+
+### Phase 1 Implementation
+1. **Conversational Prompt Design**:
+   - Start with semantic examples to build understanding
+   - Develop key concepts through dialogue
+   - Ground matrices in established semantic context
+   
+2. **Context Management**:
+   - Maintain full conversation history
+   - Each operation builds on previous understanding
+   - Rolling context window through entire pipeline
+
+3. **Testing Strategy**:
+   - Verify semantic coherence across conversation
+   - Test with different conversational variations
+   - Ensure consistent semantic resolution
+
+### Phase 2 Implementation
+1. **System Prompt Preparation**:
+   - Load complete Phase 1 implementation
+   - Include all matrix definitions and transformations
+   - Provide full semantic operation examples
+
+2. **Modular Construction**:
+   - Decompose tensors into individual cells
+   - Compute each cell independently
+   - No inter-cell context dependencies
+
+3. **Testing Strategy**:
+   - Verify cell-level semantic accuracy
+   - Test tensor assembly procedures
+   - Ensure hierarchical structure preservation
+
+### General Guidelines
+1. **Testing**:
+   - Use echo resolver for mechanics testing
+   - Use OpenAI resolver for semantic validation
+   - Run `pytest` after all changes
+
+2. **Debugging**:
+   - Phase 1: Examine conversation flow
+   - Phase 2: Check individual cell computations
+   - Use `--trace` for detailed logs
+
+3. **Critical Notes**:
+   - OpenAI resolver requires `OPENAI_API_KEY`
+   - Prompt assets are maintainer-only
+   - Canonical matrices never change
+   - Phase separation is absolute
+
+## Phase 2 Implementation Roadmap
+
+### Step 1: System Prompt Infrastructure
+- Create loader for Phase 1 implementation as system prompt
+- Implement prompt template for Phase 2 operations
+- Ensure proper semantic context transfer
+
+### Step 2: Cell Computation Engine
+- Build modular cell calculator
+- Implement hierarchical path tracking
+- Create cell-level semantic resolver
+
+### Step 3: Array R Implementation
+- Define topics for valid knowledge generation
+- Create domain entity for Array R
+
+### Step 4: Semantic Cross Product
+- Implement operation in `domain/semantics/`
+- Support hierarchical tensor generation
+- Maintain nested structure preservation
+
+### Step 5: Tensor M (Assessment)
+- Implement [R] × [E] = [M]
+- 9×3×3 tensor structure
+- Cell-by-cell construction
+
+### Step 6: Tensor W (Implementation)
+- Implement [M] × [X] = [W]
+- 9×3×3×4×4 tensor structure
+- Extended hierarchical nesting
+
+### Step 7: Tensor U (Reflection)
+- Implement [W] × [P] = [U]
+- 9×3×3×4×4×4 tensor structure
+- Reflection through validity parameters
+
+### Step 8: Tensor N (Resolution)
+- Implement [U] × [H] = [N]
+- 9×3×3×4×4×4×1 tensor structure
+- Final synthesis
+
+### Step 9: Integration
+- Unify Phase 1 and Phase 2 pipelines
+- Extend CLI for tensor operations
+- Update exporters for tensor visualization
+
+**Critical**: Maintain strict separation between Phase 1 (conversational) and Phase 2 (modular) approaches. Each phase has its own prompting strategy, context management, and computational architecture.
