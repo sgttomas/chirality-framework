@@ -2,9 +2,13 @@
 
 First, thank you for considering contributing! This project is a direct, canonical implementation of the Chirality Framework algorithm, and we welcome contributions that refine, test, and document this core implementation.
 
-## Core Philosophy: The "Semantic Calculator"
+## Core Philosophy: Meta-Ontological Semantic Computation
 
-Please understand that this project is not a general-purpose, extensible framework. It is a **"semantic calculator"** designed to execute a fixed algorithm. Contributions should focus on improving the correctness, clarity, and observability of this algorithm, not on adding new framework features, plugins, or abstractions.
+The Chirality Framework is a meta-ontological, system-agnostic methodology that employs two distinct phases:
+- **Phase 1**: Uses conversational prompting to build semantic understanding through dialogue
+- **Phase 2**: Uses Phase 1 implementation as system prompt for modular tensor construction
+
+Contributions should respect this two-phase architecture and focus on improving the correctness, clarity, and observability of the semantic computations, not on adding new framework features or abstractions.
 
 ## Getting Started
 
@@ -12,6 +16,7 @@ Please understand that this project is not a general-purpose, extensible framewo
 - Python 3.9+
 - An OpenAI API key (set as the `OPENAI_API_KEY` environment variable for live tests)
 - **Note**: The framework uses OpenAI's Responses API exclusively and requires OpenAI SDK >=1.50.0
+- **Version**: Currently at v19.1.0 with Phase 2 ready for implementation
 
 ### Development Setup
 
@@ -37,23 +42,39 @@ The most valuable contributions will be those that improve the core algorithm, i
 
 ### Semantic Contributions (The "Why")
 
-The framework's reasoning, voice, and semantic interpretation are controlled exclusively by the maintainer through a series of version-controlled text files.
+The framework's semantic interpretation differs by phase:
 
--   **Location**: `chirality/prompt_assets/`
--   **Content**: This directory contains the `system.md` prompt, the `station_briefs/*.md` files, and the operator and lensing templates in `ops/`.
--   **Contribution Process**: As these files define the canonical semantics of the framework, they are not open to direct modification via pull requests. Contributions to the semantics should be proposed in GitHub Issues for discussion with the maintainer.
+**Phase 1**: Uses conversational dialogue history as system prompt
+-   **Location**: `chirality/prompt_assets/` (conversation templates)
+-   **Content**: Dialogue that builds semantic multiplication concepts through examples
+-   **Critical**: The conversation IS the instruction - it creates semantic state
+
+**Phase 2**: Uses complete Phase 1 implementation as system prompt
+-   **Location**: `chirality/normative_implementation_*.txt`
+-   **Content**: Full Phase 1 results become semantic foundation for tensor operations
+-   **Critical**: Cell-by-cell computation without rolling context
+
+**Contribution Process**: As these define canonical semantics, they are not open to direct modification via pull requests. Propose changes in GitHub Issues for maintainer discussion.
 
 ### Code Contributions (The "How")
 
-Contributions to the code that orchestrates the semantic pipeline are welcome. The new architecture is modular:
+Contributions to the code must respect the two-phase architecture:
 
-*   **`chirality/prompt_assets/metadata.yml`**: The manifest that registers all semantic assets and their checksums. The `PromptRegistry` uses this for validation.
-*   **`chirality/lib/`**: The home of the new prompt assembly system.
-    *   `prompt_registry.py`: Loads and validates the assets defined in the metadata file.
-    *   `strategies.py`: Defines the canonical order of assets to be used for each stage of the pipeline.
-    *   `prompt_builder.py`: Assembles the final prompt messages based on the strategy and substitutes the required placeholders.
-*   **`chirality/core/llm_client.py`**: The exclusive wrapper for the OpenAI Responses API.
-*   **`chirality/core/operations.py`**: The high-level orchestration layer. The `compute_cell_*` functions here define the steps of the canonical pipeline (e.g., Stage 2 multiplication followed by Stage 3 Combined Lensing). Note that the construction of Matrix D's input sentence is hard-coded here as a mechanical step.
+**Domain-Driven Design Structure**:
+*   **`chirality/domain/`**: Core business logic and entities
+    *   `matrices/`: Matrix entities and canonical values
+    *   `pipeline/`: Pipeline orchestration logic
+    *   `semantics/`: Semantic resolution strategies
+*   **`chirality/application/`**: Application services and use cases
+*   **`chirality/infrastructure/`**: External integrations
+    *   `llm/`: LLM client implementations (OpenAI Responses API)
+    *   `prompts/`: Phase-specific prompt management
+    *   `exporters/`: Neo4j, JSONL exporters
+
+**Phase-Specific Components**:
+*   **Phase 1**: Conversational prompt management with rolling context
+*   **Phase 2**: Modular cell computation engine for tensors
+*   **Semantic Cross Product**: New operation for hierarchical tensor generation
 
 ### Testing Contributions
 
