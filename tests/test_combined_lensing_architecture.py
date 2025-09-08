@@ -10,8 +10,7 @@ Tests the core functionality that matters:
 
 import pytest
 from unittest.mock import patch
-from chirality.lib.prompt_registry import PromptRegistry
-from chirality.lib.strategies import PromptStrategy
+from chirality.infrastructure.prompts import PromptRegistry, PromptStrategy
 from chirality.core.cell_resolver import CellResolver
 from chirality.core.types import RichResult
 

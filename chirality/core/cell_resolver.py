@@ -10,8 +10,7 @@ from typing import Dict, Any, List, Optional
 
 from .types import RichResult
 from .llm_client import call_responses_api
-from ..lib.prompt_builder import PromptBuilder
-from ..lib.strategies import PromptStrategy
+from ..infrastructure.prompts import PromptBuilder, PromptStrategy
 
 
 class CellResolver:
