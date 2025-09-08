@@ -31,11 +31,7 @@ def temp_artifacts_dir():
 def sample_phase1_output():
     """Sample Phase 1 output structure for contract testing."""
     return {
-        "meta": {
-            "kernel_hash": "abc123def456",
-            "snapshot_hash": "xyz789uvw123",
-            "model": "gpt-4"
-        },
+        "meta": {"kernel_hash": "abc123def456", "snapshot_hash": "xyz789uvw123", "model": "gpt-4"},
         "matrices": {
             "A": {
                 "name": "A",
@@ -45,31 +41,30 @@ def sample_phase1_output():
                 "elements": [
                     ["objectives", "actions", "benchmarks", "feedback"],
                     ["standards", "methods", "criteria", "adaptation"],
-                    ["development", "coordination", "evaluation", "refinement"]
+                    ["development", "coordination", "evaluation", "refinement"],
                 ],
-                "step": "base"
+                "step": "base",
             },
             "B": {
-                "name": "B", 
+                "name": "B",
                 "station": "Problem Statement",
                 "rows": ["data", "information", "knowledge", "wisdom"],
-                "cols": ["necessity (vs contingency)", "sufficiency", "completeness", "consistency"],
+                "cols": [
+                    "necessity (vs contingency)",
+                    "sufficiency",
+                    "completeness",
+                    "consistency",
+                ],
                 "elements": [
                     ["necessary", "sufficient", "complete", "consistent"],
                     ["contingent", "insufficient", "incomplete", "inconsistent"],
                     ["purposeful", "effective", "comprehensive", "coherent"],
-                    ["constitutive", "optimal", "holistic", "principled"]
+                    ["constitutive", "optimal", "holistic", "principled"],
                 ],
-                "step": "base"
-            }
+                "step": "base",
+            },
         },
-        "principles": {
-            "from": "Matrix E",
-            "items": [
-                "Test principle 1",
-                "Test principle 2"
-            ]
-        }
+        "principles": {"from": "Matrix E", "items": ["Test principle 1", "Test principle 2"]},
     }
 
 
@@ -78,6 +73,6 @@ def canonical_matrices():
     """Canonical matrices for testing."""
     return {
         "A": get_canonical_matrix("A"),
-        "B": get_canonical_matrix("B"), 
-        "J": get_canonical_matrix("J")
+        "B": get_canonical_matrix("B"),
+        "J": get_canonical_matrix("J"),
     }

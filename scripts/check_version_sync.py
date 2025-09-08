@@ -39,16 +39,16 @@ def main():
     """Check if versions are synchronized."""
     version_md = get_version_from_version_md()
     version_pyproject = get_version_from_pyproject()
-    
+
     print(f"VERSION.md: {version_md}")
     print(f"pyproject.toml: {version_pyproject}")
-    
+
     if version_md != version_pyproject:
         print(f"\nERROR: Version mismatch!")
         print(f"VERSION.md has '{version_md}' but pyproject.toml has '{version_pyproject}'")
         print(f"Please update pyproject.toml version to match VERSION.md")
         sys.exit(1)
-    
+
     print(f"\n✅ Versions are synchronized: {version_md}")
     return 0
 

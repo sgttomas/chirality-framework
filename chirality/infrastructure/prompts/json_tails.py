@@ -51,7 +51,9 @@ TAIL_X_LENSED = 'Return JSON only using this contract: {"artifact":"matrix","nam
 # Matrix Z tails
 TAIL_Z_SHIFTED = 'Return JSON only using this contract: {"artifact":"matrix","name":"Z","station":"Validation","rows":["guiding","applying","judging","reflecting"],"cols":["necessity","sufficiency","completeness","consistency"],"step":"shifted","op":"shift","elements":[[...],[...],[...],[...]]}'
 
-TAIL_Z_PRINCIPLES = 'Return JSON only using this contract: {"artifact":"principles","from":"Z","items":[...]}'
+TAIL_Z_PRINCIPLES = (
+    'Return JSON only using this contract: {"artifact":"principles","from":"Z","items":[...]}'
+)
 
 # Matrix G (slice of Z)
 TAIL_G_BASE = 'Return JSON only using this contract: {"artifact":"matrix","name":"G","station":"Validation","rows":["guiding","applying","judging"],"cols":["necessity","sufficiency","completeness","consistency"],"step":"base","elements":[[...],[...],[...]]}'
@@ -73,6 +75,7 @@ TAIL_E_LENSED = 'Return JSON only using this contract: {"artifact":"matrix","nam
 
 # Final aggregator tail
 TAIL_AGGREGATOR = 'Produce a single JSON object exactly matching this schema: {"meta":{"kernel_hash":"...","snapshot_hash":"...","model":"..."},"matrices":{"C":{...},"J":{...},"F":{...},"D":{...},"K":{...},"X":{...},"Z":{...},"G":{...},"P":{...},"T":{...},"E":{...}},"principles":{"from":"Z","items":[...]}}. Return only JSON.'
+
 
 # Helper function to get tail by matrix and step
 def get_tail(matrix: str, step: str) -> str:
@@ -105,9 +108,9 @@ def get_tail(matrix: str, step: str) -> str:
         ("E", "lensed"): TAIL_E_LENSED,
         ("aggregator", ""): TAIL_AGGREGATOR,
     }
-    
+
     key = (matrix, step)
     if key not in tail_map:
         raise ValueError(f"No tail defined for matrix={matrix}, step={step}")
-    
+
     return tail_map[key]

@@ -12,8 +12,9 @@ from enum import Enum
 
 class SemanticOperationType(Enum):
     """Types of semantic operations in the framework."""
+
     MULTIPLY = "multiply"
-    ELEMENTWISE = "elementwise" 
+    ELEMENTWISE = "elementwise"
     ADDITION = "addition"
     LENSING = "lensing"
     SHIFT = "shift"
@@ -22,47 +23,44 @@ class SemanticOperationType(Enum):
 class SemanticOperation:
     """
     Represents a semantic operation with its inputs and expected output structure.
-    
+
     This is pure domain logic - it defines WHAT should happen, not HOW it's executed.
     """
-    
+
     def __init__(
-        self, 
-        operation_type: SemanticOperationType,
-        inputs: List[str],
-        context: Dict[str, Any]
+        self, operation_type: SemanticOperationType, inputs: List[str], context: Dict[str, Any]
     ):
         self.operation_type = operation_type
         self.inputs = inputs
         self.context = context
-    
+
     def validate(self) -> List[str]:
         """
         Validate operation inputs according to domain rules.
-        
+
         Returns:
             List of validation errors (empty if valid)
         """
         errors = []
-        
+
         if self.operation_type == SemanticOperationType.MULTIPLY:
             if len(self.inputs) < 2:
                 errors.append("Multiply operation requires at least 2 inputs")
-                
+
         elif self.operation_type == SemanticOperationType.ELEMENTWISE:
             if len(self.inputs) != 2:
                 errors.append("Elementwise operation requires exactly 2 inputs")
-                
+
         elif self.operation_type == SemanticOperationType.ADDITION:
             if len(self.inputs) != 2:
                 errors.append("Addition operation requires exactly 2 parts")
-                
+
         return errors
-    
+
     def get_expected_output_structure(self) -> Dict[str, str]:
         """
         Define the expected structure of the operation result.
-        
+
         Returns:
             Dictionary describing expected output fields and types
         """
@@ -70,20 +68,20 @@ class SemanticOperation:
             "text": "str",
             "terms_used": "List[str]",
             "warnings": "List[str]",
-            "metadata": "Dict[str, Any]"
+            "metadata": "Dict[str, Any]",
         }
 
 
 def create_k_products(row_terms: List[str], col_terms: List[str]) -> List[Tuple[str, str]]:
     """
     Create k-products for semantic multiplication (pure function).
-    
+
     This implements the combinatorial logic for Stage 1 of matrix operations.
-    
+
     Args:
         row_terms: Terms from matrix row
         col_terms: Terms from matrix column
-        
+
     Returns:
         List of (row_term, col_term) pairs for semantic resolution
     """
@@ -93,14 +91,14 @@ def create_k_products(row_terms: List[str], col_terms: List[str]) -> List[Tuple[
 def create_addition_sentence(part_a: str, part_b: str) -> str:
     """
     Create mechanical addition sentence for Matrix D (pure function).
-    
+
     This implements the canonical D matrix formula:
     A(i,j) + " applied to frame the problem; " + F(i,j) + " to resolve the problem."
-    
+
     Args:
         part_a: First part (from matrix A)
         part_b: Second part (from matrix F)
-        
+
     Returns:
         Mechanically constructed sentence
     """
@@ -110,19 +108,19 @@ def create_addition_sentence(part_a: str, part_b: str) -> str:
 def validate_semantic_input(text: str) -> List[str]:
     """
     Validate semantic input according to domain rules.
-    
+
     Args:
         text: Input text to validate
-        
+
     Returns:
         List of validation errors (empty if valid)
     """
     errors = []
-    
+
     if not text.strip():
         errors.append("Semantic input cannot be empty")
-    
+
     if len(text) > 10000:  # Reasonable limit
         errors.append("Semantic input too long (>10000 chars)")
-    
+
     return errors

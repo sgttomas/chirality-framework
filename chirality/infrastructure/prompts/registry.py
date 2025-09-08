@@ -157,25 +157,25 @@ class PromptRegistry:
         """
         asset = self.get(asset_id)
         return {"id": asset.id, "sha256": asset.sha256, "version": asset.version}
-    
+
     def compute_kernel_hash(self, normative_spec_path: Optional[Path] = None) -> str:
         """
         Compute kernel hash from all assets + normative spec.
-        
+
         Args:
             normative_spec_path: Path to normative_spec.txt
-            
+
         Returns:
             SHA256 kernel hash
         """
         if not self._loaded:
             self.load()
-        
+
         # Collect asset hashes in sorted order
         asset_hashes = []
         for asset_id in sorted(self._assets.keys()):
             asset_hashes.append(self._assets[asset_id].sha256)
-        
+
         # Get normative spec hash
         if normative_spec_path and normative_spec_path.exists():
             normative_bytes = normative_spec_path.read_bytes()
@@ -189,51 +189,53 @@ class PromptRegistry:
                 normative_hash = hashlib.sha256(normative_bytes).hexdigest()
             else:
                 normative_hash = "missing"
-        
+
         # Compute kernel hash
         return self._compute_kernel_hash(asset_hashes, normative_hash)
-    
+
     def _compute_kernel_hash(self, asset_hashes: list[str], normative_hash: str) -> str:
         """
         Compute kernel hash from components.
-        
+
         Args:
             asset_hashes: List of asset SHA256 hashes
             normative_hash: Normative spec SHA256 hash
-            
+
         Returns:
             Combined SHA256 kernel hash
         """
         h = hashlib.sha256()
-        
+
         # Add sorted asset hashes
         for asset_hash in sorted(asset_hashes):
             h.update(asset_hash.encode("utf-8"))
-        
+
         # Add normative spec hash
         h.update(normative_hash.encode("utf-8"))
-        
+
         return h.hexdigest()
-    
-    def create_manifest(self, output_path: Path, normative_spec_path: Optional[Path] = None) -> Dict[str, str]:
+
+    def create_manifest(
+        self, output_path: Path, normative_spec_path: Optional[Path] = None
+    ) -> Dict[str, str]:
         """
         Create asset manifest with checksums and kernel hash.
-        
+
         Args:
             output_path: Path to write manifest YAML
             normative_spec_path: Optional path to normative spec
-            
+
         Returns:
             Dict with kernel_hash and asset_count
         """
         if not self._loaded:
             self.load()
-        
+
         kernel_hash = self.compute_kernel_hash(normative_spec_path)
-        
+
         # Build manifest
         from datetime import datetime, timezone
-        
+
         manifest = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "kernel_hash": kernel_hash,
@@ -245,19 +247,19 @@ class PromptRegistry:
                     "sha256": asset.sha256,
                     "version": asset.version,
                     "size_bytes": asset.size_bytes,
-                    "last_modified": asset.last_modified
+                    "last_modified": asset.last_modified,
                 }
                 for aid, asset in self._assets.items()
-            }
+            },
         }
-        
+
         # Write manifest
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(output_path, "w") as f:
             yaml.dump(manifest, f, default_flow_style=False, sort_keys=True)
-        
+
         return {"kernel_hash": kernel_hash, "asset_count": len(self._assets)}
 
 

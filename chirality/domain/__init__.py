@@ -14,11 +14,11 @@ from .validation import FrameworkValidationError, validate_matrix, validate_cell
 __all__ = [
     # Core types
     "Cell",
-    "Matrix", 
+    "Matrix",
     "RichResult",
     # Canonical matrices
     "MATRIX_A",
-    "MATRIX_B", 
+    "MATRIX_B",
     "MATRIX_J",
     # Validation
     "FrameworkValidationError",

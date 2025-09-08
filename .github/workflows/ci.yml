@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, refactor-2 ]
+    branches: [ main, refactor-2, refactor-3 ]
   pull_request:
     branches: [ main ]
 
@@ -34,6 +34,9 @@ jobs:
     # Guards first - fail fast if architectural rules are violated
     - name: Run no-legacy guard
       run: python scripts/guard_no_legacy.py
+    
+    - name: Generate asset manifest
+      run: python -m chirality.interfaces.cli assets-verify
     
     - name: Check kernel hash
       run: python scripts/check_kernel_hash.py
