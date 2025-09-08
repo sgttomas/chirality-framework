@@ -19,7 +19,7 @@ import hashlib
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 
-from ..core.types import Cell
+from ...domain.types import Cell
 
 try:
     from neo4j import GraphDatabase, Driver

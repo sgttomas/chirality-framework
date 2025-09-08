@@ -6,7 +6,7 @@ All production semantic resolution goes through the CellResolver.
 """
 
 from typing import List
-from .types import RichResult
+from ...domain.types import RichResult
 
 
 class EchoResolver:

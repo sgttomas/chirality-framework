@@ -43,7 +43,8 @@ class PromptRegistry:
         """
         if assets_dir is None:
             # Default to chirality/prompt_assets relative to this file
-            current_dir = Path(__file__).parent.parent
+            # We're now in infrastructure/prompts, so go up to chirality root
+            current_dir = Path(__file__).parent.parent.parent
             assets_dir = current_dir / "prompt_assets"
 
         self.assets_dir = Path(assets_dir)

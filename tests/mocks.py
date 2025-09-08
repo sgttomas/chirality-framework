@@ -6,7 +6,7 @@ enabling fast, offline testing of the new combined lensing pipeline.
 """
 
 from typing import Dict, Any, List
-from chirality.core.types import RichResult
+from chirality.domain.types import RichResult
 
 
 class MockCellResolver:

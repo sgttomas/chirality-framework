@@ -17,12 +17,12 @@ through constrained stochastic processing of canonical inputs.
 from typing import List, Optional
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from .types import Cell, Matrix
-from .cell_resolver import CellResolver
-from .tracer import JSONLTracer
-from .provenance_schema import create_provenance
-from .constants import CANONICAL_PROBLEM
-from ..exporters.working_memory_exporter import Neo4jWorkingMemoryExporter
+from ...domain.types import Cell, Matrix
+from ...infrastructure.llm.resolver import CellResolver
+from ...infrastructure.monitoring.tracer import JSONLTracer
+from ...domain.provenance import create_provenance
+from ...domain.constants import CANONICAL_PROBLEM
+from ...infrastructure.exporters.working_memory_exporter import Neo4jWorkingMemoryExporter
 
 
 @dataclass

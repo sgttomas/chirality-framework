@@ -8,10 +8,9 @@ Uses OpenAI Responses API exclusively with global configuration.
 import hashlib
 from typing import Dict, Any, List, Optional
 
-from .types import RichResult
-from .llm_client import call_responses_api
-from ..lib.prompt_builder import PromptBuilder
-from ..lib.strategies import PromptStrategy
+from ...domain.types import RichResult
+from .openai_adapter import call_responses_api
+from ..prompts import PromptBuilder, PromptStrategy
 
 
 class CellResolver:

@@ -12,8 +12,8 @@ import tempfile
 from pathlib import Path
 
 from chirality.exporters.snapshot_exporter import MatrixSnapshotWriter
-from chirality.core.types import Matrix, Cell
-from chirality.core.matrices import MATRIX_A
+from chirality.domain.types import Matrix, Cell
+from chirality.domain.matrices.canonical import MATRIX_A
 
 
 class TestMatrixSnapshotWriter:

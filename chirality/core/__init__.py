@@ -2,10 +2,11 @@
 Core Chirality Framework semantic calculator modules.
 """
 
-from .types import Cell, Matrix
-from .cell_resolver import CellResolver
-from .resolvers import EchoResolver
-from .operations import (
+# Import shims for backward compatibility - TODO: remove after migration
+from ..domain.types import Cell, Matrix
+from ..infrastructure.llm.resolver import CellResolver
+from ..infrastructure.llm.mock_resolvers import EchoResolver
+from ..application.services.pipeline_service import (
     compute_cell_C,
     compute_cell_F,
     compute_cell_D,
@@ -13,9 +14,9 @@ from .operations import (
     compute_matrix_F,
     compute_matrix_D,
 )
-from .matrices import MATRIX_A, MATRIX_B, MATRIX_J
-from .validate import FrameworkValidationError
-from .tracer import JSONLTracer
+from ..domain.matrices.canonical import MATRIX_A, MATRIX_B, MATRIX_J
+from ..domain.validation import FrameworkValidationError
+from ..infrastructure.monitoring.tracer import JSONLTracer
 
 __all__ = [
     # Core types
