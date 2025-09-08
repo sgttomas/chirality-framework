@@ -38,7 +38,7 @@ def try_parse_json_or_repair(
 
     try:
         return json.loads(content), metadata
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         # Original parse failed, try repair
         for attempt in range(max_repair_attempts):
             # Create repair message

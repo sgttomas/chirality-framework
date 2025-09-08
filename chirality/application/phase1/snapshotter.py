@@ -7,7 +7,7 @@ as the system prompt for Phase 2 tensor operations.
 
 import json
 import hashlib
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from pathlib import Path
 from datetime import datetime, timezone
 

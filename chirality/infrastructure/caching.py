@@ -425,4 +425,3 @@ class ResumableRunner:
         self.save_manifest(manifest)
 
 
-import time

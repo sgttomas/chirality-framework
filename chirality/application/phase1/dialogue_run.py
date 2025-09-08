@@ -7,7 +7,6 @@ Each step returns JSON only (no tables).
 """
 
 import json
-import hashlib
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
 from pathlib import Path
@@ -192,19 +191,19 @@ Matrix B (4x4):
 
 For each position C[i,j], list the k-products A[i,k] * B[k,j] for k=0..3.
 """
-        mechanical = self._call_llm_with_json_tail(
+        self._call_llm_with_json_tail(
             user_msg, get_tail("C", "mechanical"), "C_mechanical"
         )
 
         # Step 2: Semantic interpretation
         user_msg = "Now interpret each k-product semantically using semantic multiplication."
-        interpreted = self._call_llm_with_json_tail(
+        self._call_llm_with_json_tail(
             user_msg, get_tail("C", "interpreted"), "C_interpreted"
         )
 
         # Step 3: Generate lenses
         user_msg = "Generate lenses for each cell using row × column × station perspective."
-        lenses = self._call_llm_with_json_tail(user_msg, get_tail("C", "lenses"), "C_lenses")
+        self._call_llm_with_json_tail(user_msg, get_tail("C", "lenses"), "C_lenses")
 
         # Step 4: Apply lenses
         user_msg = "Apply the lenses to produce the final lensed matrix C."
@@ -246,7 +245,7 @@ D[i,j] = A[i,j] + " applied to frame the problem; " + F[i,j] + " to resolve the 
 """
 
         # Constructed (mechanical addition)
-        constructed = self._call_llm_with_json_tail(
+        self._call_llm_with_json_tail(
             user_msg, get_tail("D", "constructed"), "D_constructed"
         )
 

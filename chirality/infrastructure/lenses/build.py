@@ -6,7 +6,7 @@ Each lens is computed independently and cached by lens_id.
 """
 
 import json
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 from pathlib import Path
 
 from ..llm.openai_adapter import call_responses_api

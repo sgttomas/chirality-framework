@@ -7,7 +7,6 @@ Enforces JSON output format and global configuration.
 
 import os
 import time
-import json
 from typing import Dict, Any, List, Tuple, Optional
 
 try:
@@ -213,7 +212,7 @@ class LLMClient:
         except Exception as e:
             # Add timing info to error metadata
             latency_ms = int((time.time() - start_time) * 1000)
-            error_metadata = {
+            {
                 "error": str(e),
                 "latency_ms": latency_ms,
                 "created_at": int(time.time()),

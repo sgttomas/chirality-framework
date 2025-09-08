@@ -7,7 +7,6 @@ Implements the two-phase architecture with proper command separation.
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional
 
 from ..application.phase1.dialogue_run import DialogueOrchestrator
 from ..application.phase1.snapshotter import SnapshotGenerator
@@ -17,7 +16,7 @@ from ..application.phase2.tensor_engine import TensorEngine
 from ..infrastructure.export.neo4j_loader import load_artifacts_to_neo4j
 from ..infrastructure.prompts.registry import get_registry
 from ..domain.budgets import BudgetConfig
-from ..lib.logging import log_info, log_error, log_success, log_progress, output_data, log_stats
+from ..lib.logging import log_info, log_error, log_success, log_progress, output_data
 
 
 def cmd_assets_hash(args):
@@ -162,7 +161,7 @@ def cmd_phase2_run(args):
             f"  Budget limits: tokens={args.token_budget}, cost=${args.cost_budget}, time={args.time_budget}s"
         )
     if args.resume:
-        log_info(f"  Resume mode: enabled")
+        log_info("  Resume mode: enabled")
     log_info(f"  Cache: {'enabled' if args.cache else 'disabled'}")
     log_info(
         f"  Model: {args.model} (temp={args.temperature}, top_p={getattr(args, 'top_p', args.__dict__.get('top_p', 0.9))})"

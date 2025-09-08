@@ -9,7 +9,7 @@ import json
 import hashlib
 from typing import Dict, List, Any, Optional
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime
 
 try:
     from neo4j import GraphDatabase

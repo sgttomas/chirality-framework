@@ -6,9 +6,8 @@ This is where the domain rules meet the real world.
 """
 
 from typing import Optional, Protocol
-from ...core.types import Cell, Matrix
-from ...domain.pipeline.stages import PipelineStage, get_matrix_pipeline_stages
-from ...domain.semantics.operations import SemanticOperation, SemanticOperationType
+from ...core.types import Cell
+from ...domain.pipeline.stages import get_matrix_pipeline_stages
 
 
 class LLMResolver(Protocol):
@@ -82,7 +81,7 @@ class CellComputationService:
             Computed cell with full provenance
         """
         # Get pipeline stages from domain rules
-        stages = get_matrix_pipeline_stages(matrix_type)
+        get_matrix_pipeline_stages(matrix_type)
 
         # Stage 1: Mechanical construction (domain logic)
         stage1_result = self._execute_stage1(matrix_type, row, col, source_matrices)

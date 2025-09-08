@@ -7,7 +7,7 @@ Creates the (row, col, station) combinations that need lens text generation.
 
 import json
 import hashlib
-from typing import Dict, List, Any, Set, Tuple
+from typing import Dict, List, Any
 from pathlib import Path
 
 

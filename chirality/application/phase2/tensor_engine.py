@@ -10,7 +10,6 @@ import json
 import hashlib
 from typing import Dict, List, Any, Optional, Tuple
 from pathlib import Path
-from datetime import datetime, timezone
 import itertools
 
 from ...infrastructure.llm.openai_adapter import call_responses_api
@@ -306,7 +305,7 @@ class TensorEngine:
     def _apply_pruning(self, dims: List[int], config: Dict[str, Any]) -> List[Tuple[int, ...]]:
         """Apply pruning to reduce cell count."""
         max_pairs = config.get("max_pairs", 64)
-        top_k = config.get("top_k", 8)
+        config.get("top_k", 8)
 
         # Generate all indices
         all_indices = list(itertools.product(*[range(d) for d in dims]))

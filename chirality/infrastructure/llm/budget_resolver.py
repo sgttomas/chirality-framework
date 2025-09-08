@@ -4,7 +4,7 @@ Budget-aware resolver wrapper.
 Wraps existing resolvers to track usage and enforce budgets.
 """
 
-from typing import Dict, Any, List
+from typing import List
 from chirality.domain.budgets import BudgetTracker
 from chirality.domain.types import RichResult
 

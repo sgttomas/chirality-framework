@@ -4,7 +4,6 @@ Phase 1 Aggregator.
 Validates and writes the final Phase 1 output with strict schema validation.
 """
 
-import json
 from pathlib import Path
 from typing import Dict, Any
 

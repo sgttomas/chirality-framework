@@ -101,18 +101,18 @@ def validate_canonical_matrices() -> None:
     """
     # Validate Matrix A (3x4)
     assert MATRIX_A.shape == (3, 4), f"Matrix A should be 3x4, got {MATRIX_A.shape}"
-    assert len(MATRIX_A.row_labels) == 3, f"Matrix A should have 3 row labels"
-    assert len(MATRIX_A.col_labels) == 4, f"Matrix A should have 4 column labels"
+    assert len(MATRIX_A.row_labels) == 3, "Matrix A should have 3 row labels"
+    assert len(MATRIX_A.col_labels) == 4, "Matrix A should have 4 column labels"
 
     # Validate Matrix B (4x4)
     assert MATRIX_B.shape == (4, 4), f"Matrix B should be 4x4, got {MATRIX_B.shape}"
-    assert len(MATRIX_B.row_labels) == 4, f"Matrix B should have 4 row labels"
-    assert len(MATRIX_B.col_labels) == 4, f"Matrix B should have 4 column labels"
+    assert len(MATRIX_B.row_labels) == 4, "Matrix B should have 4 row labels"
+    assert len(MATRIX_B.col_labels) == 4, "Matrix B should have 4 column labels"
 
     # Validate Matrix J (3x4) - truncated B
     assert MATRIX_J.shape == (3, 4), f"Matrix J should be 3x4, got {MATRIX_J.shape}"
-    assert len(MATRIX_J.row_labels) == 3, f"Matrix J should have 3 row labels"
-    assert len(MATRIX_J.col_labels) == 4, f"Matrix J should have 4 column labels"
+    assert len(MATRIX_J.row_labels) == 3, "Matrix J should have 3 row labels"
+    assert len(MATRIX_J.col_labels) == 4, "Matrix J should have 4 column labels"
 
     # Ensure J is properly truncated B (first 3 rows)
     for i in range(3):
