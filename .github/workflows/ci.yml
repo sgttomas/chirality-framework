@@ -1,240 +1,67 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main, experimental-*, feature-*, fix-* ]
+    branches: [ main, refactor-2 ]
   pull_request:
     branches: [ main ]
 
-env:
-  PYTHON_VERSION: "3.13"
-
 jobs:
-  lint:
-    name: Code Quality & Linting
+  test:
     runs-on: ubuntu-latest
-    
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install ripgrep
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ripgrep
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
-        pip install mypy black ruff
     
-    - name: Run Black (code formatting)
-      run: black --check chirality/ tests/
+    # Guards first - fail fast if architectural rules are violated
+    - name: Run no-legacy guard
+      run: python scripts/guard_no_legacy.py
     
-    - name: Run Ruff (linting) 
-      run: ruff check chirality/ tests/
+    - name: Check kernel hash
+      run: python scripts/check_kernel_hash.py
     
-    - name: Run MyPy (type checking)
+    - name: Check for legacy imports
+      run: python scripts/codemod_legacy_imports.py
+    
+    # Code quality checks
+    - name: Check code formatting
+      run: black --check chirality/ tests/ scripts/
+    
+    - name: Run linter
+      run: ruff check chirality/
+    
+    - name: Type checking
       run: mypy chirality/
-      continue-on-error: true  # Type checking is advisory for now
+    
+    # Tests
+    - name: Run tests
+      run: pytest -q
 
-  test-architecture:
-    name: Test Prompt System Architecture
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]" 
-        pip install pytest pytest-cov pyyaml
-        
-    
-    - name: Validate prompt asset integrity
-      run: |
-        echo "Validating prompt asset structure..."
-        python -c "
-        from chirality.lib.prompt_registry import PromptRegistry
-        from pathlib import Path
-        import sys
-        
-        try:
-            # Test registry loads without errors
-            registry = PromptRegistry()
-            registry.load()
-            assets = list(registry._assets.keys())
-            
-            print(f'✓ Successfully loaded {len(assets)} prompt assets')
-            print(f'Available assets: {sorted(assets)}')
-            
-            # Verify core assets exist (NEW ARCHITECTURE)
-            required_assets = [
-                'stage2_multiply', 'stage2_elementwise', 'combined_lens', 'station_shift',
-                'station_brief.requirements', 'station_brief.objectives',
-                'station_brief.verification', 'station_brief.validation', 'station_brief.evaluation'
-            ]
-            
-            missing = []
-            for asset_id in required_assets:
-                try:
-                    registry.get(asset_id)
-                except KeyError:
-                    missing.append(asset_id)
-            
-            if missing:
-                print(f'✗ Missing required assets: {missing}')
-                sys.exit(1)
-            else:
-                print('✓ All required assets present')
-                
-        except Exception as e:
-            print(f'✗ Prompt asset validation failed: {e}')
-            sys.exit(1)
-        "
-    
-    - name: Test combined lensing architecture
-      run: pytest tests/test_combined_lensing_architecture.py -v
-    
-    - name: Run package verification
-      run: python verify_package.py
-
-  test-core:
-    name: Test Core Framework
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
-        pip install pytest pytest-cov
-    
-    - name: Test core operations (echo resolver)
-      run: pytest tests/core/test_operations.py -v
-    
-    - name: Test exporters
-      run: pytest tests/exporters/ -v
-    
-    - name: Test CLI functionality
-      run: pytest tests/test_cli.py -v
-
-  test-api-compliance:
-    name: Test OpenAI Responses API Compliance
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python  
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
-        pip install pytest
-    
-    - name: Test API compliance
-      run: pytest tests/test_api_compliance.py -v
-      
-
-  dependency-security:
-    name: Dependency Security Scan
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install safety pip-audit
-    
-    - name: Run Safety (known vulnerabilities)
-      run: safety check --json || true
-    
-    - name: Run pip-audit (dependency audit)
-      run: pip-audit --format=json || true
-
-  build-test:
-    name: Build & Installation Test
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Test clean installation
-      run: |
-        python -m pip install --upgrade pip build
-        python -m build
-    
-    - name: Test wheel installation
-      run: |
-        pip install dist/*.whl
-        python -c "import chirality; print('✓ Package imports successfully')"
-        python -c "from chirality.lib.strategies import PromptStrategy; print('✓ New prompt system available')"
-        python -c "from chirality.lib.prompt_registry import PromptRegistry; r = PromptRegistry(); r.load(); print('✓ Prompt assets load successfully')"
-
-  coverage-report:
-    name: Test Coverage Report
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]" 
-        pip install pytest pytest-cov pyyaml
-    
-    - name: Run tests with coverage
-      run: |
-        pytest \
-          tests/core/test_operations.py \
-          tests/core/test_station5_validation.py \
-          tests/core/test_station6_evaluation.py \
-          tests/test_combined_lensing_architecture.py \
-          tests/exporters/ \
-          --cov=chirality \
-          --cov-report=html \
-          --cov-report=term-missing \
-          --cov-fail-under=70
-    
-    - name: Upload coverage to artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report
-        path: htmlcov/
+    # Optional: Phase 2 smoke test (when container available)
+    # - name: Phase 2 smoke test
+    #   if: false  # Enable when Neo4j container is available
+    #   run: |
+    #     # Start Neo4j container
+    #     docker run -d --name neo4j -p 7687:7687 -e NEO4J_AUTH=neo4j/test neo4j:latest
+    #     # Wait for startup
+    #     sleep 30
+    #     # Run smoke test
+    #     python -m chirality.interfaces.cli export-neo4j --uri bolt://localhost:7687 --user neo4j --pwd test --artifacts runs/smoke || true

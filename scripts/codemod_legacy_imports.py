@@ -12,8 +12,9 @@ import pathlib
 BANNED = [
     r"^from\s+chirality\.core(\.| import )",
     r"^import\s+chirality\.core(\.|$)",
-    r"^from\s+chirality\.lib\.(?!logging)(.*?)(\s+import|\.|$)",  # Allow lib.logging
-    r"^import\s+chirality\.lib\.(?!logging)",  # Allow lib.logging
+    r"^from\s+chirality\.lib\.(?!logging\b)(.*?)(\s+import|\.|$)",  # Allow ONLY lib.logging
+    r"^import\s+chirality\.lib\.(?!logging\b)",  # Allow ONLY lib.logging  
+    r"^from\s+chirality\.lib\s+import\s+(?!logging\b)",  # Block "from chirality.lib import X" unless X is logging
     r"application\.services\.pipeline_service"
 ]
 

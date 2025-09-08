@@ -30,10 +30,11 @@ if lib_path.exists():
         fails.append(f"Unauthorized files in chirality/lib: {unauthorized}")
 
 # 2) Disallowed imports
-# Note: lib.logging imports are allowed (production infrastructure)
+# Note: ONLY lib.logging imports are allowed (production infrastructure)
 patterns = [
     r"chirality\.core\.",
-    r"chirality\.lib\.(?!logging)",  # Allow lib.logging but nothing else
+    r"chirality\.lib\.(?!logging\b)",  # Allow lib.logging but nothing else (strict word boundary)
+    r"from\s+chirality\.lib\s+import\s+(?!logging\b)",  # Block "from chirality.lib import X" unless X is logging
     r"application\.services\.pipeline_service"
 ]
 try:

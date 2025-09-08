@@ -165,16 +165,21 @@ python3 -m chirality.cli render-viewer --latest --style elements --no-sanitize-v
 
 ## Common CLI Commands
 
-- Compute full pipeline (dev): `python3 -m chirality.cli compute-pipeline --resolver echo --snapshot-jsonl --include-base -v`
-- App-mode run (artifacts): `python3 -m chirality.cli compute-pipeline --resolver echo --out runs/my-run-1 --problem-file problem.json --max-seconds 900`
-- Render latest viewer: `python3 -m chirality.cli render-viewer --latest --open`
-- Inspect a cell: `python3 -m chirality.cli compute-cell C --i 0 --j 0 -v`
+- Phase 1 dialogue: `python3 -m chirality.interfaces.cli phase1-dialogue-run --out artifacts/`
+- Phase 2 tensor computation: `python3 -m chirality.interfaces.cli phase2-run tensor_spec.json --snapshot phase1_snapshot.md`
+- Asset verification: `python3 -m chirality.interfaces.cli assets-verify`
+- Export to Neo4j: `python3 -m chirality.interfaces.cli export-neo4j --uri bolt://localhost:7687 --user neo4j --pwd password`
 
 See full CLI Quick Reference in `docs/API_REFERENCE.md#cli-reference`.
 
 ## Development
 
 To set up the development environment and run tests, please refer to the instructions in `CONTRIBUTING.md`.
+
+**Key Development Notes:**
+- **Single CLI Entry Point**: Use `chirality` command (via `chirality.interfaces.cli:main`)
+- **Output Channels**: Logs go to stderr, data goes to stdout (for CI/CD integration)
+- **Guard Scripts**: Run before commits to prevent legacy code drift
 
 Additional docs:
 - `docs/INTERFACE.md`: Producer mirror of the chirality-app contract (app mode).
