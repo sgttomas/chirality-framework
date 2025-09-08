@@ -24,24 +24,6 @@ __author__ = "Chirality Framework Team"
 from .domain.types import Cell, Matrix
 from .infrastructure.llm.resolver import CellResolver
 from .infrastructure.llm.mock_resolvers import EchoResolver
-from .application.services.pipeline_service import (
-    compute_cell_C,
-    compute_cell_F,
-    compute_cell_D,
-    compute_cell_X,
-    compute_cell_Z,
-    compute_cell_E,
-    compute_matrix_C,
-    compute_matrix_F,
-    compute_matrix_D,
-    compute_matrix_K,
-    compute_matrix_X,
-    compute_matrix_Z,
-    compute_matrix_T_from_B,
-    compute_matrix_G,
-    compute_array_P,
-    compute_matrix_E,
-)
 from .domain.matrices.canonical import MATRIX_A, MATRIX_B, MATRIX_J
 from .domain.validation import FrameworkValidationError, validate_matrix, validate_cell
 from .infrastructure.monitoring.tracer import JSONLTracer
@@ -57,24 +39,6 @@ __all__ = [
     # Resolvers
     "CellResolver",
     "EchoResolver",
-    # Cell-level operations
-    "compute_cell_C",
-    "compute_cell_F",
-    "compute_cell_D",
-    "compute_cell_X",
-    "compute_cell_Z",
-    "compute_cell_E",
-    # Matrix-level operations
-    "compute_matrix_C",
-    "compute_matrix_F",
-    "compute_matrix_D",
-    "compute_matrix_K",
-    "compute_matrix_X",
-    "compute_matrix_Z",
-    "compute_matrix_T_from_B",
-    "compute_matrix_G",
-    "compute_array_P",
-    "compute_matrix_E",
     # Validation
     "FrameworkValidationError",
     "validate_matrix",

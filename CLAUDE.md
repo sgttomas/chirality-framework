@@ -361,7 +361,7 @@ Tensor operations use a different approach:
 - Phase 2: Normative implementation snapshots
 
 ### Normative Specifications (`chirality/`)
-- **`normative_spec.txt`**: v19.1.0 canonical specification with Phase 2 instructions
+- **`normative_spec.txt`**: v19.2.0 canonical specification with Phase 2 instructions
 - **`normative_system_prompt.txt`**: System prompt for LLM operations
 - **`normative_implementation_chirality-framework_v*.txt`**: Implementation snapshots
   - These become system prompts for Phase 2

@@ -218,7 +218,7 @@ def cmd_export_neo4j(args):
 
 def main():
     """Main CLI entry point."""
-    parser = argparse.ArgumentParser(prog="chirality", description="Chirality Framework v19.1.0")
+    parser = argparse.ArgumentParser(prog="chirality", description="Chirality Framework v19.2.0")
     subparsers = parser.add_subparsers(dest="cmd", required=True, help="Available commands")
     
     # Assets commands
