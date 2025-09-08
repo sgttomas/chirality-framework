@@ -14,6 +14,7 @@ from ..semantics.operations import SemanticOperationType
 
 class PipelineStage(Enum):
     """The three canonical stages of the Chirality Framework pipeline."""
+
     STAGE_1_CONSTRUCT = "stage_1_construct"
     STAGE_2_SEMANTIC = "stage_2_semantic"
     STAGE_3_COMBINED_LENSED = "stage_3_combined_lensed"
@@ -22,6 +23,7 @@ class PipelineStage(Enum):
 @dataclass
 class StageDefinition:
     """Defines what happens at a pipeline stage."""
+
     stage: PipelineStage
     description: str
     is_llm_required: bool
@@ -38,26 +40,24 @@ STAGE_DEFINITIONS = {
         is_llm_required=False,
         operation_type=None,  # Mechanical only
         expected_inputs=["source_matrices", "row_index", "col_index"],
-        expected_outputs=["texts", "metadata", "terms_used", "warnings"]
+        expected_outputs=["texts", "metadata", "terms_used", "warnings"],
     ),
-    
     PipelineStage.STAGE_2_SEMANTIC: StageDefinition(
         stage=PipelineStage.STAGE_2_SEMANTIC,
         description="LLM resolves concepts via operation-specific strategies",
         is_llm_required=True,
         operation_type=None,  # Varies by matrix type
         expected_inputs=["stage_1_output", "component_id"],
-        expected_outputs=["text", "metadata", "terms_used", "warnings"]
+        expected_outputs=["text", "metadata", "terms_used", "warnings"],
     ),
-    
     PipelineStage.STAGE_3_COMBINED_LENSED: StageDefinition(
         stage=PipelineStage.STAGE_3_COMBINED_LENSED,
         description="Single unified semantic operation combining row × column × station perspectives",
         is_llm_required=True,
         operation_type=SemanticOperationType.LENSING,
         expected_inputs=["stage_2_output", "row_label", "col_label", "station_context"],
-        expected_outputs=["text", "metadata", "terms_used", "warnings"]
-    )
+        expected_outputs=["text", "metadata", "terms_used", "warnings"],
+    ),
 }
 
 
@@ -69,32 +69,32 @@ def get_stage_definition(stage: PipelineStage) -> StageDefinition:
 def validate_stage_inputs(stage: PipelineStage, inputs: Dict[str, Any]) -> List[str]:
     """
     Validate inputs for a pipeline stage according to domain rules.
-    
+
     Args:
         stage: Pipeline stage
         inputs: Input data to validate
-        
+
     Returns:
         List of validation errors (empty if valid)
     """
     definition = get_stage_definition(stage)
     errors = []
-    
+
     # Check required inputs are present
     for required_input in definition.expected_inputs:
         if required_input not in inputs:
             errors.append(f"Missing required input '{required_input}' for {stage.value}")
-    
+
     return errors
 
 
 def get_matrix_pipeline_stages(component_id: str) -> List[PipelineStage]:
     """
     Get the pipeline stages for a matrix component according to domain rules.
-    
+
     Args:
         component_id: Matrix component ('C', 'D', 'F', 'X', 'Z', 'E')
-        
+
     Returns:
         List of stages in execution order
     """
@@ -103,7 +103,7 @@ def get_matrix_pipeline_stages(component_id: str) -> List[PipelineStage]:
     return [
         PipelineStage.STAGE_1_CONSTRUCT,
         PipelineStage.STAGE_2_SEMANTIC,
-        PipelineStage.STAGE_3_COMBINED_LENSED
+        PipelineStage.STAGE_3_COMBINED_LENSED,
     ]
 
 

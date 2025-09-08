@@ -9,11 +9,14 @@ from typing import List, Dict, Optional, Literal
 from pydantic import BaseModel, Field
 
 
-Step = Literal["base", "mechanical", "interpreted", "lenses", "lensed", "transpose", "shifted", "constructed"]
+Step = Literal[
+    "base", "mechanical", "interpreted", "lenses", "lensed", "transpose", "shifted", "constructed"
+]
 
 
 class Meta(BaseModel):
     """Metadata for Phase 1 run."""
+
     kernel_hash: str
     snapshot_hash: str
     model: str
@@ -23,6 +26,7 @@ class Meta(BaseModel):
 
 class Matrix(BaseModel):
     """Matrix specification with validation."""
+
     name: str
     station: str
     rows: List[str]
@@ -36,15 +40,17 @@ class Matrix(BaseModel):
 
 class Principles(BaseModel):
     """Principles extracted from validation."""
+
     from_: str = Field(alias="from")
     items: List[str]
 
 
 class Phase1Output(BaseModel):
     """Complete Phase 1 output with strict validation."""
+
     meta: Meta
     matrices: Dict[str, Matrix]
     principles: Principles
-    
+
     class Config:
         allow_population_by_field_name = True

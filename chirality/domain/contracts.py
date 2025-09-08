@@ -12,14 +12,16 @@ from enum import Enum
 
 class TensorType(str, Enum):
     """Tensor types for Phase-2 operations."""
+
     M = "M"  # Methods tensor
-    W = "W"  # Workflows tensor  
+    W = "W"  # Workflows tensor
     U = "U"  # Utilities tensor
     N = "N"  # Networks tensor
 
 
 class ComponentType(str, Enum):
     """Component types in the pipeline."""
+
     C = "C"  # Combination
     D = "D"  # Definition
     F = "F"  # Framing
@@ -30,6 +32,7 @@ class ComponentType(str, Enum):
 
 class StationType(str, Enum):
     """Station types for semantic context."""
+
     REQUIREMENTS = "requirements"
     OBJECTIVES = "objectives"
     VERIFICATION = "verification"
@@ -39,6 +42,7 @@ class StationType(str, Enum):
 
 class TensorM(BaseModel):
     """Methods tensor schema for Phase-2."""
+
     tensor_type: TensorType = TensorType.M
     dimensions: tuple[int, int] = Field(..., description="Tensor dimensions (rows, cols)")
     components: List[ComponentType] = Field(..., description="Component sequence")
@@ -48,6 +52,7 @@ class TensorM(BaseModel):
 
 class TensorW(BaseModel):
     """Workflows tensor schema for Phase-2."""
+
     tensor_type: TensorType = TensorType.W
     dimensions: tuple[int, int] = Field(..., description="Tensor dimensions (rows, cols)")
     workflow_stages: List[str] = Field(..., description="Workflow stage names")
@@ -57,6 +62,7 @@ class TensorW(BaseModel):
 
 class TensorU(BaseModel):
     """Utilities tensor schema for Phase-2."""
+
     tensor_type: TensorType = TensorType.U
     dimensions: tuple[int, int] = Field(..., description="Tensor dimensions (rows, cols)")
     utility_functions: List[str] = Field(..., description="Utility function names")
@@ -66,6 +72,7 @@ class TensorU(BaseModel):
 
 class TensorN(BaseModel):
     """Networks tensor schema for Phase-2."""
+
     tensor_type: TensorType = TensorType.N
     dimensions: tuple[int, int] = Field(..., description="Tensor dimensions (rows, cols)")
     network_nodes: List[str] = Field(..., description="Network node identifiers")
@@ -75,6 +82,7 @@ class TensorN(BaseModel):
 
 class SolutionStatement(BaseModel):
     """Final solution statement schema."""
+
     problem_id: str = Field(..., description="Problem identifier")
     solution_text: str = Field(..., description="Solution statement text")
     confidence: float = Field(ge=0.0, le=1.0, description="Solution confidence")
@@ -84,8 +92,9 @@ class SolutionStatement(BaseModel):
 
 class Phase2Contract(BaseModel):
     """Complete Phase-2 contract schema."""
+
     tensor_m: Optional[TensorM] = None
-    tensor_w: Optional[TensorW] = None  
+    tensor_w: Optional[TensorW] = None
     tensor_u: Optional[TensorU] = None
     tensor_n: Optional[TensorN] = None
     solution: Optional[SolutionStatement] = None
@@ -95,12 +104,12 @@ class Phase2Contract(BaseModel):
 # Export schemas for external use
 __all__ = [
     "TensorType",
-    "ComponentType", 
+    "ComponentType",
     "StationType",
     "TensorM",
     "TensorW",
-    "TensorU", 
+    "TensorU",
     "TensorN",
     "SolutionStatement",
-    "Phase2Contract"
+    "Phase2Contract",
 ]

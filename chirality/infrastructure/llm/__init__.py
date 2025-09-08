@@ -12,7 +12,7 @@ from .config import get_config, LLMConfig
 
 __all__ = [
     "LLMClient",
-    "call_responses_api", 
+    "call_responses_api",
     "CellResolver",
     "EchoResolver",
     "get_config",

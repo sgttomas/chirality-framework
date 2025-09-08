@@ -39,11 +39,13 @@ def output_data(data: Any) -> None:
         print(data, file=sys.stdout)
 
 
-def log_stats(stats: Dict[str, Any], title: Optional[str] = None, prefix: Optional[str] = None) -> None:
+def log_stats(
+    stats: Dict[str, Any], title: Optional[str] = None, prefix: Optional[str] = None
+) -> None:
     """Log statistics to stderr with proper formatting."""
     if title:
         print(f"📊 {title}", file=sys.stderr)
-    
+
     if prefix:
         # Custom prefix format
         for key, value in stats.items():

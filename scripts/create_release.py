@@ -27,11 +27,11 @@ def main():
     version = get_current_version()
     if not version:
         sys.exit(1)
-    
+
     tag = f"v{version}"
     repo_url = "https://github.com/sgttomas/chirality-framework"
     release_url = f"{repo_url}/releases/new?tag={tag}&title=Chirality%20Framework%20{tag}"
-    
+
     print(f"📦 Current version: {version}")
     print(f"🏷️  Release tag: {tag}")
     print()

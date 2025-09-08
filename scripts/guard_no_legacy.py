@@ -35,14 +35,14 @@ patterns = [
     r"chirality\.core\.",
     r"chirality\.lib\.(?!logging\b)",  # Allow lib.logging but nothing else (strict word boundary)
     r"from\s+chirality\.lib\s+import\s+(?!logging\b)",  # Block "from chirality.lib import X" unless X is logging
-    r"application\.services\.pipeline_service"
+    r"application\.services\.pipeline_service",
 ]
 try:
     rg = subprocess.run(
         ["rg", "-n", "--no-heading", "-g", "*.py", "|".join(patterns), "chirality"],
         capture_output=True,
         text=True,
-        cwd=ROOT
+        cwd=ROOT,
     )
     if rg.stdout.strip():
         fails.append("Disallowed imports found:\n" + rg.stdout)
