@@ -1,0 +1,1 @@
+{"meta": {"version": "19.2.0", "created": "2025-01-09", "status": "reference_snapshot"}, "tensors": {"M": "pending", "W": "pending", "U": "pending", "N": "pending"}, "note": "Reference snapshot before legacy cleanup - Phase 2 ready for implementation"}
