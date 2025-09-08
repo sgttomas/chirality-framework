@@ -1,0 +1,113 @@
+"""
+JSON tail templates for Phase 1 dialogue.
+
+These exact strings are appended to prompts to ensure JSON-only responses.
+No markdown, no prose - just the contract specification.
+"""
+
+# Base template for general matrix operations
+TAIL_TEMPLATE = 'Return JSON only using this contract: {{"artifact":"matrix","name":"{name}","station":"{station}","rows":{rows},"cols":{cols},"step":"{step}","op":"{op}","elements":{elements}}}'
+
+# Specific tails for each matrix/step combination
+
+# Matrix C tails
+TAIL_C_MECH = 'Return JSON only using this contract: {"artifact":"matrix","name":"C","station":"Problem Statement","rows":["normative","operative","iterative"],"cols":["guiding","applying","judging","reflecting"],"step":"mechanical","op":"dot","elements":[[...],[...],[...]]}'
+
+TAIL_C_INTERP = 'Return JSON only using this contract: {"artifact":"matrix","name":"C","station":"Problem Statement","rows":["normative","operative","iterative"],"cols":["guiding","applying","judging","reflecting"],"step":"interpreted","op":"dot","elements":[[...],[...],[...]]}'
+
+TAIL_C_LENSES = 'Return JSON only using this contract: {"artifact":"matrix","name":"C","station":"Problem Statement","rows":["normative","operative","iterative"],"cols":["guiding","applying","judging","reflecting"],"step":"lenses","lenses":[[...],[...],[...]]}'
+
+TAIL_C_LENSED = 'Return JSON only using this contract: {"artifact":"matrix","name":"C","station":"Problem Statement","rows":["normative","operative","iterative"],"cols":["guiding","applying","judging","reflecting"],"step":"lensed","op":"dot","elements":[[...],[...],[...]]}'
+
+# Matrix J (base canonical)
+TAIL_J_BASE = 'Return JSON only using this contract: {"artifact":"matrix","name":"J","station":"Requirements","rows":["data","information","knowledge"],"cols":["necessity","sufficiency","completeness","consistency"],"step":"base","elements":[[...],[...],[...]]}'
+
+# Matrix F tails
+TAIL_F_MECH = 'Return JSON only using this contract: {"artifact":"matrix","name":"F","station":"Requirements","rows":["normative","operative","iterative"],"cols":["guiding","applying","judging","reflecting"],"step":"mechanical","op":"hadamard","elements":[[...],[...],[...]]}'
+
+TAIL_F_INTERP = 'Return JSON only using this contract: {"artifact":"matrix","name":"F","station":"Requirements","rows":["normative","operative","iterative"],"cols":["guiding","applying","judging","reflecting"],"step":"interpreted","op":"hadamard","elements":[[...],[...],[...]]}'
+
+TAIL_F_LENSES = 'Return JSON only using this contract: {"artifact":"matrix","name":"F","station":"Requirements","rows":["normative","operative","iterative"],"cols":["guiding","applying","judging","reflecting"],"step":"lenses","lenses":[[...],[...],[...]]}'
+
+TAIL_F_LENSED = 'Return JSON only using this contract: {"artifact":"matrix","name":"F","station":"Requirements","rows":["normative","operative","iterative"],"cols":["guiding","applying","judging","reflecting"],"step":"lensed","op":"hadamard","elements":[[...],[...],[...]]}'
+
+# Matrix D tails
+TAIL_D_CONSTRUCTED = 'Return JSON only using this contract: {"artifact":"matrix","name":"D","station":"Objectives","rows":["normative","operative","iterative"],"cols":["guiding","applying","judging","reflecting"],"step":"constructed","op":"add","elements":[[...],[...],[...]]}'
+
+TAIL_D_LENSED = 'Return JSON only using this contract: {"artifact":"matrix","name":"D","station":"Objectives","rows":["normative","operative","iterative"],"cols":["guiding","applying","judging","reflecting"],"step":"lensed","op":"add","elements":[[...],[...],[...]]}'
+
+# Matrix K (transpose of D)
+TAIL_K_TRANSPOSE = 'Return JSON only using this contract: {"artifact":"matrix","name":"K","station":"Objectives","rows":["guiding","applying","judging","reflecting"],"cols":["normative","operative","iterative"],"step":"transpose","op":"transpose","elements":[[...],[...],[...],[...]]}'
+
+# Matrix X tails
+TAIL_X_MECH = 'Return JSON only using this contract: {"artifact":"matrix","name":"X","station":"Verification","rows":["guiding","applying","judging","reflecting"],"cols":["necessity","sufficiency","completeness","consistency"],"step":"mechanical","op":"dot","elements":[[...],[...],[...],[...]]}'
+
+TAIL_X_INTERP = 'Return JSON only using this contract: {"artifact":"matrix","name":"X","station":"Verification","rows":["guiding","applying","judging","reflecting"],"cols":["necessity","sufficiency","completeness","consistency"],"step":"interpreted","op":"dot","elements":[[...],[...],[...],[...]]}'
+
+TAIL_X_LENSES = 'Return JSON only using this contract: {"artifact":"matrix","name":"X","station":"Verification","rows":["guiding","applying","judging","reflecting"],"cols":["necessity","sufficiency","completeness","consistency"],"step":"lenses","lenses":[[...],[...],[...],[...]]}'
+
+TAIL_X_LENSED = 'Return JSON only using this contract: {"artifact":"matrix","name":"X","station":"Verification","rows":["guiding","applying","judging","reflecting"],"cols":["necessity","sufficiency","completeness","consistency"],"step":"lensed","op":"dot","elements":[[...],[...],[...],[...]]}'
+
+# Matrix Z tails
+TAIL_Z_SHIFTED = 'Return JSON only using this contract: {"artifact":"matrix","name":"Z","station":"Validation","rows":["guiding","applying","judging","reflecting"],"cols":["necessity","sufficiency","completeness","consistency"],"step":"shifted","op":"shift","elements":[[...],[...],[...],[...]]}'
+
+TAIL_Z_PRINCIPLES = 'Return JSON only using this contract: {"artifact":"principles","from":"Z","items":[...]}'
+
+# Matrix G (slice of Z)
+TAIL_G_BASE = 'Return JSON only using this contract: {"artifact":"matrix","name":"G","station":"Validation","rows":["guiding","applying","judging"],"cols":["necessity","sufficiency","completeness","consistency"],"step":"base","elements":[[...],[...],[...]]}'
+
+# Array P (row 3 of Z)
+TAIL_P_BASE = 'Return JSON only using this contract: {"artifact":"matrix","name":"P","station":"Validation","rows":["reflecting"],"cols":["necessity","sufficiency","completeness","consistency"],"step":"base","elements":[[...]]}'
+
+# Matrix T (transpose of J)
+TAIL_T_TRANSPOSE = 'Return JSON only using this contract: {"artifact":"matrix","name":"T","station":"Requirements","rows":["necessity","sufficiency","completeness","consistency"],"cols":["data","information","knowledge"],"step":"transpose","op":"transpose","elements":[[...],[...],[...],[...]]}'
+
+# Matrix E tails
+TAIL_E_MECH = 'Return JSON only using this contract: {"artifact":"matrix","name":"E","station":"Evaluation","rows":["guiding","applying","judging"],"cols":["data","information","knowledge"],"step":"mechanical","op":"dot","elements":[[...],[...],[...]]}'
+
+TAIL_E_INTERP = 'Return JSON only using this contract: {"artifact":"matrix","name":"E","station":"Evaluation","rows":["guiding","applying","judging"],"cols":["data","information","knowledge"],"step":"interpreted","op":"dot","elements":[[...],[...],[...]]}'
+
+TAIL_E_LENSES = 'Return JSON only using this contract: {"artifact":"matrix","name":"E","station":"Evaluation","rows":["guiding","applying","judging"],"cols":["data","information","knowledge"],"step":"lenses","lenses":[[...],[...],[...]]}'
+
+TAIL_E_LENSED = 'Return JSON only using this contract: {"artifact":"matrix","name":"E","station":"Evaluation","rows":["guiding","applying","judging"],"cols":["data","information","knowledge"],"step":"lensed","op":"dot","elements":[[...],[...],[...]]}'
+
+# Final aggregator tail
+TAIL_AGGREGATOR = 'Produce a single JSON object exactly matching this schema: {"meta":{"kernel_hash":"...","snapshot_hash":"...","model":"..."},"matrices":{"C":{...},"J":{...},"F":{...},"D":{...},"K":{...},"X":{...},"Z":{...},"G":{...},"P":{...},"T":{...},"E":{...}},"principles":{"from":"Z","items":[...]}}. Return only JSON.'
+
+# Helper function to get tail by matrix and step
+def get_tail(matrix: str, step: str) -> str:
+    """Get the appropriate JSON tail for a matrix and step."""
+    tail_map = {
+        ("C", "mechanical"): TAIL_C_MECH,
+        ("C", "interpreted"): TAIL_C_INTERP,
+        ("C", "lenses"): TAIL_C_LENSES,
+        ("C", "lensed"): TAIL_C_LENSED,
+        ("J", "base"): TAIL_J_BASE,
+        ("F", "mechanical"): TAIL_F_MECH,
+        ("F", "interpreted"): TAIL_F_INTERP,
+        ("F", "lenses"): TAIL_F_LENSES,
+        ("F", "lensed"): TAIL_F_LENSED,
+        ("D", "constructed"): TAIL_D_CONSTRUCTED,
+        ("D", "lensed"): TAIL_D_LENSED,
+        ("K", "transpose"): TAIL_K_TRANSPOSE,
+        ("X", "mechanical"): TAIL_X_MECH,
+        ("X", "interpreted"): TAIL_X_INTERP,
+        ("X", "lenses"): TAIL_X_LENSES,
+        ("X", "lensed"): TAIL_X_LENSED,
+        ("Z", "shifted"): TAIL_Z_SHIFTED,
+        ("Z", "principles"): TAIL_Z_PRINCIPLES,
+        ("G", "base"): TAIL_G_BASE,
+        ("P", "base"): TAIL_P_BASE,
+        ("T", "transpose"): TAIL_T_TRANSPOSE,
+        ("E", "mechanical"): TAIL_E_MECH,
+        ("E", "interpreted"): TAIL_E_INTERP,
+        ("E", "lenses"): TAIL_E_LENSES,
+        ("E", "lensed"): TAIL_E_LENSED,
+        ("aggregator", ""): TAIL_AGGREGATOR,
+    }
+    
+    key = (matrix, step)
+    if key not in tail_map:
+        raise ValueError(f"No tail defined for matrix={matrix}, step={step}")
+    
+    return tail_map[key]
