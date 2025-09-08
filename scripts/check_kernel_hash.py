@@ -14,7 +14,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from chirality.infrastructure.prompts.registry import get_registry
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-manifest_path = ROOT / "artifacts/prompt_assets.manifest.yaml"
+manifest_path = ROOT / "artifacts/prompts_assets.manifest.yaml"
 
 if not manifest_path.exists():
     print(f"Missing {manifest_path}")

@@ -1,4 +1,4 @@
-# Normative Specification for the Chirality Framework v19.1.0
+# Normative Specification for the Chirality Framework v19.2.0
 
 
 ## What is the Chirality Framework?

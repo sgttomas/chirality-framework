@@ -22,10 +22,10 @@ def calculate_sha256(file_path: Path) -> str:
 
 def fix_metadata_and_update_checksums(verbose: bool = True):
     """Fix file paths and update all checksums in metadata.yml."""
-    # Find the prompt_assets directory
+    # Find the prompt assets directory
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
-    assets_dir = project_root / "chirality" / "prompt_assets"
+    assets_dir = project_root / "chirality" / "infrastructure" / "prompts" / "assets"
     metadata_path = assets_dir / "metadata.yml"
 
     if not metadata_path.exists():
@@ -113,7 +113,7 @@ def fix_metadata_and_update_checksums(verbose: bool = True):
     print(f"   Path: {metadata_path}")
 
     # List all .md files to check we got everything
-    print("\n📁 Verification - All .md files in prompt_assets:")
+    print("\n📁 Verification - All .md files in prompts/assets:")
     tracked_paths = {asset["path"] for asset in new_metadata["assets"]}
     for md_file in sorted(assets_dir.rglob("*.md")):
         relative_path = str(md_file.relative_to(assets_dir))
