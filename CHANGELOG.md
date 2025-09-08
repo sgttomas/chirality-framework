@@ -5,6 +5,48 @@ All notable changes to the Chirality Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [19.2.0] - 2025-09-08
+
+### 🗂️ REFACTOR-3 OBLITERATION COMPLETE
+
+**Legacy Code Elimination (Breaking Changes)**
+- **REMOVED**: `chirality/core/**` - Entire legacy directory structure permanently deleted
+- **REMOVED**: All `*_shim.py` compatibility files 
+- **REMOVED**: `chirality/application/services/pipeline_service.py` - Legacy service
+- **REMOVED**: `chirality/cli.py` - Secondary CLI entry point eliminated
+- **REMOVED**: All `__pycache__/` directories from version control
+
+**Single CLI Entry Point**
+- **CHANGED**: All CLI commands now use `python3 -m chirality.interfaces.cli <command>`
+- **BREAKING**: `python3 -m chirality.cli` commands no longer work
+
+**Library Restrictions** 
+- **RESTRICTED**: `chirality/lib/` now contains ONLY `logging.py` for production infrastructure
+- **ARCHITECTURAL**: New utilities must use appropriate DDD layers (domain/application/infrastructure)
+
+### Added
+- **Guard Scripts**: Architectural enforcement preventing legacy code reintroduction
+  - `scripts/guard_no_legacy.py` - No-legacy invariant enforcement
+  - `scripts/check_kernel_hash.py` - Asset integrity validation
+  - `scripts/codemod_legacy_imports.py` - Import validation
+- **CI/CD Pipeline Enhancements**:
+  - Guards-first approach with fail-fast architectural validation
+  - Automatic asset manifest generation during CI
+  - Proper dependency management (`pydantic>=2.0.0`, `ruff>=0.4.0`)
+- **Production Dependencies**: Added missing core dependencies to `pyproject.toml`
+
+### Fixed
+- **Missing Dependencies**: Added `pydantic>=2.0.0` for contract models
+- **Missing Dev Dependencies**: Added `ruff>=0.4.0` for linting
+- **CI Asset Generation**: Fixed kernel hash check by generating manifest in CI
+- **Code Quality**: Fixed 34+ linting violations and formatting issues
+- **Type Checking**: Relaxed mypy to non-strict mode during refactoring phase
+
+### Infrastructure
+- **Output Channel Separation**: Logs → stderr, data → stdout for CI/CD integration  
+- **Crash-Safe Operations**: All file operations use atomic writes
+- **Cache Determinism**: Stable cache keys eliminate unnecessary computation
+
 ## [19.1.0] - 2025-09-08
 
 ### Added

@@ -38,14 +38,13 @@ class PromptRegistry:
         Initialize registry with assets directory.
 
         Args:
-            assets_dir: Path to prompt_assets directory.
-                       Defaults to chirality/prompt_assets/
+            assets_dir: Path to prompt assets directory.
+                       Defaults to chirality/infrastructure/prompts/assets/
         """
         if assets_dir is None:
-            # Default to chirality/prompt_assets relative to this file
-            # We're now in infrastructure/prompts, so go up to chirality root
-            current_dir = Path(__file__).parent.parent.parent
-            assets_dir = current_dir / "prompt_assets"
+            # Default to assets/ relative to this file (in infrastructure/prompts/)
+            current_dir = Path(__file__).parent
+            assets_dir = current_dir / "assets"
 
         self.assets_dir = Path(assets_dir)
         self.metadata_file = self.assets_dir / "metadata.yml"

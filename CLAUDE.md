@@ -9,11 +9,13 @@ The Chirality Framework is a meta-ontological, system-agnostic methodology for m
 **Core Philosophy**: Fixed ontological structure + constrained stochastic processing = reproducible semantic computation.
 
 **Current Status**: 
-- Recently migrated to Domain-Driven Design (DDD) architecture
+- **REFACTOR-3 BRANCH**: Complete legacy code obliteration completed
+- Fully migrated to Domain-Driven Design (DDD) architecture
 - Phase 1 complete: Matrices A through E implemented with conversational prompting
 - Phase 2 ready for implementation: Tensors M, W, U, N with modular cell-by-cell construction
 - **Version 19.2.0: Production-ready infrastructure** with budgets, caching, and resume capabilities
 - Enterprise-grade reliability, cost control, and crash-safe operations
+- **CI/CD Pipeline**: Guards-first approach with fail-fast architectural protection
 
 ## Critical Architectural Insight: Two-Phase Prompting Strategy
 
@@ -59,20 +61,23 @@ pytest tests/core/test_operations.py -v
 # Run with coverage
 pytest --cov=chirality
 
-# Type checking (strict mode enabled)
+# Type checking (non-strict mode during refactoring)
 mypy chirality/
 
-# Code formatting
-black chirality/ tests/
+# Code formatting  
+black chirality/ tests/ scripts/
 
 # Linting
 ruff check chirality/
+
+# Fix linting issues automatically
+ruff check chirality/ --fix
 ```
 
 ### CLI Development & Testing
 ```bash
 # Production-ready Phase 2 computation with budgets and resume
-python3 -m chirality.cli phase2-run \
+python3 -m chirality.interfaces.cli phase2-run \
   --tensor-spec tensors.json \
   --snapshot phase1_snapshot.md \
   --out production-run \
@@ -84,39 +89,39 @@ python3 -m chirality.cli phase2-run \
   --parallel 4
 
 # Phase 1 dialogue with budget tracking
-python3 -m chirality.cli phase1-dialogue-run \
+python3 -m chirality.interfaces.cli phase1-dialogue-run \
   --out artifacts/ \
   --token-budget 50000 \
   --cost-budget 10.0 \
   --time-budget 1800
 
 # Generate Phase 1 snapshot for Phase 2
-python3 -m chirality.cli phase1-snapshot \
+python3 -m chirality.interfaces.cli phase1-snapshot \
   --from artifacts/phase1_dialogue.jsonl \
   --out artifacts/phase1_snapshot.md
 
 # Build lens catalog for tensor computation
-python3 -m chirality.cli lenses-derive \
+python3 -m chirality.interfaces.cli lenses-derive \
   --phase1 artifacts/phase1_output.json \
   --spec chirality/normative_spec.txt \
   --out artifacts/lenses_triples.json
 
-python3 -m chirality.cli lenses-build \
+python3 -m chirality.interfaces.cli lenses-build \
   --triples artifacts/lenses_triples.json \
   --out artifacts/lens_catalog.jsonl
 
 # Export results to Neo4j
-python3 -m chirality.cli export-neo4j \
+python3 -m chirality.interfaces.cli export-neo4j \
   --artifacts production-run \
   --uri bolt://localhost:7687 \
   --user neo4j \
   --pwd password
 
 # Get current kernel hash for versioning
-python3 -m chirality.cli assets-hash
+python3 -m chirality.interfaces.cli assets-hash
 
 # Verify prompt assets integrity
-python3 -m chirality.cli assets-verify
+python3 -m chirality.interfaces.cli assets-verify
 ```
 
 ### Installation
@@ -149,10 +154,33 @@ chirality/
 │   ├── prompts/     # Prompt management
 │   ├── exporters/   # Neo4j, JSONL exporters
 │   └── monitoring/  # Tracing and observability
-├── core/            # Legacy core (being refactored)
-├── interfaces/      # CLI and user interfaces
-└── lib/             # Shared libraries (logging, utilities)
+├── interfaces/      # CLI and user interfaces (single entry point)
+└── lib/             # RESTRICTED - Contains only logging.py for production infrastructure
 ```
+
+## REFACTOR-3 OBLITERATION COMPLETE ✅
+
+### Legacy Code Elimination
+The refactor-3 branch has completed the **"obliteration"** phase, permanently removing all legacy code:
+
+- **🗂️ Deleted**: `chirality/core/**` (entire legacy directory structure)
+- **🗂️ Deleted**: All `*_shim.py` compatibility files 
+- **🗂️ Deleted**: `chirality/application/services/pipeline_service.py`
+- **🗂️ Deleted**: Secondary CLI entry point (`chirality/cli.py`)
+- **🗂️ Cleaned**: `chirality/lib/` now contains ONLY `logging.py` for production infrastructure
+- **🗂️ Removed**: All `__pycache__/` directories from version control
+
+### Architectural Enforcement
+- **Guard Scripts**: Prevent reintroduction of legacy patterns with fail-fast CI checks
+- **Single CLI**: Only `chirality.interfaces.cli:main` entry point via `pyproject.toml`
+- **No-Legacy Invariant**: Strict architectural rules enforced at commit time
+
+### CI/CD Pipeline Enhancement
+- **Guards-First Approach**: Architectural validation before any code quality checks
+- **Asset Manifest Generation**: Automatic prompt asset verification in CI
+- **Dependency Management**: Fixed missing dependencies (`pydantic>=2.0.0`, `ruff>=0.4.0`)
+- **Output Channel Separation**: Logs → stderr, data → stdout for automation
+- **Non-Strict Type Checking**: Relaxed mypy during refactoring phase
 
 ## Production Infrastructure (v19.2.0)
 
@@ -348,10 +376,9 @@ Tensor operations use a different approach:
 ### Application Layer (`chirality/application/`)
 - **`services/`**: Application service implementations
 
-### Legacy Core (`chirality/core/`)
-- Being refactored as part of DDD migration
-- **`operations.py`**: Current 3-stage pipeline implementation
-- **`cell_resolver.py`**: LLM interface with combined operations
+### Interfaces Layer (`chirality/interfaces/`)
+- **`cli.py`**: Single CLI entry point for all framework operations
+- **IMPORTANT**: This is the ONLY CLI entry point - no secondary CLIs permitted
 
 ### Prompt Assets (`chirality/prompt_assets/`)
 - Maintainer-authored markdown files
@@ -416,6 +443,43 @@ Tensors use modular provenance:
    - Verify cell-level semantic accuracy
    - Test tensor assembly procedures
    - Ensure hierarchical structure preservation
+
+### POST-OBLITERATION DEVELOPMENT GUIDELINES
+
+**CRITICAL RULES FOR REFACTOR-3 BRANCH:**
+
+#### 1. **No-Legacy Invariant (ABSOLUTE)**
+- **NEVER** create code in `chirality/core/` - this directory must not exist
+- **NEVER** create `*_shim.py` compatibility files
+- **NEVER** import from `chirality.lib.*` except `chirality.lib.logging`
+- **NEVER** create secondary CLI entry points beyond `chirality.interfaces.cli:main`
+
+#### 2. **lib/ Directory Restrictions**
+- **ONLY** `chirality/lib/logging.py` is permitted for production infrastructure
+- **ALL** new utilities must go to appropriate DDD layers:
+  - Domain utilities → `chirality/domain/`
+  - Application utilities → `chirality/application/`
+  - Infrastructure utilities → `chirality/infrastructure/`
+
+#### 3. **CLI Development**
+- **Single Entry Point**: Always use `chirality.interfaces.cli:main`
+- **Commands**: Use `python3 -m chirality.interfaces.cli <command>`
+- **Never** use `python3 -m chirality.cli` (deleted)
+- **Output Channels**: Logs to stderr, data to stdout
+
+#### 4. **Pre-Commit Guards (MANDATORY)**
+Run these before EVERY commit:
+```bash
+python scripts/guard_no_legacy.py      # Architectural enforcement
+python scripts/check_kernel_hash.py    # Asset integrity 
+python scripts/codemod_legacy_imports.py  # Import validation
+```
+
+#### 5. **CI/CD Integration**
+- Guards run FIRST in CI pipeline (fail-fast)
+- Asset manifest generated automatically
+- All dependencies properly declared in `pyproject.toml`
+- Type checking in non-strict mode during refactoring
 
 ### General Guidelines
 1. **Testing**:

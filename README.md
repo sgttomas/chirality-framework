@@ -73,7 +73,7 @@ pip install 'chirality-framework[openai]'
 export OPENAI_API_KEY="sk-..."
 
 # Run the full pipeline with the OpenAI resolver
-python3 -m chirality.cli compute-pipeline --resolver openai --snapshot-jsonl --include-base
+python3 -m chirality.interfaces.cli compute-pipeline --resolver openai --snapshot-jsonl --include-base
 ```
 This will create two directories, `snapshots/<run_id>/` and `traces/<run_id>/`, containing the output files.
 
@@ -82,7 +82,7 @@ This command reads the generated snapshots and creates a self-contained HTML fil
 
 ```bash
 # Render the latest run and open it in your browser
-python3 -m chirality.cli render-viewer --latest --open
+python3 -m chirality.interfaces.cli render-viewer --latest --open
 ```
 This will create a `viewer-output/` directory containing the `index.html` and `style.css` files and automatically open the page for you. You can change the output location with `--output-dir`.
 
@@ -92,7 +92,7 @@ This will create a `viewer-output/` directory containing the `index.html` and `s
 For automation by external apps (e.g., chirality-app), use app mode to write a manifest and contract snapshots with a single JSON result to stdout.
 
 ```
-python3 -m chirality.cli compute-pipeline \
+python3 -m chirality.interfaces.cli compute-pipeline \
   --resolver echo \
   --out runs/my-run-1 \
   --problem-file problem.json \
@@ -109,7 +109,7 @@ python3 -m chirality.cli compute-pipeline \
 
 - Generate a run:
 
-  `python3 -m chirality.cli compute-pipeline --resolver <echo|openai> --out runs/<run_id> --problem-file problem.json --max-seconds 900`
+  `python3 -m chirality.interfaces.cli compute-pipeline --resolver <echo|openai> --out runs/<run_id> --problem-file problem.json --max-seconds 900`
 
 - Output:
   - `runs/<run_id>/index.json`
@@ -135,10 +135,10 @@ The `compute-matrix` command allows you to compute and snapshot any single matri
 
 ```bash
 # Compute just the final Evaluation matrix (E)
-python3 -m chirality.cli compute-matrix E --resolver openai --snapshot-jsonl
+python3 -m chirality.interfaces.cli compute-matrix E --resolver openai --snapshot-jsonl
 
 # Snapshot a base matrix for reference
-python3 -m chirality.cli compute-matrix A --snapshot-jsonl
+python3 -m chirality.interfaces.cli compute-matrix A --snapshot-jsonl
 ```
 
 ### Inspecting a Single Cell
@@ -146,7 +146,7 @@ For detailed debugging, the `compute-cell` command lets you observe the new cano
 
 ```bash
 # Observe the computation of cell C[0,0] with verbose output
-python3 -m chirality.cli compute-cell C --i 0 --j 0 --resolver openai --verbose --trace
+python3 -m chirality.interfaces.cli compute-cell C --i 0 --j 0 --resolver openai --verbose --trace
 ```
 
 ### Viewing Options
@@ -154,13 +154,13 @@ The `render-viewer` command has several options for customizing the output:
 
 ```bash
 # Render a specific run with a custom title
-python3 -m chirality.cli render-viewer --run-id "<run_id>" --title "My Analysis"
+python3 -m chirality.interfaces.cli render-viewer --run-id "<run_id>" --title "My Analysis"
 
 # Render with the "Elements" style for a more code-like view
-python3 -m chirality.cli render-viewer --latest --style elements
+python3 -m chirality.interfaces.cli render-viewer --latest --style elements
 
 # Disable the default value sanitization to see raw output
-python3 -m chirality.cli render-viewer --latest --style elements --no-sanitize-values
+python3 -m chirality.interfaces.cli render-viewer --latest --style elements --no-sanitize-values
 ```
 
 ## Common CLI Commands

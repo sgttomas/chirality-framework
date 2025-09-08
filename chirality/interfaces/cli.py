@@ -29,7 +29,7 @@ def cmd_assets_hash(args):
 def cmd_assets_verify(args):
     """Verify and create asset manifest."""
     registry = get_registry()
-    result = registry.create_manifest(Path("artifacts/prompt_assets.manifest.yaml"))
+    result = registry.create_manifest(Path("artifacts/prompts_assets.manifest.yaml"))
     log_success(
         f"Manifest created: kernel_hash={result['kernel_hash']}, assets={result['asset_count']}"
     )
