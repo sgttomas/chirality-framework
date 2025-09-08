@@ -191,15 +191,11 @@ Matrix B (4x4):
 
 For each position C[i,j], list the k-products A[i,k] * B[k,j] for k=0..3.
 """
-        self._call_llm_with_json_tail(
-            user_msg, get_tail("C", "mechanical"), "C_mechanical"
-        )
+        self._call_llm_with_json_tail(user_msg, get_tail("C", "mechanical"), "C_mechanical")
 
         # Step 2: Semantic interpretation
         user_msg = "Now interpret each k-product semantically using semantic multiplication."
-        self._call_llm_with_json_tail(
-            user_msg, get_tail("C", "interpreted"), "C_interpreted"
-        )
+        self._call_llm_with_json_tail(user_msg, get_tail("C", "interpreted"), "C_interpreted")
 
         # Step 3: Generate lenses
         user_msg = "Generate lenses for each cell using row × column × station perspective."
@@ -245,9 +241,7 @@ D[i,j] = A[i,j] + " applied to frame the problem; " + F[i,j] + " to resolve the 
 """
 
         # Constructed (mechanical addition)
-        self._call_llm_with_json_tail(
-            user_msg, get_tail("D", "constructed"), "D_constructed"
-        )
+        self._call_llm_with_json_tail(user_msg, get_tail("D", "constructed"), "D_constructed")
 
         # Lensed
         user_msg = "Apply lenses to matrix D for the Objectives station."

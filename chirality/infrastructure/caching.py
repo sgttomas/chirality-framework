@@ -423,5 +423,3 @@ class ResumableRunner:
             manifest["phase2_complete"] = True
 
         self.save_manifest(manifest)
-
-
