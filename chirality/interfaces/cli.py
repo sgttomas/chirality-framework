@@ -46,7 +46,11 @@ def cmd_phase1_dialogue_run(args):
             time_budget=args.time_budget,
         )
 
-    orchestrator = DialogueOrchestrator(budget_config=budget_config)
+    orchestrator = DialogueOrchestrator(
+        budget_config=budget_config,
+        lens_mode=args.lenses,
+        write_catalog=args.write_catalog,
+    )
 
     log_progress("Running Phase 1 dialogue...")
     if budget_config:
@@ -54,10 +58,16 @@ def cmd_phase1_dialogue_run(args):
             f"  Budget limits: tokens={args.token_budget}, cost=${args.cost_budget}, time={args.time_budget}s"
         )
 
-    final_output = orchestrator.run_dialogue()
-
     # Save dialogue and output
     output_dir = Path(args.out)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Handle lens regeneration if requested
+    if args.regen_lenses:
+        log_info("Regenerating lens catalog from normative_spec...")
+        orchestrator.regenerate_full_catalog(output_dir)
+    
+    final_output = orchestrator.run_dialogue(output_dir)
     orchestrator.save_dialogue(output_dir / "phase1_dialogue.jsonl")
     validated_output = orchestrator.save_output(final_output, output_dir)
 
@@ -231,7 +241,7 @@ def cmd_export_neo4j(args):
 
 def main():
     """Main CLI entry point."""
-    parser = argparse.ArgumentParser(prog="chirality", description="Chirality Framework v19.2.0")
+    parser = argparse.ArgumentParser(prog="chirality", description="Chirality Framework v19.3.0")
     subparsers = parser.add_subparsers(dest="cmd", required=True, help="Available commands")
 
     # Assets commands
@@ -245,6 +255,12 @@ def main():
     p1_run.add_argument("--token-budget", type=int, help="Maximum tokens to use")
     p1_run.add_argument("--cost-budget", type=float, help="Maximum cost in USD")
     p1_run.add_argument("--time-budget", type=int, help="Maximum time in seconds")
+    p1_run.add_argument("--lenses", choices=["catalog", "generate", "auto"], default="catalog",
+                       help="Where Stage-3 lenses come from (default: catalog)")
+    p1_run.add_argument("--write-catalog", action="store_true", 
+                       help="Persist generated lenses into artifacts/lens_catalog.json")
+    p1_run.add_argument("--regen-lenses", action="store_true",
+                       help="Regenerate the full catalog from normative_spec before running")
 
     p1_snap = subparsers.add_parser("phase1-snapshot", help="Generate Phase 1 snapshot")
     p1_snap.add_argument(

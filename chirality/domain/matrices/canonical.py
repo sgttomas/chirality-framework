@@ -35,7 +35,7 @@ MATRIX_A = Matrix(
         [
             ["objectives", "actions", "benchmarks", "feedback"],
             ["standards", "methods", "criteria", "adaptation"],
-            ["development", "coordination", "evaluation", "refinement"],
+            ["developments", "coordination", "evaluation", "refinement"],
         ]
     ),
 )
@@ -49,7 +49,7 @@ MATRIX_B = Matrix(
     cells=_create_matrix_cells(
         [
             ["necessary", "sufficient", "complete", "consistent"],
-            ["contingent", "insufficient", "incomplete", "inconsistent"],
+            ["contingent", "actionable", "contextual", "congruent"],
             ["purposeful", "effective", "comprehensive", "coherent"],
             ["constitutive", "optimal", "holistic", "principled"],
         ]
@@ -65,7 +65,7 @@ MATRIX_J = Matrix(
     cells=_create_matrix_cells(
         [
             ["necessary", "sufficient", "complete", "consistent"],
-            ["contingent", "insufficient", "incomplete", "inconsistent"],
+            ["contingent", "actionable", "contextual", "congruent"],
             ["purposeful", "effective", "comprehensive", "coherent"],
         ]
     ),

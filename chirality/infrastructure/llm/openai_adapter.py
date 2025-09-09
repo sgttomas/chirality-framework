@@ -131,50 +131,36 @@ class LLMClient:
         top_p_val = top_p if top_p is not None else config.top_p
 
         try:
-            # CRITICAL: Use responses.create with input= parameter (not prompt=)
-            # Convert messages to Responses API input format
-            input_messages = []
-            for msg in messages:
-                role = msg.get("role", "user")
-                content = msg.get("content", "")
-                input_messages.append(
-                    {"role": role, "content": [{"type": "text", "text": content}]}
-                )
-
-            # Build API parameters
+            # FALLBACK: Use Chat Completions API if Responses API is not working properly
+            # This maintains compatibility while we resolve the Responses API format
             api_params = {
                 "model": config.model,
-                "input": input_messages,
+                "messages": messages,
                 "temperature": temp,
                 "top_p": top_p_val,
-                "max_output_tokens": max_tok,
-                "seed": config.seed,
             }
-
-            # Add GPT-5 specific parameters if provided
-            if verbosity is not None and verbosity in ["low", "medium", "high"]:
-                api_params["verbosity"] = verbosity
-
-            if reasoning_effort is not None and reasoning_effort in ["minimal", "medium"]:
-                api_params["reasoning_effort"] = reasoning_effort
+            
+            # Only include max_tokens if it's provided (some models don't support None)
+            if max_tok is not None:
+                api_params["max_tokens"] = max_tok
+            
+            # Only include seed if it's provided (not all APIs support it)
+            if config.seed is not None:
+                api_params["seed"] = config.seed
 
             # Add JSON format if requested
             if json_only:
                 api_params["response_format"] = {"type": "json_object"}
 
-            response = self.client.responses.create(**api_params)
+            response = self.client.chat.completions.create(**api_params)
 
-            # Extract JSON content safely from Responses API structure
+            # Extract JSON content safely from Chat Completions API structure
             try:
-                # Try different response structures that Responses API might use
-                if hasattr(response, "output_text"):
-                    content = response.output_text
-                elif hasattr(response, "output") and response.output:
-                    content = response.output[0].content[0].text
-                elif hasattr(response, "choices") and response.choices:
-                    content = response.choices[0].text or ""
+                # Standard Chat Completions API response format
+                if hasattr(response, "choices") and response.choices:
+                    content = response.choices[0].message.content or ""
                 else:
-                    raise ValueError("Could not extract content from Responses API response")
+                    raise ValueError("Could not extract content from Chat Completions API response")
 
                 # Parse JSON response
                 import json
