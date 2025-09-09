@@ -90,6 +90,20 @@ class Matrix:
             return self.cells[row][col]
         return None
 
+    def __getitem__(self, key):
+        """
+        Support A[i] -> row list and A[i, j] -> single cell.
+        Keeps legacy code working that wrote A[i][j].
+        """
+        if isinstance(key, tuple):
+            i, j = key
+            return self.cells[i][j]
+        return self.cells[key]
+
+    def __len__(self):
+        """Return number of rows in matrix."""
+        return len(self.cells)
+
     def transpose(self) -> "Matrix":
         """
         Transposes the matrix by swapping rows and columns.

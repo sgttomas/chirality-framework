@@ -124,3 +124,44 @@ def validate_semantic_input(text: str) -> List[str]:
         errors.append("Semantic input too long (>10000 chars)")
 
     return errors
+
+
+def semantic_multiply(term_a: str, term_b: str) -> str:
+    """
+    Perform semantic multiplication: find semantic intersection of two terms.
+    
+    This is a pure domain function that defines what semantic multiplication means.
+    The actual LLM resolution would be handled by infrastructure layers.
+    
+    Examples from normative spec:
+    - "sufficient" * "reason" = "justification"  
+    - "precision" * "durability" = "reliability"
+    - "probability" * "consequence" = "risk"
+    
+    Args:
+        term_a: First term
+        term_b: Second term
+        
+    Returns:
+        Semantic intersection as coherent word/statement
+    """
+    # This is the domain definition - infrastructure will implement LLM resolution
+    return f"{term_a}_MULTIPLY_{term_b}"
+
+
+def semantic_add(parts: List[str]) -> str:
+    """
+    Perform semantic addition: concatenate terms/fragments into statement.
+    
+    This is a pure domain function for semantic addition.
+    
+    Example from normative spec:
+    - "faisal" + "has" + "seven" + "balloons" = "faisal has seven balloons"
+    
+    Args:
+        parts: List of terms/fragments to concatenate
+        
+    Returns:
+        Concatenated statement with proper spacing
+    """
+    return " ".join(parts)

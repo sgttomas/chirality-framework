@@ -20,7 +20,10 @@ def try_parse_json_or_repair(
 
     Args:
         messages: List of chat messages
-        adapter_call: Function to call LLM (should return (response, metadata))
+        adapter_call: Function to call LLM - returns (response_obj, metadata)
+                     where response_obj may be:
+                     - a parsed dict OR
+                     - {"content": "...json string..."} (legacy/raw)
         schema_hint: Optional schema hint for repair prompt
         max_repair_attempts: Maximum repair attempts
 
@@ -30,47 +33,116 @@ def try_parse_json_or_repair(
     Raises:
         json.JSONDecodeError: If JSON still invalid after repairs
     """
+    
+    def _basic_validate(obj: Dict[str, Any], hint: Optional[str]) -> Tuple[bool, str]:
+        """
+        Minimal contract checks per tail type. Fast, non-exhaustive.
+        """
+        if not isinstance(obj, dict):
+            return False, "not a dict"
+        
+        art = obj.get("artifact")
+        if art == "matrix":
+            # Matrices need these keys; 'elements' shape is checked later.
+            for k in ("name", "station", "rows", "cols", "step", "elements"):
+                if k not in obj:
+                    return False, f"missing key '{k}'"
+            return True, ""
+        
+        if art == "lenses":
+            for k in ("station", "rows", "cols", "lenses"):
+                if k not in obj:
+                    return False, f"missing key '{k}'"
+            return True, ""
+        
+        if art == "lens_catalog":
+            for k in ("station", "rows", "cols", "lenses"):
+                if k not in obj:
+                    return False, f"missing key '{k}'"
+            # For lens_catalog, we could add station-specific validation here if needed
+            return True, ""
+        
+        if art == "aggregated_output":
+            for k in ("matrices", "meta"):
+                if k not in obj:
+                    return False, f"missing key '{k}'"
+            return True, ""
+        
+        # Unknown artifact: require at least something structured
+        if art is None:
+            return False, "missing 'artifact' key"
+        
+        return False, f"unknown artifact '{art}'"
+
     # First attempt
     response, metadata = adapter_call(messages)
+
+    # If adapter already returned parsed JSON, validate before accepting.
+    if isinstance(response, dict) and "content" not in response and "text" not in response:
+        ok, why = _basic_validate(response, schema_hint)
+        if ok:
+            return response, metadata
+        # Fall through to repair attempts using the same messages + a repair cue.
+        print(f"DEBUG: Parsed JSON failed basic validation ({why}); attempting repair...")
 
     # Try to parse response
     content = response.get("content", response.get("text", ""))
 
     try:
-        return json.loads(content), metadata
+        parsed = json.loads(content)
+        ok, why = _basic_validate(parsed, schema_hint)
+        if ok:
+            return parsed, metadata
+        # If structure wrong, proceed to repair below
+        print(f"DEBUG: Parsed JSON failed basic validation ({why}); attempting repair...")
     except json.JSONDecodeError:
-        # Original parse failed, try repair
-        for attempt in range(max_repair_attempts):
-            # Create repair message
-            repair_content = (
-                "The previous output was invalid JSON. "
-                "Return valid JSON only"
-                + (f" matching this shape: {schema_hint}" if schema_hint else "")
-                + "."
-            )
+        pass
+        
+    # Original parse failed or validation failed, try repair
+    for attempt in range(max_repair_attempts):
+        # Create repair message
+        repair_content = (
+            "The previous output was invalid JSON. "
+            "Return valid JSON only"
+            + (f" matching this shape: {schema_hint}" if schema_hint else "")
+            + "."
+        )
+        if schema_hint:
+            repair_content += f"\nEnsure the JSON contains the required keys for '{schema_hint}'."
 
-            repair_message = {"role": "user", "content": repair_content}
+        repair_message = {"role": "user", "content": repair_content}
 
-            # Add repair message and try again
-            repair_messages = (
-                messages + [{"role": "assistant", "content": content}] + [repair_message]
-            )
+        # Add repair message and try again
+        repair_messages = (
+            messages + [{"role": "assistant", "content": content}] + [repair_message]
+        )
 
-            response, metadata = adapter_call(repair_messages)
+        response, metadata = adapter_call(repair_messages)
+        
+        # Handle parsed dict response
+        if isinstance(response, dict) and "content" not in response and "text" not in response:
+            ok, why = _basic_validate(response, schema_hint)
+            if ok:
+                return response, metadata
+            content = json.dumps(response)  # For error reporting
+        else:
             content = response.get("content", response.get("text", ""))
-
             try:
-                return json.loads(content), metadata
+                parsed = json.loads(content)
+                ok, why = _basic_validate(parsed, schema_hint)
+                if ok:
+                    return parsed, metadata
             except json.JSONDecodeError:
-                if attempt == max_repair_attempts - 1:
-                    # Last attempt failed, raise with helpful error
-                    raise json.JSONDecodeError(
-                        f"JSON repair failed after {max_repair_attempts} attempts. "
-                        f"Final response: {content[:200]}...",
-                        content,
-                        0,
-                    )
-                continue
+                pass
+
+        if attempt == max_repair_attempts - 1:
+            # Last attempt failed, raise with helpful error
+            raise json.JSONDecodeError(
+                f"JSON repair failed after {max_repair_attempts} attempts. "
+                f"Final response: {content[:200]}...",
+                content,
+                0,
+            )
 
     # Should not reach here, but handle gracefully
     raise json.JSONDecodeError(f"Unexpected error parsing JSON: {content}", content, 0)

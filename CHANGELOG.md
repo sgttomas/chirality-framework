@@ -5,6 +5,28 @@ All notable changes to the Chirality Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [19.3.0] - 2025-09-08
+
+### 🏗️ REFACTOR-4 DOMAIN-DRIVEN DESIGN ALIGNMENT
+
+**DDD Architecture Compliance**
+- **MOVED**: `chirality/prompt_assets/` → `chirality/infrastructure/prompts/assets/` for proper DDD layering
+- **CONSOLIDATED**: Removed duplicate `exporters/` directory, unified all export functionality in `export/`
+- **CLEANED**: Removed 10+ empty directories violating DDD principles (application services, domain subdirectories, infrastructure placeholders)
+- **STRUCTURED**: Clear domain/application/infrastructure/interfaces separation now enforced
+
+**Developer Experience Improvements**
+- **REMOVED**: 167MB+ of unused build artifacts, cache directories, and virtual environments
+- **CLEANED**: Eliminated development clutter (.grok/, GEMINI.md, problem.json, verify_package.py)
+- **ORGANIZED**: Prompt assets now properly co-located with prompt infrastructure code
+- **VERIFIED**: All functionality maintained with successful `assets-verify` test after refactoring
+
+**Updated References**
+- **FIXED**: Registry path resolution for new assets location in `infrastructure/prompts/registry.py`
+- **UPDATED**: Package data paths in `pyproject.toml` for proper distribution
+- **CORRECTED**: CLI manifest path and script references throughout codebase
+- **MAINTAINED**: Full backward compatibility for all CLI commands and functionality
+
 ## [19.2.0] - 2025-09-08
 
 ### 🗂️ REFACTOR-3 OBLITERATION COMPLETE

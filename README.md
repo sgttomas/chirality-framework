@@ -7,7 +7,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/tag/sgttomas/chirality-framework?sort=semver&label=release)](https://github.com/sgttomas/chirality-framework/tags)
 
-**Version: 19.2.0** | **Status: Production-Ready Infrastructure**
+**Version: 19.3.0** | **Status: DDD-Compliant Architecture**
 
 The Chirality Framework is a meta-ontological, system-agnostic methodology for mapping the solution space to a problem statement in the context of knowledge work. It creates structured semantic relationships that serve as "semantic anchors" to guide LLMs through problem-solving stages across a "semantic valley."
 
@@ -177,6 +177,8 @@ See full CLI Quick Reference in `docs/API_REFERENCE.md#cli-reference`.
 To set up the development environment and run tests, please refer to the instructions in `CONTRIBUTING.md`.
 
 **Key Development Notes:**
+- **DDD Architecture**: Clean separation of domain/application/infrastructure/interfaces layers
+- **Prompt Assets**: Located in `chirality/infrastructure/prompts/assets/` following DDD principles
 - **Single CLI Entry Point**: Use `chirality` command (via `chirality.interfaces.cli:main`)
 - **Output Channels**: Logs go to stderr, data goes to stdout (for CI/CD integration)
 - **Guard Scripts**: Run before commits to prevent legacy code drift

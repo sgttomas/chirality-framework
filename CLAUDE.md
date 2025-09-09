@@ -9,11 +9,12 @@ The Chirality Framework is a meta-ontological, system-agnostic methodology for m
 **Core Philosophy**: Fixed ontological structure + constrained stochastic processing = reproducible semantic computation.
 
 **Current Status**: 
-- **REFACTOR-3 BRANCH**: Complete legacy code obliteration completed
-- Fully migrated to Domain-Driven Design (DDD) architecture
+- **REFACTOR-4 BRANCH**: DDD compliance and architecture cleanup completed
+- **Version 19.3.0: DDD-compliant architecture** with clean layer separation
+- Fully migrated to Domain-Driven Design (DDD) architecture with proper prompt asset placement
 - Phase 1 complete: Matrices A through E implemented with conversational prompting
 - Phase 2 ready for implementation: Tensors M, W, U, N with modular cell-by-cell construction
-- **Version 19.2.0: Production-ready infrastructure** with budgets, caching, and resume capabilities
+- Production-ready infrastructure with budgets, caching, and resume capabilities
 - Enterprise-grade reliability, cost control, and crash-safe operations
 - **CI/CD Pipeline**: Guards-first approach with fail-fast architectural protection
 
@@ -137,8 +138,8 @@ pip install -e ".[all]"       # All optional dependencies
 
 ## Architecture Overview
 
-### DDD Structure (Post-Migration)
-The codebase follows Domain-Driven Design with clear separation of concerns:
+### DDD Structure (Refactor-4 Complete)
+The codebase follows Domain-Driven Design with clean separation of concerns:
 
 ```
 chirality/
@@ -148,15 +149,29 @@ chirality/
 │   ├── semantics/    # Semantic resolution logic
 │   └── types.py      # Core domain types
 ├── application/      # Application services
+│   ├── phase1/       # Phase 1 dialogue orchestration
+│   ├── phase2/       # Phase 2 tensor computation
 │   └── services/     # Use case implementations
 ├── infrastructure/   # External integrations
 │   ├── llm/         # LLM provider implementations
 │   ├── prompts/     # Prompt management
-│   ├── exporters/   # Neo4j, JSONL exporters
+│   │   └── assets/  # Prompt asset files (moved from root)
+│   ├── export/      # Neo4j export functionality
+│   ├── caching.py   # Production caching system
 │   └── monitoring/  # Tracing and observability
 ├── interfaces/      # CLI and user interfaces (single entry point)
 └── lib/             # RESTRICTED - Contains only logging.py for production infrastructure
 ```
+
+## REFACTOR-4 DDD COMPLIANCE COMPLETE ✅
+
+### Architecture Cleanup and DDD Alignment
+- **Prompt Assets Relocated**: `chirality/prompt_assets/` → `chirality/infrastructure/prompts/assets/`
+- **Export Consolidation**: Removed duplicate `exporters/` directory, unified in `export/`
+- **Empty Directory Cleanup**: Removed 10+ empty directories violating DDD principles
+- **Development Clutter Removal**: Eliminated .grok/, GEMINI.md, problem.json, verify_package.py, cache dirs
+- **Reference Updates**: All imports, package data, and scripts updated for new structure
+- **167MB+ Space Savings**: Cleaned unused build artifacts and virtual environments
 
 ## REFACTOR-3 OBLITERATION COMPLETE ✅
 
@@ -380,12 +395,13 @@ Tensor operations use a different approach:
 - **`cli.py`**: Single CLI entry point for all framework operations
 - **IMPORTANT**: This is the ONLY CLI entry point - no secondary CLIs permitted
 
-### Prompt Assets (`chirality/prompt_assets/`)
+### Prompt Assets (`chirality/infrastructure/prompts/assets/`)
 - Maintainer-authored markdown files
 - NEVER modify these programmatically
 - Only user should edit semantic content
 - Phase 1: Conversational dialogue templates
 - Phase 2: Normative implementation snapshots
+- **Location**: Moved to infrastructure layer following DDD principles
 
 ### Normative Specifications (`chirality/`)
 - **`normative_spec.txt`**: v19.2.0 canonical specification with Phase 2 instructions
