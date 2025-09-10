@@ -1,0 +1,119 @@
+{
+  "meta": {
+    "generated_at": "2025-09-10T00:31:28.967288+00:00",
+    "model": "gpt-5-nano",
+    "temperature": 1.0,
+    "lens_mode": "auto",
+    "kernel_hash": "phase_d_matrix_c_only",
+    "token_count": 985
+  },
+  "matrices": {
+    "C": {
+      "mechanical": {
+        "content": "({'artifact': 'matrix', 'name': 'C', 'station': 'Problem Statement', 'rows': ['normative', 'operative', 'iterative'], 'cols': ['necessity (vs contingency)', 'sufficiency', 'completeness', 'consistency'], 'step': 'mechanical', 'op': 'dot', 'elements': [['objectives * necessary + actions * contingent + benchmarks * purposeful + feedback * constitutive', 'objectives * sufficient + actions * actionable + benchmarks * effective + feedback * optimal', 'objectives * complete + actions * contextual + benchmarks * comprehensive + feedback * holistic', 'objectives * consistent + actions * congruent + benchmarks * coherent + feedback * principled'], ['standards * necessary + methods * contingent + criteria * purposeful + adaptation * constitutive', 'standards * sufficient + methods * actionable + criteria * effective + adaptation * optimal', 'standards * complete + methods * contextual + criteria * comprehensive + adaptation * holistic', 'standards * consistent + methods * congruent + criteria * coherent + adaptation * principled'], ['developments * necessary + coordination * contingent + evaluation * purposeful + refinement * constitutive', 'developments * sufficient + coordination * actionable + evaluation * effective + refinement * optimal', 'developments * complete + coordination * contextual + evaluation * comprehensive + refinement * holistic', 'developments * consistent + coordination * congruent + evaluation * coherent + refinement * principled']]}, {'model': 'gpt-4.1-nano-2025-04-14', 'temperature': 1.0, 'top_p': 0.9, 'max_tokens': None, 'json_only': True, 'latency_ms': 5050, 'usage': CompletionUsage(completion_tokens=302, prompt_tokens=8714, total_tokens=9016, completion_tokens_details=CompletionTokensDetails(accepted_prediction_tokens=0, audio_tokens=0, reasoning_tokens=0, rejected_prediction_tokens=0), prompt_tokens_details=PromptTokensDetails(audio_tokens=0, cached_tokens=0)), 'created_at': 1757464283, 'response_format': 'json_object', 'prompt_tokens': 8714, 'completion_tokens': 302, 'cached_tokens': 0, 'total_tokens': 9016})",
+        "error": "json_parse_failed"
+      },
+      "interpreted": {
+        "content": "({'artifact': 'matrix', 'name': 'C', 'station': 'Problem Statement', 'rows': ['normative', 'operative', 'iterative'], 'cols': ['necessity (vs contingency)', 'sufficiency', 'completeness', 'consistency'], 'step': 'interpreted', 'op': 'dot', 'elements': [['objectives necessary contingency', 'actions sufficient actionable', 'benchmarks complete comprehensive', 'feedback constitutive principled'], ['standards necessary contingent', 'methods sufficient actionable', 'criteria complete comprehensive', 'adaptation constitutive holistic'], ['developments necessary contingent', 'coordination sufficient actionable', 'evaluation complete comprehensive', 'refinement constitutive holistic']]}, {'model': 'gpt-4.1-nano-2025-04-14', 'temperature': 1.0, 'top_p': 0.9, 'max_tokens': None, 'json_only': True, 'latency_ms': 2549, 'usage': CompletionUsage(completion_tokens=154, prompt_tokens=9380, total_tokens=9534, completion_tokens_details=CompletionTokensDetails(accepted_prediction_tokens=0, audio_tokens=0, reasoning_tokens=0, rejected_prediction_tokens=0), prompt_tokens_details=PromptTokensDetails(audio_tokens=0, cached_tokens=8576)), 'created_at': 1757464285, 'response_format': 'json_object', 'prompt_tokens': 9380, 'completion_tokens': 154, 'cached_tokens': 0, 'total_tokens': 9534})",
+        "error": "json_parse_failed"
+      },
+      "lenses": {
+        "station": "Problem Statement",
+        "matrix_id": "C",
+        "rows": [
+          "normative",
+          "operative",
+          "iterative"
+        ],
+        "cols": [
+          "guiding",
+          "applying",
+          "judging",
+          "reflecting"
+        ],
+        "lenses": [
+          [
+            "problem_statement_lens_0_0",
+            "problem_statement_lens_0_1",
+            "problem_statement_lens_0_2",
+            "problem_statement_lens_0_3"
+          ],
+          [
+            "problem_statement_lens_1_0",
+            "problem_statement_lens_1_1",
+            "problem_statement_lens_1_2",
+            "problem_statement_lens_1_3"
+          ],
+          [
+            "problem_statement_lens_2_0",
+            "problem_statement_lens_2_1",
+            "problem_statement_lens_2_2",
+            "problem_statement_lens_2_3"
+          ]
+        ],
+        "source": "catalog",
+        "meta": {
+          "generated_at": "2025-09-09T21:43:45.117286",
+          "context_hash": "e221c7dd94078099",
+          "model": "gpt-4o-mini"
+        }
+      },
+      "lensed": {
+        "content": "({'artifact': 'matrix', 'name': 'C', 'station': 'Problem Statement', 'rows': ['normative', 'operative', 'iterative'], 'cols': ['necessity (vs contingency)', 'sufficiency', 'completeness', 'consistency'], 'step': 'lensed', 'op': 'dot', 'elements': [['Problem Statement: Objectives related to what is necessary and contingency.', 'Actions aligned with what is sufficient and actionable.', 'Benchmarks measuring completeness and comprehensiveness.', 'Feedback ensuring feedback loops are consistent and principled.'], ['Standards grounded in what is necessary and contingent.', 'Methods aligned with sufficiency and actionability.', 'Criteria reflecting completeness and comprehensiveness.', 'Adaptation aimed at maintaining consistency and holism.'], ['Developments driven by what is necessary and contingent.', 'Coordination facilitating sufficiency and action.', 'Evaluation assessing completeness and coverage.', 'Refinement striving for consistency and holistic improvement.']]}, {'model': 'gpt-4.1-nano-2025-04-14', 'temperature': 1.0, 'top_p': 0.9, 'max_tokens': None, 'json_only': True, 'latency_ms': 3318, 'usage': CompletionUsage(completion_tokens=174, prompt_tokens=10147, total_tokens=10321, completion_tokens_details=CompletionTokensDetails(accepted_prediction_tokens=0, audio_tokens=0, reasoning_tokens=0, rejected_prediction_tokens=0), prompt_tokens_details=PromptTokensDetails(audio_tokens=0, cached_tokens=9216)), 'created_at': 1757464288, 'response_format': 'json_object', 'prompt_tokens': 10147, 'completion_tokens': 174, 'cached_tokens': 0, 'total_tokens': 10321})",
+        "error": "json_parse_failed"
+      }
+    }
+  },
+  "trace": [
+    {
+      "asset_id": "phase1_c_mechanical",
+      "asset_sha": "pending_user_aut",
+      "matrix": "C",
+      "stage": "mechanical",
+      "model": "gpt-5-nano",
+      "temperature": 1.0,
+      "input_hash": "b9831028b8780ca7",
+      "output_hash": "9e96174971cdee82",
+      "usage": {
+        "estimated_tokens": 533
+      },
+      "timestamp": "2025-09-10T00:31:23.096023+00:00"
+    },
+    {
+      "asset_id": "phase1_c_interpreted",
+      "asset_sha": "pending_user_aut",
+      "matrix": "C",
+      "stage": "interpreted",
+      "model": "gpt-5-nano",
+      "temperature": 1.0,
+      "input_hash": "3f099688decd6d28",
+      "output_hash": "1d74f694c0cccdc9",
+      "usage": {
+        "estimated_tokens": 198
+      },
+      "timestamp": "2025-09-10T00:31:25.646779+00:00"
+    },
+    {
+      "type": "lens_injection",
+      "station": "Problem Statement",
+      "matrix": "C",
+      "source": "catalog",
+      "lens_count": 12,
+      "timestamp": "2025-09-10T00:31:25.648027+00:00"
+    },
+    {
+      "asset_id": "phase1_c_lensed",
+      "asset_sha": "pending_user_aut",
+      "matrix": "C",
+      "stage": "lensed",
+      "model": "gpt-5-nano",
+      "temperature": 1.0,
+      "input_hash": "68f30eed8c54c7a0",
+      "output_hash": "ae789ecb68b125f0",
+      "usage": {
+        "estimated_tokens": 254
+      },
+      "timestamp": "2025-09-10T00:31:28.967250+00:00"
+    }
+  ]
+}

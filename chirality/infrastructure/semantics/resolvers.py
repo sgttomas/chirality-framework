@@ -8,7 +8,7 @@ following the semantic-first approach for Phase 1.
 import re
 import hashlib
 from typing import List, Dict, Any
-from ..llm.openai_adapter import call_responses_api
+from ..llm.openai_adapter import call_responses
 
 
 def _current_prompt_hash() -> str:
@@ -61,13 +61,13 @@ Examples:
 Find the semantic intersection of "{term_a}" and "{term_b}". Return only the resulting word or short phrase that captures their combined meaning.
 """
 
-    messages = [
-        {"role": "system", "content": "You are performing semantic multiplication for the Chirality Framework. Find the semantic intersection of terms, returning only the result word or phrase."},
-        {"role": "user", "content": user_message}
-    ]
+    instructions = "You are performing semantic multiplication for the Chirality Framework. Find the semantic intersection of terms, returning only the result word or phrase."
     
-    response = call_responses_api(messages=messages, temperature=0.7, json_only=False)
-    result = response.get("content", "").strip()
+    response = call_responses(
+        instructions=instructions,
+        input=user_message
+    )
+    result = response.get("output_text", "").strip()
     
     if not result:
         raise ValueError(f"Failed to resolve semantic multiplication: '{term_a}' * '{term_b}'")
@@ -157,13 +157,13 @@ Return a brief but semantically rich statement capturing the essence when viewed
 Focus on the semantic meaning that emerges from applying the lens perspective to the content.
 """
 
-    messages = [
-        {"role": "system", "content": f"You are applying semantic lenses for the {station} station in the Chirality Framework."},
-        {"role": "user", "content": user_message}
-    ]
+    instructions = f"You are applying semantic lenses for the {station} station in the Chirality Framework."
     
-    response = call_responses_api(messages=messages, temperature=0.7, json_only=False)
-    result = response.get("content", "").strip()
+    response = call_responses(
+        instructions=instructions,
+        input=user_message
+    )
+    result = response.get("output_text", "").strip()
     
     if not result:
         raise ValueError(f"Failed to apply lens at station '{station}'")

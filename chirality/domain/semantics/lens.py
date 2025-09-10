@@ -9,7 +9,7 @@ semantic operations rather than implementing them in Python logic.
 """
 
 from typing import List
-from ...infrastructure.llm.openai_adapter import call_responses_api
+from ...infrastructure.llm.openai_adapter import call_responses
 from ...infrastructure.prompts.registry import get_registry
 
 
@@ -50,17 +50,16 @@ Return exactly one interpretive lens statement that captures the essence of this
 Do not include ontological identifiers or explanations - just the semantic meaning at the nexus of these aspects.
 """
 
-    # Create conversation for lens generation
-    messages = [
-        {"role": "system", "content": "You are generating semantic lenses for the Chirality Framework using semantic multiplication to find the intersection of ontological meanings."},
-        {"role": "user", "content": user_message}
-    ]
+    # Call LLM to generate lens using Responses API
+    instructions = "You are generating semantic lenses for the Chirality Framework using semantic multiplication to find the intersection of ontological meanings."
     
-    # Call LLM to generate lens
-    response = call_responses_api(messages=messages, temperature=0.7, json_only=False)
+    response = call_responses(
+        instructions=instructions,
+        input=user_message
+    )
     
     # Extract the lens from response
-    lens = response.get("content", "").strip()
+    lens = response.get("output_text", "").strip()
     
     if not lens:
         raise ValueError(f"Failed to generate lens for station='{station}', row='{row_name}', col='{col_name}'")
@@ -94,17 +93,16 @@ Interpret the content through this lens to produce a lensed interpretation. Your
 Focus on the semantic meaning that emerges from applying the lens perspective to the content. Do not include lens labels or meta-commentary - just the interpreted meaning.
 """
 
-    # Create conversation for lens application
-    messages = [
-        {"role": "system", "content": "You are applying semantic lenses in the Chirality Framework to interpret content through specific ontological perspectives."},
-        {"role": "user", "content": user_message}
-    ]
+    # Call LLM to apply lens using Responses API
+    instructions = "You are applying semantic lenses in the Chirality Framework to interpret content through specific ontological perspectives."
     
-    # Call LLM to apply lens
-    response = call_responses_api(messages=messages, temperature=0.7, json_only=False)
+    response = call_responses(
+        instructions=instructions,
+        input=user_message
+    )
     
     # Extract the lensed interpretation
-    lensed = response.get("content", "").strip()
+    lensed = response.get("output_text", "").strip()
     
     if not lensed:
         raise ValueError(f"Failed to apply lens to content: '{content[:50]}...'")

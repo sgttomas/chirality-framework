@@ -15,8 +15,8 @@ class LLMConfig:
     """Global LLM configuration parameters."""
 
     model: str = "gpt-4o"
-    temperature: float = 1.0
-    top_p: float = 0.9
+    temperature: Optional[float] = None  # Default to None per semantic rule
+    top_p: Optional[float] = 0.9
     max_tokens: Optional[int] = None  # Let API determine from context
     seed: Optional[int] = None  # For deterministic testing
     response_format: Dict[str, Any] = field(default_factory=lambda: {"type": "json_object"})

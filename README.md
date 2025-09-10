@@ -53,124 +53,35 @@ The sequence of stations in the semantic valley is not arbitrary; it follows a d
 
 For a detailed explanation of this conceptual architecture, see the **[Project Philosophy Documentation](docs/PHILOSOPHY.md)**.
 
-## Quick Start: The End-to-End Workflow
+## Quick Start
 
-The recommended way to use the framework is to compute the entire pipeline and view the results in the generated HTML viewer.
+The recommended way to use the framework is to compute the entire Phase 1 pipeline and view the results.
 
 ### Prerequisites
 - Python 3.9+
-- An OpenAI API key set as the `OPENAI_API_KEY` environment variable
-- **Note**: The framework uses OpenAI's Responses API exclusively (not Chat Completions API)
+- An OpenAI API key set as the `OPENAI_API_KEY` environment variable in a `.env` file in the project root.
 
-### Step 1: Compute the Full Pipeline
-This command runs the entire semantic pipeline (Matrices C through E), generates snapshots of every matrix (including the base matrices A, B, and J), and creates detailed trace files for debugging.
+### Step 1: Install and Set Up
 
 ```bash
-# Install with OpenAI support (requires OpenAI SDK >=1.50.0)
-pip install 'chirality-framework[openai]'
+# Install with all dependencies
+pip install -e ".[dev,openai]"
 
-# Set your API key (add to your shell profile for persistence)
-export OPENAI_API_KEY="sk-..."
-
-# Run the full pipeline with the OpenAI resolver
-python3 -m chirality.interfaces.cli compute-pipeline --resolver openai --snapshot-jsonl --include-base
+# Ensure the lens catalog is generated (only needs to be done once)
+python3 -m chirality.interfaces.cli lenses ensure
 ```
-This will create two directories, `snapshots/<run_id>/` and `traces/<run_id>/`, containing the output files.
 
-### Step 2: Render and View the Results
-This command reads the generated snapshots and creates a self-contained HTML file to display all the matrices in an elegant, readable format.
+### Step 2: Run the Phase 1 Pipeline
+
+This command runs the entire semantic pipeline (Matrices A through E) using the on-the-fly lens generation fallback if the catalog is out of date.
 
 ```bash
-# Render the latest run and open it in your browser
-python3 -m chirality.interfaces.cli render-viewer --latest --open
-```
-This will create a `viewer-output/` directory containing the `index.html` and `style.css` files and automatically open the page for you. You can change the output location with `--output-dir`.
-
-## Advanced Usage
-
-### App Integration Mode (Producer Contract)
-For automation by external apps (e.g., chirality-app), use app mode to write a manifest and contract snapshots with a single JSON result to stdout.
-
-```
-python3 -m chirality.interfaces.cli compute-pipeline \
-  --resolver echo \
-  --out runs/my-run-1 \
-  --problem-file problem.json \
-  --max-seconds 900
+# Run the full Phase 1 dialogue pipeline
+python3 -m chirality.interfaces.cli phase1-dialogue-run --lens-mode=auto --out=runs/latest_run
 ```
 
-- Writes per-cell JSONL snapshots for `C`, `D`, `X`, `E` under `runs/<run_id>/snapshots/` with format `cells-jsonl-v1`.
-- Writes `runs/<run_id>/index.json` last and atomically with checksums, sizes, and record counts.
-- Prints exactly one JSON line to stdout on success: `{ "run_id": "...", "manifest": "runs/<run_id>/index.json" }`.
-- Exit codes: `0` success; `2` invalid args; `3` timeout; `4` I/O; `5` resolver; `1` general.
-- Backward compatibility: also dual-writes legacy snapshots for all computed matrices to `snapshots/<run_id>/` for the built-in viewer.
+This will create a `runs/latest_run` directory containing the final output and a full conversational trace.
 
-### App Mode (Chirality App Integration)
-
-- Generate a run:
-
-  `python3 -m chirality.interfaces.cli compute-pipeline --resolver <echo|openai> --out runs/<run_id> --problem-file problem.json --max-seconds 900`
-
-- Output:
-  - `runs/<run_id>/index.json`
-  - `runs/<run_id>/snapshots/{C,D,X,E}.jsonl`
-
-- Stdout (last line):
-
-  `{"run_id":"<run_id>","manifest":"runs/<run_id>/index.json"}`
-
-- Contract:
-  - Manifest `framework_schema_version = "1.0.0"`
-  - Each matrix entry includes `path`, `format:"cells-jsonl-v1"`, `records`, `sha256`, `bytes`
-  - JSONL rows include `id, matrix, row, col, row_label, col_label, station, text, citations, refs, meta.order`
-
-### Using Framework Artifacts (chirality-app)
-
-- Set `CHIRALITY_RUNS_DIR=/absolute/path/to/chirality-framework/runs` in chirality-app `.env.local`
-- Ingest: `POST /api/agent/run` with body `{"framework_run_id":"<run_id>"}` (optionally include `"enable_rag": true`)
-- Export: `GET /api/agent/export/<run_id>` with header `X-Role: approver`
-
-### Computing Individual Matrices
-The `compute-matrix` command allows you to compute and snapshot any single matrix, automatically handling its prerequisites.
-
-```bash
-# Compute just the final Evaluation matrix (E)
-python3 -m chirality.interfaces.cli compute-matrix E --resolver openai --snapshot-jsonl
-
-# Snapshot a base matrix for reference
-python3 -m chirality.interfaces.cli compute-matrix A --snapshot-jsonl
-```
-
-### Inspecting a Single Cell
-For detailed debugging, the `compute-cell` command lets you observe the new canonical pipeline for any single cell in a matrix.
-
-```bash
-# Observe the computation of cell C[0,0] with verbose output
-python3 -m chirality.interfaces.cli compute-cell C --i 0 --j 0 --resolver openai --verbose --trace
-```
-
-### Viewing Options
-The `render-viewer` command has several options for customizing the output:
-
-```bash
-# Render a specific run with a custom title
-python3 -m chirality.interfaces.cli render-viewer --run-id "<run_id>" --title "My Analysis"
-
-# Render with the "Elements" style for a more code-like view
-python3 -m chirality.interfaces.cli render-viewer --latest --style elements
-
-# Disable the default value sanitization to see raw output
-python3 -m chirality.interfaces.cli render-viewer --latest --style elements --no-sanitize-values
-```
-
-## Common CLI Commands
-
-- Phase 1 dialogue: `python3 -m chirality.interfaces.cli phase1-dialogue-run --out artifacts/`
-- Phase 2 tensor computation: `python3 -m chirality.interfaces.cli phase2-run tensor_spec.json --snapshot phase1_snapshot.md`
-- Asset verification: `python3 -m chirality.interfaces.cli assets-verify`
-- Export to Neo4j: `python3 -m chirality.interfaces.cli export-neo4j --uri bolt://localhost:7687 --user neo4j --pwd password`
-
-See full CLI Quick Reference in `docs/API_REFERENCE.md#cli-reference`.
 
 ## Development
 
@@ -186,5 +97,8 @@ To set up the development environment and run tests, please refer to the instruc
 Additional docs:
 - `docs/INTERFACE.md`: Producer mirror of the chirality-app contract (app mode).
 - `GEMINI.md`: Guidance for using Gemini/AI assistants with this repo.
+ - `CLAUDE.md`: Guidance for using Claude Code with this repo.
+ - `AGENTS.md`: Notes for agentic coding assistants working on this project.
+repo.
  - `CLAUDE.md`: Guidance for using Claude Code with this repo.
  - `AGENTS.md`: Notes for agentic coding assistants working on this project.

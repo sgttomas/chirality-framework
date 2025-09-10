@@ -1,8 +1,11 @@
 """
 API Guards for Chirality Framework
 
-Prevents usage of forbidden APIs like Chat Completions.
-Enforces Responses API usage throughout the framework.
+Per colleague_1's D2-4 specification:
+- no_chat_completions: Forbid client.chat.completions.create
+- no_decoding_overrides: Forbid passing temperature, top_p, etc., from code/tests
+
+Enforces Responses API usage and external parameter control throughout the framework.
 """
 
 
@@ -12,9 +15,18 @@ class APIGuardError(Exception):
     pass
 
 
-def forbid_chat_completions(*args, **kwargs):
+class DecodingOverrideError(Exception):
+    """Raised when decoding parameters are passed from code/tests."""
+
+    pass
+
+
+def no_chat_completions(*args, **kwargs):
     """
-    Guard function to prevent Chat Completions API usage.
+    D2-4 Guard: Prevent Chat Completions API usage.
+
+    Per colleague_1's specification, this guard must forbid any usage of
+    client.chat.completions.create throughout the framework.
 
     Raises:
         APIGuardError: Always - Chat Completions API is forbidden
@@ -24,6 +36,44 @@ def forbid_chat_completions(*args, **kwargs):
         "Use Responses API (client.responses.create) instead. "
         "This is enforced by the normative specification."
     )
+
+
+def no_decoding_overrides(func_name: str, **kwargs):
+    """
+    D2-4 Guard: Prevent decoding parameter overrides from code/tests.
+
+    Per colleague_1's specification, temperature, top_p, and other decoding
+    parameters must be controlled externally, not passed from code.
+
+    Args:
+        func_name: Name of the function being called
+        **kwargs: Parameters being passed to the function
+
+    Raises:
+        DecodingOverrideError: If forbidden parameters are detected
+    """
+    forbidden_params = {
+        'temperature', 'top_p', 'top_k', 'frequency_penalty', 
+        'presence_penalty', 'repetition_penalty', 'min_p',
+        'typical_p', 'entropy_cutoff', 'rep_pen'
+    }
+    
+    detected_params = []
+    for param in forbidden_params:
+        if param in kwargs and kwargs[param] is not None:
+            detected_params.append(param)
+    
+    if detected_params:
+        raise DecodingOverrideError(
+            f"Decoding parameters {detected_params} forbidden in {func_name}. "
+            "Parameters must be controlled externally via configuration, "
+            "not passed from code/tests. This is enforced by colleague_1's "
+            "D2-4 specification."
+        )
+
+
+# Legacy name for backward compatibility
+forbid_chat_completions = no_chat_completions
 
 
 def require_responses_api():
@@ -58,7 +108,7 @@ def require_responses_api():
 
 def install_chat_completions_guard():
     """
-    Install a guard that monkey-patches OpenAI Chat Completions to always fail.
+    D2-4: Install a guard that monkey-patches OpenAI Chat Completions to always fail.
 
     This should be called in test setup to ensure no code accidentally uses
     the forbidden Chat Completions API.
@@ -68,16 +118,47 @@ def install_chat_completions_guard():
 
         # Monkey patch chat completions to always raise our guard error
         if hasattr(openai, "chat") and hasattr(openai.chat, "completions"):
-            openai.chat.completions.create = forbid_chat_completions
+            openai.chat.completions.create = no_chat_completions
 
         # Also patch any Completions API if it exists
         if hasattr(openai, "Completion"):
-            openai.Completion.create = forbid_chat_completions
+            openai.Completion.create = no_chat_completions
 
     except ImportError:
         # OpenAI not installed, no need to guard
         pass
 
 
+def install_all_guards():
+    """
+    D2-4: Install all D2-4 guards for comprehensive protection.
+    
+    This should be called at application startup or test setup to ensure
+    all forbidden patterns are protected against.
+    """
+    install_chat_completions_guard()
+    
+    # The no_decoding_overrides guard is applied at function call level,
+    # so it doesn't need global installation like the chat completions guard
+
+
+def guard_llm_call(func_name: str, **kwargs):
+    """
+    D2-4: Combined guard for LLM calls.
+    
+    Applies both no_chat_completions and no_decoding_overrides protection.
+    
+    Args:
+        func_name: Name of the function being called
+        **kwargs: Parameters being passed to the function
+        
+    Raises:
+        DecodingOverrideError: If forbidden decoding parameters detected
+    """
+    # Apply decoding override guard
+    no_decoding_overrides(func_name, **kwargs)
+
+
 # Global guards that can be monkey-patched if needed
-CHAT_COMPLETIONS_GUARD = forbid_chat_completions
+CHAT_COMPLETIONS_GUARD = no_chat_completions
+DECODING_OVERRIDES_GUARD = no_decoding_overrides

@@ -10,10 +10,12 @@ from typing import Dict, Any, List, Callable, Optional, Tuple
 
 
 def try_parse_json_or_repair(
-    messages: List[Dict[str, str]],
-    adapter_call: Callable,
+    messages: List[Dict[str, str]] = None,
+    adapter_call: Callable = None,
     schema_hint: Optional[str] = None,
     max_repair_attempts: int = 1,
+    instructions: str = None,
+    input_text: str = None,
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
     Attempt to parse JSON, with repair pass if needed.
@@ -74,8 +76,13 @@ def try_parse_json_or_repair(
         
         return False, f"unknown artifact '{art}'"
 
-    # First attempt
-    response, metadata = adapter_call(messages)
+    # First attempt - support both formats
+    if instructions is not None and input_text is not None:
+        # New format: use instructions + input
+        response, metadata = adapter_call(instructions=instructions, input=input_text)
+    else:
+        # Legacy format: use messages
+        response, metadata = adapter_call(messages)
 
     # If adapter already returned parsed JSON, validate before accepting.
     if isinstance(response, dict) and "content" not in response and "text" not in response:
@@ -112,12 +119,17 @@ def try_parse_json_or_repair(
 
         repair_message = {"role": "user", "content": repair_content}
 
-        # Add repair message and try again
-        repair_messages = (
-            messages + [{"role": "assistant", "content": content}] + [repair_message]
-        )
-
-        response, metadata = adapter_call(repair_messages)
+        # P0-4: EPHEMERAL repair - never append to transcript (per colleague_1's specification)
+        if instructions is not None and input_text is not None:
+            # Use separate ephemeral repair call that doesn't pollute transcript
+            response, metadata = _ephemeral_repair_call(
+                instructions, input_text, content, repair_content, adapter_call
+            )
+        else:
+            # Legacy format: use messages (also ephemeral)
+            response, metadata = _ephemeral_repair_call_legacy(
+                messages, content, repair_message, adapter_call
+            )
         
         # Handle parsed dict response
         if isinstance(response, dict) and "content" not in response and "text" not in response:
@@ -211,3 +223,79 @@ def create_tensor_cell_schema_hint(tensor_name: str) -> str:
         Schema hint string
     """
     return create_schema_hint({"tensor": tensor_name, "value": "string", "confidence": "0.0-1.0"})
+
+
+def _ephemeral_repair_call(
+    instructions: str, 
+    original_input: str, 
+    failed_content: str, 
+    repair_content: str, 
+    adapter_call: Callable
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """
+    P0-4: Make an ephemeral repair call that doesn't pollute the transcript.
+    
+    Per colleague_1's specification: "Keep JSON repair prompts ephemeral (not appended 
+    to history), and confirm via a test that the transcript remains metadata-free 
+    even when repair is triggered."
+    
+    This creates a completely separate, temporary conversation for repair that never
+    affects the main transcript.
+    
+    Args:
+        instructions: System instructions for repair
+        original_input: Original input that failed
+        failed_content: The content that failed to parse
+        repair_content: Repair instructions  
+        adapter_call: Function to call LLM
+        
+    Returns:
+        Tuple of (response, metadata) from repair attempt
+    """
+    # Create ephemeral repair context (separate from main transcript)
+    ephemeral_input = (
+        f"PREVIOUS ATTEMPT:\n{failed_content}\n\n"
+        f"REPAIR INSTRUCTIONS:\n{repair_content}\n\n"
+        f"ORIGINAL CONTEXT (for reference only):\n{original_input}"
+    )
+    
+    # Make ephemeral call with clear repair instructions
+    repair_instructions = (
+        f"{instructions}\n\n"
+        f"REPAIR MODE: The previous response was invalid JSON. "
+        f"Provide ONLY valid JSON that meets the requirements. "
+        f"Do not include any explanations or markdown."
+    )
+    
+    return adapter_call(instructions=repair_instructions, input=ephemeral_input)
+
+
+def _ephemeral_repair_call_legacy(
+    original_messages: List[Dict[str, str]], 
+    failed_content: str, 
+    repair_message: Dict[str, str], 
+    adapter_call: Callable
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """
+    P0-4: Legacy ephemeral repair call for messages format.
+    
+    Creates a temporary repair conversation without affecting original messages.
+    
+    Args:
+        original_messages: Original message history
+        failed_content: Content that failed to parse
+        repair_message: Repair instruction message
+        adapter_call: Function to call LLM
+        
+    Returns:
+        Tuple of (response, metadata) from repair attempt
+    """
+    # Create ephemeral messages list (separate from original)
+    ephemeral_messages = [
+        {"role": "system", "content": "You are a JSON repair assistant. Provide only valid JSON."},
+        {"role": "user", "content": f"Previous invalid response: {failed_content}"},
+        repair_message,
+        {"role": "user", "content": "Return ONLY valid JSON, no explanations."}
+    ]
+    
+    return adapter_call(ephemeral_messages)

@@ -59,12 +59,11 @@ def test_budget_aware_resolver_wraps_correctly():
 
     budget_resolver = BudgetAwareResolver(echo_resolver, tracker)
 
-    # Test that basic functionality works
-    result = budget_resolver.run_stage2_multiply(["test", "word"], "C")
+    # Test that basic functionality works - using a method that still exists
+    result = budget_resolver.run_combined_lens(["test content"], "test lens", "C")
     assert result.text  # Should have some result
 
     # Test delegation works
-    assert hasattr(budget_resolver, "run_stage2_elementwise")
     assert hasattr(budget_resolver, "run_combined_lens")
 
 

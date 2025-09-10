@@ -118,10 +118,25 @@ Contributions to the code must respect the two-phase architecture:
 
 ### Testing Contributions
 
-Our testing strategy is crucial for validating the calculator's correctness without making expensive LLM calls.
+Our testing strategy is crucial for validating the framework's correctness and architectural integrity.
 
-*   **Mocking**: All core logic is tested against mock objects and a deterministic `echo` resolver. No new tests should make live network calls.
-*   **Adding Tests**: New tests for the core operations should be added to `tests/core/test_operations.py`. Tests for the prompt assembly system should go in `tests/lib/`.
+#### Architectural Guardrails
+
+This project uses a series of "guardrail" tests to programmatically enforce its core architectural principles. Before submitting any changes, you **must** run these tests to ensure your changes are compliant. These are more important than standard unit tests.
+
+Key guardrail tests include:
+- `tests/test_architecture_guards.py`: Checks for forbidden legacy code patterns and ensures the system prompt has not been altered.
+- `tests/test_clean_transcript.py`: Scans dialogue transcripts to ensure no framework metadata (e.g., SHAs, sources, modes) is ever exposed to the LLM.
+
+To run all critical guards:
+```bash
+pytest -v tests/test_architecture_guards.py tests/test_clean_transcript.py
+```
+
+#### Full Test Suite
+
+*   **Mocking**: All core logic is tested against mock objects and a deterministic `echo` resolver. No new tests should make live network calls unless they are specifically designed for integration testing and use a dedicated, low-cost model.
+*   **Adding Tests**: New tests for core domain logic should be added to the `tests/` directory with a clear and descriptive filename.
 
 ### Documentation Contributions
 

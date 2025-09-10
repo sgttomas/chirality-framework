@@ -16,6 +16,7 @@ from ..application.phase2.tensor_engine import TensorEngine
 from ..infrastructure.export.neo4j_loader import load_artifacts_to_neo4j
 from ..infrastructure.prompts.registry import get_registry
 from ..domain.budgets import BudgetConfig
+from ..application.lenses import LensCatalogManager, LensResolver
 from ..lib.logging import log_info, log_error, log_success, log_progress, output_data
 
 
@@ -48,7 +49,7 @@ def cmd_phase1_dialogue_run(args):
 
     orchestrator = DialogueOrchestrator(
         budget_config=budget_config,
-        lens_mode=args.lenses,
+        lens_mode=args.lens_mode,
         write_catalog=args.write_catalog,
     )
 
@@ -134,6 +135,144 @@ def cmd_lenses_build(args):
 
     log_success(f"Lens catalog built: {output_path}")
     log_info(f"  - Lenses generated: {count}")
+
+
+def cmd_lenses_ensure(args):
+    """Ensure lens catalog exists and is valid (idempotent)."""
+    catalog_path = Path(args.out) if args.out else None
+    manager = LensCatalogManager(catalog_path)
+    
+    log_progress("Checking lens catalog...")
+    catalog = manager.ensure_catalog()
+    
+    meta = catalog["meta"]
+    log_success("Lens catalog is ready")
+    log_info(f"  - Stations: {len(meta['stations'])}")
+    log_info(f"  - Generated: {meta['generated_at']}")
+    log_info(f"  - System SHA: {meta['system_sha']}")
+
+
+def cmd_lenses_refresh(args):
+    """Force regeneration of lens catalog."""
+    catalog_path = Path(args.out) if args.out else None
+    manager = LensCatalogManager(catalog_path)
+    
+    log_progress("Regenerating lens catalog...")
+    catalog = manager.ensure_catalog(force_refresh=True)
+    
+    meta = catalog["meta"]
+    log_success("Lens catalog regenerated")
+    log_info(f"  - Stations: {len(meta['stations'])}")
+    log_info(f"  - Generated: {meta['generated_at']}")
+
+
+def cmd_lenses_show(args):
+    """Show lens catalog information."""
+    catalog_path = Path(args.catalog) if args.catalog else None
+    manager = LensCatalogManager(catalog_path)
+    
+    if args.station:
+        # Show specific station
+        try:
+            info = manager.show_station_info(args.station)
+            log_info(f"Station: {info['station']}")
+            log_info(f"  - Matrix: {info['matrix_id']} ({info['dimensions']})")
+            log_info(f"  - Rows: {info['rows']}")
+            log_info(f"  - Cols: {info['cols']}")
+            log_info(f"  - Lenses: {info['lens_count']}")
+            log_info(f"  - Generated: {info['generated_at']}")
+            log_info(f"  - Context hash: {info['context_hash']}")
+        except (FileNotFoundError, ValueError) as e:
+            log_error(f"Error: {e}")
+            sys.exit(1)
+    else:
+        # Show all stations
+        try:
+            stations = manager.list_stations()
+            meta = manager.get_catalog_meta()
+            
+            log_info("Lens catalog overview:")
+            log_info(f"  - Generated: {meta['generated_at']}")
+            log_info(f"  - Model: {meta['model']}")
+            log_info(f"  - System SHA: {meta['system_sha']}")
+            log_info(f"  - Normative SHA: {meta['normative_sha']}")
+            log_info(f"  - Stations: {', '.join(stations)}")
+            
+        except FileNotFoundError as e:
+            log_error(f"Error: {e}")
+            log_info("Run 'chirality lenses ensure' to create catalog")
+            sys.exit(1)
+
+
+def cmd_lenses_meta(args):
+    """Show lens catalog metadata."""
+    catalog_path = Path(args.catalog) if args.catalog else None
+    manager = LensCatalogManager(catalog_path)
+    
+    try:
+        meta = manager.get_catalog_meta()
+        
+        log_info("Lens catalog metadata:")
+        for key, value in meta.items():
+            log_info(f"  - {key}: {value}")
+            
+    except FileNotFoundError as e:
+        log_error(f"Error: {e}")
+        log_info("Run 'chirality lenses ensure' to create catalog")
+        sys.exit(1)
+
+
+def cmd_lenses_source(args):
+    """Show lens source precedence for stations."""
+    lens_mode = args.mode or "catalog"
+    resolver = LensResolver(lens_mode=lens_mode)
+    
+    if args.station:
+        # Show specific station
+        try:
+            source = resolver.get_lens_source(args.station)
+            log_info(f"Station '{args.station}': {source}")
+        except Exception as e:
+            log_error(f"Error: {e}")
+            sys.exit(1)
+    else:
+        # Show all stations
+        station_matrices = {
+            "Problem Statement": "C",
+            "Requirements": "F", 
+            "Objectives": "D",
+            "Verification": "X",
+            "Validation": "Z",
+            "Evaluation": "E"
+        }
+        
+        log_info(f"Lens sources (mode: {lens_mode}):")
+        for station in station_matrices.keys():
+            try:
+                source = resolver.get_lens_source(station)
+                log_info(f"  - {station}: {source}")
+            except Exception as e:
+                log_info(f"  - {station}: ERROR - {e}")
+
+
+def cmd_lenses_clear_overrides(args):
+    """Clear lens overrides."""
+    resolver = LensResolver()
+    
+    if args.station:
+        # Clear specific station
+        success = resolver.clear_station_override(args.station)
+        if success:
+            log_success(f"Override cleared for station '{args.station}'")
+        else:
+            log_info(f"No override found for station '{args.station}'")
+    else:
+        # Clear all overrides
+        count = resolver.clear_all_overrides()
+        if count > 0:
+            log_success(f"Cleared {count} overrides")
+        else:
+            log_info("No overrides to clear")
 
 
 def cmd_phase2_run(args):
@@ -239,8 +378,12 @@ def cmd_export_neo4j(args):
     log_success(f"Export complete: run_id={run_id}")
 
 
+from dotenv import load_dotenv
+
+
 def main():
     """Main CLI entry point."""
+    load_dotenv()
     parser = argparse.ArgumentParser(prog="chirality", description="Chirality Framework v19.3.0")
     subparsers = parser.add_subparsers(dest="cmd", required=True, help="Available commands")
 
@@ -255,7 +398,7 @@ def main():
     p1_run.add_argument("--token-budget", type=int, help="Maximum tokens to use")
     p1_run.add_argument("--cost-budget", type=float, help="Maximum cost in USD")
     p1_run.add_argument("--time-budget", type=int, help="Maximum time in seconds")
-    p1_run.add_argument("--lenses", choices=["catalog", "generate", "auto"], default="catalog",
+    p1_run.add_argument("--lens-mode", choices=["catalog", "generate", "auto"], default="catalog",
                        help="Where Stage-3 lenses come from (default: catalog)")
     p1_run.add_argument("--write-catalog", action="store_true", 
                        help="Persist generated lenses into artifacts/lens_catalog.json")
@@ -277,6 +420,27 @@ def main():
     lens_build = subparsers.add_parser("lenses-build", help="Build lens catalog")
     lens_build.add_argument("--triples", required=True, help="Path to lenses_triples.json")
     lens_build.add_argument("--out", required=True, help="Output catalog path")
+
+    # New lens management commands
+    lens_ensure = subparsers.add_parser("lenses-ensure", help="Ensure lens catalog exists and is valid")
+    lens_ensure.add_argument("--out", help="Custom catalog path (default: artifacts/lens_catalog.json)")
+
+    lens_refresh = subparsers.add_parser("lenses-refresh", help="Force regeneration of lens catalog")
+    lens_refresh.add_argument("--out", help="Custom catalog path (default: artifacts/lens_catalog.json)")
+
+    lens_show = subparsers.add_parser("lenses-show", help="Show lens catalog information")
+    lens_show.add_argument("--station", help="Show specific station (e.g., 'Validation')")
+    lens_show.add_argument("--catalog", help="Custom catalog path (default: artifacts/lens_catalog.json)")
+
+    lens_meta = subparsers.add_parser("lenses-meta", help="Show lens catalog metadata")
+    lens_meta.add_argument("--catalog", help="Custom catalog path (default: artifacts/lens_catalog.json)")
+
+    lens_source = subparsers.add_parser("lenses-source", help="Show lens source precedence for stations")
+    lens_source.add_argument("--station", help="Show specific station (e.g., 'Validation')")
+    lens_source.add_argument("--mode", choices=["catalog", "auto"], default="catalog", help="Lens resolution mode")
+
+    lens_clear = subparsers.add_parser("lenses-clear-overrides", help="Clear lens overrides")
+    lens_clear.add_argument("--station", help="Clear specific station (default: clear all)")
 
     # Phase 2 commands
     p2_run = subparsers.add_parser("phase2-run", help="Run Phase 2 tensor computation")
@@ -316,6 +480,12 @@ def main():
         "phase1-snapshot": cmd_phase1_snapshot,
         "lenses-derive": cmd_lenses_derive,
         "lenses-build": cmd_lenses_build,
+        "lenses-ensure": cmd_lenses_ensure,
+        "lenses-refresh": cmd_lenses_refresh,
+        "lenses-show": cmd_lenses_show,
+        "lenses-meta": cmd_lenses_meta,
+        "lenses-source": cmd_lenses_source,
+        "lenses-clear-overrides": cmd_lenses_clear_overrides,
         "phase2-run": cmd_phase2_run,
         "export-neo4j": cmd_export_neo4j,
     }
