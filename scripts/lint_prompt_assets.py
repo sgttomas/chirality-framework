@@ -6,6 +6,10 @@ Per colleague_1's specification: "Add a quick lint to fail if any prompt asset
 contains ChatML remnants (e.g., <|system|>, System: headers) or framework 
 metadata tokens (e.g., system_sha, source:)."
 
+C1-5: Asset linting allows generate_lenses.md in auto mode only - these files
+are permitted to appear in transcripts during auto lens generation, but they
+must still be clean of ChatML markers and framework metadata.
+
 This script scans all prompt assets for forbidden patterns and fails if any are found.
 """
 

@@ -56,7 +56,7 @@ def create_default_config() -> LLMConfig:
 
     Environment variables:
         CHIRALITY_MODEL: Model name (default: gpt-4.1-nano)
-        CHIRALITY_TEMPERATURE: Temperature (default: 0.7)
+        CHIRALITY_TEMPERATURE: Temperature (default: None - unset)
         CHIRALITY_TOP_P: Top-p value (default: 0.9)
         CHIRALITY_MAX_TOKENS: Max tokens (default: None)
         CHIRALITY_SEED: Random seed (default: None)
@@ -66,7 +66,7 @@ def create_default_config() -> LLMConfig:
     """
     return LLMConfig(
         model=os.getenv("CHIRALITY_MODEL", "gpt-4.1-nano"),
-        temperature=float(os.getenv("CHIRALITY_TEMPERATURE", "0.7")),
+        temperature=float(os.getenv("CHIRALITY_TEMPERATURE")) if os.getenv("CHIRALITY_TEMPERATURE") else None,
         top_p=float(os.getenv("CHIRALITY_TOP_P", "0.9")),
         max_tokens=_parse_optional_int(os.getenv("CHIRALITY_MAX_TOKENS")),
         seed=_parse_optional_int(os.getenv("CHIRALITY_SEED")),

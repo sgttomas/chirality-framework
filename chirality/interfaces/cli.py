@@ -51,6 +51,8 @@ def cmd_phase1_dialogue_run(args):
         budget_config=budget_config,
         lens_mode=args.lens_mode,
         write_catalog=args.write_catalog,
+        model=args.model,
+        reasoning_effort=getattr(args, 'reasoning_effort', None),
     )
 
     log_progress("Running Phase 1 dialogue...")
@@ -399,11 +401,14 @@ def main():
     p1_run.add_argument("--cost-budget", type=float, help="Maximum cost in USD")
     p1_run.add_argument("--time-budget", type=int, help="Maximum time in seconds")
     p1_run.add_argument("--lens-mode", choices=["catalog", "generate", "auto"], default="catalog",
-                       help="Where Stage-3 lenses come from (default: catalog)")
+                       help="Where Stage-3 lenses come from: catalog=use existing catalog, auto=in-transcript generation (default: catalog)")
     p1_run.add_argument("--write-catalog", action="store_true", 
                        help="Persist generated lenses into artifacts/lens_catalog.json")
     p1_run.add_argument("--regen-lenses", action="store_true",
                        help="Regenerate the full catalog from normative_spec before running")
+    p1_run.add_argument("--model", help="LLM model to use (uses global config if not specified)")
+    p1_run.add_argument("--reasoning-effort", choices=["low", "medium", "high"], 
+                       help="GPT-5 reasoning effort level")
 
     p1_snap = subparsers.add_parser("phase1-snapshot", help="Generate Phase 1 snapshot")
     p1_snap.add_argument(

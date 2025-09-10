@@ -63,6 +63,7 @@ class DialogueOrchestrator:
         tracer: Optional[JSONLTracer] = None,
         lens_mode: Literal["catalog", "auto"] = "catalog",
         write_catalog: bool = False,
+        reasoning_effort: Optional[str] = None,
     ):
         """
         Initialize the dialogue orchestrator.
@@ -75,6 +76,7 @@ class DialogueOrchestrator:
             tracer: Optional JSONL tracer for logging
             lens_mode: Lens resolution mode ("catalog" or "auto")
             write_catalog: Whether to write generated lenses to catalog
+            reasoning_effort: GPT-5 reasoning effort level ("minimal", "medium", "low")
         """
         # Use global config if not provided
         from ...infrastructure.llm.config import get_config
@@ -82,6 +84,7 @@ class DialogueOrchestrator:
         
         self.model = model if model is not None else config.model
         self.temperature = temperature if temperature is not None else config.temperature
+        self.reasoning_effort = reasoning_effort
         self.max_repair = max_repair
         self.budget_config = budget_config
         self.tracer = tracer
@@ -488,7 +491,291 @@ class DialogueOrchestrator:
             "trace": trace_entries
         }
         
+        # C1-6: Guard against framework metadata tokens in transcript
+        self._validate_clean_transcript()
+        
+        # FIX-7: Guard that generate_lenses only appears in auto mode
+        self._validate_generate_lenses_only_in_auto()
+        
         return final_output
+
+    def _generate_lenses_in_transcript(self, station: str, matrix_name: str, 
+                                     interpreted_rows: List[str], interpreted_cols: List[str]) -> Dict[str, Any]:
+        """
+        C1-2: Generate lenses in-transcript using generate_lenses.md prompt (option A).
+        
+        Per colleague_1's specification:
+        - Load phase1/<MATRIX>/generate_lenses.md and render with matrix parameters
+        - Add user turn to transcript with rendered prompt
+        - Call Responses API with strict JSON schema
+        - Use assistant JSON response as canonical lenses (no additional data-drop)
+        - Record lens_source="auto" in trace only (not transcript)
+        
+        Args:
+            station: Station name (e.g., "problem statement")
+            matrix_name: Matrix name (e.g., "C")
+            interpreted_rows: Row labels from interpreted matrix
+            interpreted_cols: Column labels from interpreted matrix
+            
+        Returns:
+            Dict with lenses result in expected format
+        """
+        from ...domain.matrices.canonical import get_matrix_info
+        import json
+        
+        # Get matrix info for rendering
+        matrix_info = get_matrix_info(matrix_name)
+        if not matrix_info:
+            raise ValueError(f"Unknown matrix: {matrix_name}")
+        
+        # Use interpreted dimensions if available, otherwise canonical
+        rows = interpreted_rows if interpreted_rows else matrix_info["row_labels"]
+        cols = interpreted_cols if interpreted_cols else matrix_info["col_labels"]
+        
+        # Load and render the generation asset
+        asset_id = f"phase1_{matrix_name.lower()}_generate_lenses"
+        try:
+            asset_text = self.registry.get_text(asset_id)
+        except KeyError:
+            raise ValueError(f"Generation asset not found: {asset_id}")
+        
+        # Replace placeholders with strict templater (FIX-2)
+        template_vars = {
+            "station": station,
+            "matrix_id": matrix_name,
+            "n_rows": str(len(rows)),
+            "n_cols": str(len(cols)),
+            "rows_json": json.dumps(rows),
+            "cols_json": json.dumps(cols)
+        }
+        
+        rendered_prompt = self._render_template_strict(asset_text, template_vars)
+        
+        # Add user turn to transcript with rendered prompt
+        user_message = {"role": "user", "content": rendered_prompt}
+        self.dialogue_history.append(user_message)
+        
+        # Get system prompt and build input from dialogue history
+        system_text = self.registry.get_text("system")
+        input_text = self._build_canonical_transcript()
+        
+        # Build strict JSON schema for lenses response
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "lenses_response",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "lenses": {
+                            "type": "array",
+                            "items": {
+                                "type": "array", 
+                                "items": {"type": "string"}
+                            }
+                        }
+                    },
+                    "required": ["lenses"],
+                    "additionalProperties": False
+                }
+            }
+        }
+        
+        # Call Responses API with strict JSON schema (fail fast, no repair)
+        response = call_responses(
+            instructions=system_text,
+            input=input_text,
+            response_format=response_format,
+            reasoning_effort=self.reasoning_effort,
+            model=self.model,
+            store=True
+        )
+        
+        # Parse the assistant's JSON response
+        response_content = response.get("output_text", "")
+        try:
+            lenses_json = json.loads(response_content)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse lenses JSON response: {e}")
+        
+        # Add assistant turn to transcript with JSON response (option A)
+        assistant_message = {"role": "assistant", "content": response_content}
+        self.dialogue_history.append(assistant_message)
+        
+        # Validate lenses structure
+        if "lenses" not in lenses_json:
+            raise ValueError("Lenses response missing 'lenses' field")
+            
+        lenses_array = lenses_json["lenses"]
+        if len(lenses_array) != len(rows):
+            raise ValueError(f"Lenses row count mismatch: expected {len(rows)}, got {len(lenses_array)}")
+            
+        for i, row in enumerate(lenses_array):
+            if len(row) != len(cols):
+                raise ValueError(f"Lenses col count mismatch in row {i}: expected {len(cols)}, got {len(row)}")
+        
+        # FIX-6: Validate lenses JSON in auto mode (log to trace, not transcript)
+        from ...infrastructure.validation.schemas import validate_lens_payload
+        
+        # Create lens block format for validation (similar to catalog mode)
+        lens_content = self._render_clean_payload(rows, cols, lenses_array, "lenses_json")
+        lens_block = f"""<<<BEGIN LENS MATRIX>>>
+{lens_content}
+<<<END LENS MATRIX>>>"""
+        
+        lens_validation_errors = validate_lens_payload(lens_block)
+        if lens_validation_errors:
+            # Log to trace/stderr, not transcript
+            print(f"⚠️  Auto mode lens validation warnings for {station}/{matrix_name}:")
+            for error in lens_validation_errors:
+                print(f"    - {error}")
+        else:
+            print(f"✅ Auto mode lens validation passed for {station}/{matrix_name}")
+        
+        # Return lenses_result in expected format
+        return {
+            "station": station,
+            "matrix_id": matrix_name,
+            "rows": rows,
+            "cols": cols,
+            "lenses": lenses_array,
+            "source": "auto",
+            "meta": {
+                "generated_at": "in-transcript",
+                "model": self.model,
+                "reasoning_effort": self.reasoning_effort,
+                "source": "auto"
+            }
+        }
+
+    def _validate_clean_transcript(self) -> None:
+        """
+        C1-6: Validate transcript is free of framework metadata tokens.
+        
+        Per colleague_1's specification: "Add transcript guard against framework 
+        metadata tokens in auto mode" - ensure no framework metadata appears in 
+        the conversational history, even in auto mode.
+        
+        Raises:
+            ValueError: If forbidden metadata tokens are found in transcript
+        """
+        # Forbidden metadata patterns that should NEVER appear in transcript
+        # FIX-4: Use anchored regex patterns to avoid false positives
+        import re
+        
+        forbidden_patterns = [
+            # Framework metadata (anchored to avoid false positives)
+            r'\bsystem_sha\b', r'\bnormative_sha\b', r'\basset_sha\b', r'\bgenerated_at\b',
+            r'\bkernel_hash\b', r'\bsnapshot_hash\b', r'\bcode_sha\b', r'\boutput_sha\b',
+            
+            # Data-drop metadata (with colons)
+            r'\bkind:\s', r'\bderivation:\s', r'\bsource:\s', r'\bfunction:\s', 
+            r'\bcode_fqn:\s', r'\bfrom_turn:\s', r'\bfrom_matrix:\s', r'\bfrom_layer:\s',
+            r'\binput_rows:\s', r'\binput_cols:\s', r'\bmeta:\s', r'\bassumption:\s', r'\bnote:\s',
+            
+            # Cross-ontology clutter
+            r'\bDOT[-\s]?BRIDGE\b', r'\bcross[-\s]?basis\b', r'\bcross[-\s]?ontology\b',
+            
+            # Mode/source awareness (specific patterns)
+            r'\bmode:\s', r'\bsource:\s*(catalog|auto|override)\b',
+            
+            # Reference block clutter
+            r'BEGIN REFERENCE MATRIX', r'END REFERENCE MATRIX'
+        ]
+        
+        for i, turn in enumerate(self.dialogue_history):
+            content = turn.get("content", "")
+            
+            # Check for any forbidden patterns (case-insensitive)
+            for pattern in forbidden_patterns:
+                if re.search(pattern, content, re.IGNORECASE):
+                    match = re.search(pattern, content, re.IGNORECASE)
+                    raise ValueError(
+                        f"C1-6 Transcript violation: Turn {i} contains forbidden metadata pattern: '{match.group()}'. "
+                        f"Framework metadata must remain in trace only, never in transcript. "
+                        f"Content preview: {content[:100]}..."
+                    )
+
+    def _render_template_strict(self, template: str, variables: Dict[str, str]) -> str:
+        """
+        FIX-2: Strict template renderer with fail-fast validation.
+        
+        Renders template variables and ensures no {{...}} placeholders remain unresolved.
+        
+        Args:
+            template: Template string with {{variable}} placeholders
+            variables: Dict of variable name -> value mappings
+            
+        Returns:
+            Rendered template string
+            
+        Raises:
+            ValueError: If any {{...}} placeholders remain unresolved
+        """
+        import re
+        
+        rendered = template
+        
+        # Replace each variable
+        for var_name, var_value in variables.items():
+            placeholder = f"{{{{{var_name}}}}}"
+            rendered = rendered.replace(placeholder, var_value)
+        
+        # Check for any remaining unresolved placeholders
+        leftover_matches = re.findall(r'\{\{[^}]+\}\}', rendered)
+        if leftover_matches:
+            raise ValueError(
+                f"Template rendering failed: unresolved placeholders {leftover_matches}. "
+                f"Available variables: {list(variables.keys())}"
+            )
+        
+        return rendered
+
+    def _build_canonical_transcript(self) -> str:
+        """
+        FIX-3: Build canonical transcript format for LLM input.
+        
+        Returns dialogue history as human-readable text format, not JSON.
+        This maintains semantic consistency with how the LLM sees conversations.
+        
+        Returns:
+            Canonical transcript string
+        """
+        transcript_lines = []
+        for msg in self.dialogue_history:
+            role = msg["role"]
+            content = msg["content"]
+            if role != "system":  # Skip system message as it goes in instructions
+                transcript_lines.append(f"[{role.upper()}] {content}")
+        
+        return "\n\n".join(transcript_lines)
+
+    def _validate_generate_lenses_only_in_auto(self) -> None:
+        """
+        FIX-7: Guard that generate_lenses.md only appears in transcript when lens_mode=auto.
+        
+        Per colleague_1's specification: "allow generate_lenses.md to appear in the 
+        transcript only when lens_mode='auto'".
+        
+        Raises:
+            ValueError: If generate_lenses content appears in non-auto mode
+        """
+        # Only enforce this guard in non-auto modes
+        if self.lens_mode == "auto":
+            return  # Auto mode is allowed to have generate_lenses content
+        
+        # Search transcript for generate_lenses content
+        for i, turn in enumerate(self.dialogue_history):
+            content = turn.get("content", "")
+            
+            # Look for generate_lenses asset patterns
+            if "generate_lenses" in content.lower() or "Generate Complete Lens Matrix" in content:
+                raise ValueError(
+                    f"FIX-7 Generate lenses guard: Turn {i} contains generate_lenses content in {self.lens_mode} mode. "
+                    f"generate_lenses.md content is only allowed in auto mode, not {self.lens_mode} mode. "
+                    f"Content preview: {content[:100]}..."
+                )
 
     def _execute_stage(self, asset_id: str, matrix_name: str, stage: str) -> tuple[Dict[str, Any], Dict[str, Any]]:
         """
@@ -518,7 +805,7 @@ class DialogueOrchestrator:
         self.dialogue_history.append(user_message)
         
         # Compute input hash for provenance
-        input_text = json.dumps(self.dialogue_history, sort_keys=True)
+        input_text = self._build_canonical_transcript()
         input_hash = hashlib.sha256(input_text.encode()).hexdigest()[:16]
         
         # Make LLM call using new Responses API interface
@@ -549,6 +836,8 @@ class DialogueOrchestrator:
                 instructions=system_text,
                 input=input_text,
                 response_format=response_format,
+                reasoning_effort=self.reasoning_effort,
+                model=self.model,
                 store=True
             )
             
@@ -772,8 +1061,13 @@ cols: {json.dumps(cols)}
                         except:
                             pass  # Continue without preflight check if parsing fails
         
-        # Resolve lenses using lens system
-        lenses_result = self.lens_resolver.resolve_lenses(station)
+        # C1-2: Handle auto mode with in-transcript lens generation (option A)
+        if self.lens_mode == "auto":
+            # Generate lenses in-transcript using generate_lenses.md prompt
+            lenses_result = self._generate_lenses_in_transcript(station, matrix_name, interpreted_rows, interpreted_cols)
+        else:
+            # Resolve lenses using lens system (catalog mode)
+            lenses_result = self.lens_resolver.resolve_lenses(station)
         
         # D2-2: Perform preflight parity check if we have interpreted data
         if interpreted_rows is not None and interpreted_cols is not None:
@@ -844,18 +1138,23 @@ cols: {json.dumps(cols)}
 {lens_content}
 <<<END LENS MATRIX>>>"""
         
-        # D2-5: Validate lens payload before injection
-        lens_validation_errors = validate_lens_payload(lens_block)
-        if lens_validation_errors:
-            print(f"⚠️  D2-5 lens validation warnings for {station}/{matrix_name}:")
-            for error in lens_validation_errors:
-                print(f"    - {error}")
+        # C1-2: For auto mode, lenses are already in transcript from LLM response (option A)
+        # For catalog mode, add data-drop turn  
+        if self.lens_mode != "auto":
+            # D2-5: Validate lens payload before injection
+            lens_validation_errors = validate_lens_payload(lens_block)
+            if lens_validation_errors:
+                print(f"⚠️  D2-5 lens validation warnings for {station}/{matrix_name}:")
+                for error in lens_validation_errors:
+                    print(f"    - {error}")
+            else:
+                print(f"✅ D2-5 lens payload validation passed for {station}/{matrix_name}")
+            
+            # Add lens data as USER message (data belongs in conversational turns)
+            lens_message = {"role": "user", "content": lens_block}
+            self.dialogue_history.append(lens_message)
         else:
-            print(f"✅ D2-5 lens payload validation passed for {station}/{matrix_name}")
-        
-        # Add lens data as USER message (data belongs in conversational turns)
-        lens_message = {"role": "user", "content": lens_block}
-        self.dialogue_history.append(lens_message)
+            print(f"✅ Auto mode: lenses already in transcript from LLM generation for {station}/{matrix_name}")
         
         # Build trace entry with turn_type: "data"
         trace_entry = {
@@ -921,7 +1220,9 @@ cols: {json.dumps(cols)}
             response = call_responses(
                 instructions=instructions,
                 input=input,
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
+                reasoning_effort=self.reasoning_effort,
+                model=self.model
             )
             # Convert to expected format for repair mechanism
             return {"content": response.get("output_text", "")}, response.get("raw", {}).get("metadata", {})
