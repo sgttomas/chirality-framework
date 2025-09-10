@@ -1,4 +1,4 @@
-# Normative Specification for the Chirality Framework v19.2.0
+# Normative Specification for the Chirality Framework v19.3.0
 
 
 ## What is the Chirality Framework?
@@ -197,7 +197,7 @@ Apply semantic multiplication first, and then semantic addition. Do not leave an
 
 ### Generate the interpretive lenses for Matrix C
 
-Recall logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
+Recall the logical progression of stations to generate reliable knowledge (semantic valley): if problem statement, then requirements, then objectives, then verification, then validation, then evaluation, then assessment, then implementation, then reflection and resolution.
 
 We are at "problem statement"
 

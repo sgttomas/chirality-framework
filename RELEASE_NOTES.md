@@ -1,197 +1,46 @@
-# Chirality Framework Release Notes
+# Release Notes: Version 20.0.0
 
-## v19.2.0 - Production Readiness Update (2025-01-08)
+**Release Date:** 2025-09-10
+**Codename:** Architectural Purity
 
-### 🚀 Major Production Enhancements
+## Overview
 
-This release focuses on production readiness, reliability, and operational excellence for the Chirality Framework's budgets, caching, and resume capabilities.
+Version 20.0.0 represents a fundamental architectural rewrite of the Chirality Framework. This release moves the project from a conventional Python application to a true **"Conversation as Program"** model, where the core logic is expressed as a pure, auditable, and semantically-clean dialogue with a Large Language Model.
 
-#### 🔧 Infrastructure Improvements
+The Python codebase has been refactored into a robust **Control-Plane** responsible only for orchestrating this conversation, while all semantic instructions and data reside in a version-controlled **Data-Plane**. This release introduces major improvements in architectural clarity, testability, provenance, and philosophical alignment.
 
-**Centralized Pricing System**
-- Created unified `chirality/domain/pricing.py` module as single source of truth
-- Eliminated pricing duplication across components
-- Added support for cached token pricing with reduced rates
-- Comprehensive model coverage including GPT-5 series
+## Major Architectural Changes
 
-**Cache System Hardening**
-- **Stable Cache Identity**: Cache keys now use `snapshot_hash` and `kernel_hash` from Phase 1 metadata instead of raw content hashing
-- **Complete Dependency Tracking**: Cache keys include all parameters affecting results (operands, snapshot, kernel, lens catalog, model params, GPT-5 params)
-- **Cache Invalidation**: Proper invalidation when any dependency changes
-- **Collision Resistance**: Robust cache key generation prevents false cache hits
+- **Adoption of the "Pure History" Model:** The framework now operates on a single, continuous conversational transcript. The LLM relies exclusively on the preceding dialogue for context, eliminating complex template injection and making the process more robust and transparent.
 
-**Atomic Resume Operations**
-- **Crash-Safe Writes**: All resume files use atomic writes (`tempfile + os.replace`) to prevent partial files after crashes
-- **Centralized Path Management**: Canonical `compute_cell_path()` function ensures consistency
-- **Corruption Recovery**: Automatic detection and cleanup of corrupted resume files
-- **Graceful Degradation**: Resume system fails safely without breaking computation
+- **Complete OpenAI Responses API Migration:** All calls to the legacy Chat Completions API (`client.chat.completions.create`) have been purged. The framework now exclusively uses the `client.responses.create` endpoint with the `instructions` and `input` contract, ensuring a clean separation of the system prompt from the conversational transcript.
 
-#### 🎯 API & Integration
+- **Strict Metadata Purge from LLM Transcript:** All framework-level metadata (e.g., SHAs, timestamps, sources, modes) has been completely removed from the dialogue sent to the LLM. The LLM now sees only pure semantic content (instructions, matrices, lenses). All provenance data is captured exclusively in Python-side trace objects.
 
-**Normalized Adapter Interface**
-- Robust usage field extraction from OpenAI responses with fallbacks
-- Consistent field naming across different API response structures
-- Proper handling of cached tokens for cost calculation
-- Enhanced error handling for malformed responses
+- **Canonical Data-Drop Pattern:** All non-LLM operations (e.g., matrix transpose, slicing) now leave a footprint in the conversation as a clean, metadata-free `<<<BEGIN DERIVED MATRIX>>>` block. This makes every step in the pipeline, whether code- or LLM-driven, a visible and auditable part of the dialogue.
 
-**CLI Output Channel Separation**
-- **Logs → stderr**: All progress, status, and diagnostic messages
-- **Data → stdout**: Only actual output data (hashes, results)
-- **Clean Integration**: Suitable for CI/CD pipelines and automation
-- **Consistent Formatting**: Emoji prefixes for different message types
+- **Formalized DDD Structure:** The architecture is now formally described using Domain-Driven Design (DDD) principles, including Bounded Contexts for Lens Management and Conversation Execution, and an Anti-Corruption Layer (ACL) for the OpenAI adapter. See the new `ARCHITECTURE.md` for full details.
 
-#### 🧪 Testing & Quality Assurance
+## New Features & Systems
 
-**Comprehensive Test Coverage**
-- **Cache Invalidation Tests**: 10+ scenarios covering all dependency changes
-- **Resume Robustness Tests**: Atomic writes, corruption handling, concurrent safety
-- **Adapter Normalization Tests**: Various OpenAI response structures and edge cases
-- **CLI Output Tests**: Proper channel separation and formatting
-- **Pricing Tests**: Model coverage, rate validation, cost calculation accuracy
+- **Comprehensive Lens Management System:** A complete, standalone system for managing semantic lenses has been implemented.
+    - **Lens Catalog:** A meta-pipeline can now pre-generate a full `lens_catalog.json` for all stations.
+    - **On-the-Fly Generation:** A new `lens_mode="auto"` allows the framework to generate missing lenses dynamically during a run.
+    - **Overrides & Caching:** On-the-fly generated lenses are cached in `lens_overrides.json` with full provenance, and this cache takes precedence over the main catalog, allowing for robust A/B testing.
+- **New CLI Commands:** The command-line interface has been expanded with a full suite of tools for managing the lens system: `chirality lenses ensure|refresh|show|meta|source|clear-overrides`.
 
-### 🐛 Bug Fixes
+## Testing & Architectural Enforcement
 
-- Fixed 1000x pricing error in budget calculations (now uses per-1M rates correctly)
-- Resolved cache key instability causing unnecessary cache misses
-- Fixed resume key consistency issues preventing proper recovery
-- Corrected top-k/top-p parameter confusion (OpenAI uses top_p)
-- Enhanced budget enforcement timing to prevent runaway costs
+- **Architectural Guardrails:** The CI/CD pipeline is now protected by a new suite of blocking tests that programmatically enforce the architecture. These guards prevent the use of forbidden APIs, inline prompts, and metadata leaks into the transcript.
+- **Semantic Contract Tests:** A new layer of testing has been introduced to validate the *conversation itself*. These tests assert the correct turn order, check for the presence and resolution of semantic operators, and verify the structural integrity of data-drops.
 
-### 📊 Performance Improvements
+## Documentation Overhaul
 
-- **Deterministic Caching**: Stable cache keys reduce redundant computations
-- **Atomic I/O**: Eliminates file corruption without performance impact
-- **Memory Efficiency**: Two-layer caching (memory + disk) with proper cleanup
-- **Parallel Safety**: Thread-safe operations for concurrent tensor computation
+- **New `ARCHITECTURE.md`:** A new, definitive document has been created that describes the "Conversation as Program" model and the full DDD-based design.
+- **Updated AI & Contributor Guides:** `GEMINI.md`, `CLAUDE.md`, and `CONTRIBUTING.md` have been completely rewritten to reflect the new architecture, API contracts, and testing philosophy.
+- **Refactored `README.md`:** The main README is now a clean, high-level entry point with an updated Quick Start guide.
 
-### 🔄 API Changes
+## Deprecations & Removals
 
-**New Modules**
-```python
-# Centralized pricing
-from chirality.domain.pricing import get_model_pricing, calculate_cost
-
-# CLI logging utilities  
-from chirality.lib.logging import log_info, log_error, output_data
-```
-
-**Enhanced Cache API**
-```python
-# Atomic resume operations
-resumable_runner.compute_cell_path(tensor_name, indices)  # Canonical paths
-resumable_runner.save_cell_result(name, indices, result)  # Atomic writes
-
-# Complete cache keys
-cache.compute_cache_key(
-    # ... existing params
-    kernel_hash="abc123",
-    lens_catalog_digest="def456", 
-    verbosity="medium",           # GPT-5 params
-    reasoning_effort="medium",
-    max_tokens=1000
-)
-```
-
-**Normalized Usage Fields**
-```python
-# OpenAI adapter now provides consistent fields
-metadata = {
-    "prompt_tokens": 1000,      # Always present
-    "completion_tokens": 500,   # Always present  
-    "cached_tokens": 200,       # Cached input tokens
-    "total_tokens": 1500        # Calculated if missing
-}
-```
-
-### 🛠️ Configuration Updates
-
-**Budget Configuration**
-```python
-budget_config = BudgetConfig(
-    token_budget=50000,          # Max tokens
-    cost_budget=10.0,           # Max USD
-    time_budget=1800            # Max seconds
-)
-```
-
-**Phase 2 Configuration**
-```python
-phase2_config = Phase2Config(
-    model="gpt-5-nano",         # Default model
-    temperature=0.7,            # Default temperature  
-    cache_enabled=True,         # Enable caching
-    resume_enabled=True         # Enable resume
-)
-```
-
-### 🔐 Security & Reliability
-
-- **Atomic Operations**: Prevents data corruption during system crashes
-- **Input Validation**: All configuration parameters validated
-- **Error Boundaries**: Graceful failure modes with helpful error messages
-- **Resource Limits**: Budget enforcement prevents runaway costs
-
-### 📚 Documentation
-
-- Updated CLAUDE.md with Phase 2 implementation details
-- Added comprehensive API documentation for new modules
-- Enhanced troubleshooting guides for production deployment
-- Example configurations for common use cases
-
-### ⚡ Migration Guide
-
-**From v19.1.x to v19.2.0:**
-
-1. **No Breaking Changes**: Existing code continues to work
-2. **Recommended Updates**:
-   ```bash
-   # Use new centralized CLI logging
-   from chirality.lib.logging import log_info, output_data
-   
-   # Access centralized pricing  
-   from chirality.domain.pricing import calculate_cost
-   ```
-
-3. **Configuration Migration**: Existing config files work unchanged
-4. **Cache Invalidation**: Existing caches will be rebuilt (expected)
-
-### 🎯 Production Deployment
-
-**Ready for Production Use:**
-- ✅ Crash-safe resume operations
-- ✅ Deterministic caching with proper invalidation
-- ✅ Cost control with accurate budget tracking
-- ✅ Clean CI/CD integration (stderr/stdout separation)
-- ✅ Comprehensive error handling and recovery
-- ✅ Thread-safe concurrent operations
-
-**Recommended Settings:**
-```bash
-# Production command example
-python -m chirality.cli phase2-run \
-  --tensor-spec tensors.json \
-  --snapshot phase1_snapshot.md \
-  --out production-run \
-  --token-budget 100000 \
-  --cost-budget 25.0 \
-  --time-budget 3600 \
-  --resume \
-  --cache \
-  --parallel 4
-```
-
-### 📈 Metrics
-
-- **43 new tests** added with 100% pass rate
-- **Zero breaking changes** to existing APIs
-- **5 new modules** for enhanced functionality
-- **8 critical production gaps** resolved
-- **100% atomic** file operations for data integrity
-
----
-
-**Full Changelog**: [v19.1.0...v19.2.0](https://github.com/user/chirality-framework/compare/v19.1.0...v19.2.0)
-
-**Contributors**: Claude Code Assistant
-
-**Next Release**: v19.3.0 - Phase 2 Tensor Implementation
+- All legacy components have been removed from the codebase, including `CellResolver`, `PromptBuilder`, `PromptStrategy`, and all `_compute_matrix_*` methods.
+- All old prompt assets that mixed instructions with metadata have been removed in favor of the new, clean, single-purpose assets.

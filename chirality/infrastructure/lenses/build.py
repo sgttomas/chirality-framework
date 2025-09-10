@@ -9,7 +9,8 @@ import json
 from typing import Dict, Any, Optional
 from pathlib import Path
 
-from ..llm.openai_adapter import call_responses_api
+# No longer importing call_responses_api - using call_responses directly
+from ..prompts.registry import get_registry
 
 
 class LensBuilder:
@@ -22,8 +23,8 @@ class LensBuilder:
 
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
-        temperature: float = 0.2,  # CRITICAL: Lenses must be deterministic
+        model: str = "gpt-5",
+        temperature: float = 1.0,  # CRITICAL: Lenses must be able to interpret semantics from abstraction without direct grammatical connection
         system_prompt: Optional[str] = None,
     ):
         """
@@ -36,7 +37,7 @@ class LensBuilder:
         """
         self.model = model
         self.temperature = temperature
-        self.system_prompt = system_prompt or self._default_system_prompt()
+        self.system_prompt = system_prompt or self._load_system_prompt()
 
     def build_lens_catalog(self, lens_triples_path: Path, output_path: Path) -> int:
         """
@@ -96,69 +97,65 @@ class LensBuilder:
         col = lens_spec["col"]
         station = lens_spec["station"]
 
-        # Build user prompt
-        user_prompt = f"""
-Generate a lens for semantic interpretation.
+        # Load lens generation prompt from registry and substitute variables
+        registry = get_registry()
+        lens_prompt_template = registry.get_text("lens_generation")
+        
+        # Get matrix_id from lens_spec or derive it
+        matrix_id = lens_spec.get("matrix_source", "Unknown")
+        
+        # Substitute template variables
+        user_prompt = lens_prompt_template.replace("{{matrix_id}}", matrix_id)
+        user_prompt = user_prompt.replace("{{station}}", station)
+        user_prompt = user_prompt.replace("{{row}}", row)
+        user_prompt = user_prompt.replace("{{col}}", col)
 
-Ontological coordinates:
-- Row perspective: {row}
-- Column perspective: {col}
-- Station context: {station}
-
-Create a brief, focused interpretive lens that guides how semantic content
-should be understood through this specific combination of row × column × station.
-
-The lens should be 1-2 sentences that capture the essence of interpreting
-content through this ontological position.
-
-Examples:
-- "Through the lens of normative × necessity at Problem Statement: Focus on essential standards that must be established."
-- "Through the lens of operative × sufficiency at Requirements: Consider practical adequacy for implementation."
-"""
-
-        # Call LLM statelessly
-        messages = [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
-
-        response, metadata = call_responses_api(
-            messages=messages,
-            temperature=0.2,  # CRITICAL: Force deterministic temperature
-            max_tokens=512,  # Lenses should be brief
-            json_only=True,
+        # Call LLM statelessly using Responses API
+        from ..llm.openai_adapter import call_responses
+        
+        response_result = call_responses(
+            instructions=self.system_prompt,
+            input=user_prompt
         )
+        
+        # Convert to expected format for compatibility
+        response = {"content": response_result.get("output_text", "")}
+        metadata = response_result.get("raw", {}).get("metadata", {})
 
-        # Extract text from JSON response
-        if "text" in response:
-            return response["text"]
-        elif "lens" in response:
-            return response["lens"]
-        elif isinstance(response, dict):
-            # Try to find text in any field
-            for value in response.values():
-                if isinstance(value, str) and len(value) > 10:
-                    return value
+        # Extract lens text from response (may contain reasoning + JSON)
+        if isinstance(response, dict):
+            # Direct JSON response
+            if "text" in response:
+                return response["text"]
+            elif "lens" in response:
+                return response["lens"]
+        elif isinstance(response, str):
+            # Response contains reasoning + JSON, extract the JSON part
+            try:
+                import re
+                json_match = re.search(r'\{[^}]*"text"[^}]*\}', response)
+                if json_match:
+                    json_str = json_match.group()
+                    json_data = json.loads(json_str)
+                    return json_data.get("text", response)
+                else:
+                    # No JSON found, use the whole response
+                    return response
+            except (json.JSONDecodeError, AttributeError):
+                # JSON parsing failed, use the whole response
+                return response
 
-        # Fallback if JSON parsing fails
+        # Fallback if all parsing fails
         return f"Through the lens of {row} × {col} at {station}"
 
-    def _default_system_prompt(self) -> str:
-        """Default system prompt for lens generation."""
-        return """
-You are generating interpretive lenses for the Chirality Framework.
-
-A lens is a brief, focused statement that guides semantic interpretation
-through specific ontological coordinates (row × column × station).
-
-Each lens should:
-1. Be concise (1-2 sentences)
-2. Capture the essence of the ontological position
-3. Guide interpretation without being overly prescriptive
-4. Use clear, accessible language
-
-Return JSON with: {"text": "lens text here"}
-"""
+    def _load_system_prompt(self) -> str:
+        """Load Phase 1 system prompt from registry for consistency."""
+        try:
+            registry = get_registry()
+            return registry.get_text("system")
+        except Exception:
+            # Fallback if registry fails
+            return "You are generating interpretive lenses for the Chirality Framework semantic calculator."
 
     def extract_component_lenses(self, catalog_path: Path, component: str, output_path: Path):
         """

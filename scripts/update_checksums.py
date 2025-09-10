@@ -41,7 +41,6 @@ def fix_metadata_and_update_checksums(verbose: bool = True):
         {"id": "station_brief.verification", "path": "station_briefs/verification.md"},
         {"id": "station_brief.validation", "path": "station_briefs/validation.md"},
         {"id": "station_brief.evaluation", "path": "station_briefs/evaluation.md"},
-        {"id": "stage2_multiply", "path": "stage2_multiply.md"},  # Was: ops/operators/multiply.md
         {
             "id": "stage2_elementwise",
             "path": "stage2_elementwise.md",

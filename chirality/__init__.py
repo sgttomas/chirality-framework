@@ -22,11 +22,12 @@ except Exception:
 __author__ = "Chirality Framework Team"
 
 from .domain.types import Cell, Matrix
-from .infrastructure.llm.resolver import CellResolver
-from .infrastructure.llm.mock_resolvers import EchoResolver
 from .domain.matrices.canonical import MATRIX_A, MATRIX_B, MATRIX_J
 from .domain.validation import FrameworkValidationError, validate_matrix, validate_cell
 from .infrastructure.monitoring.tracer import JSONLTracer
+
+# QUARANTINED: EchoResolver and other legacy resolvers are no longer exported
+# Use the CLI interface instead: python3 -m chirality.interfaces.cli
 
 __all__ = [
     # Core types
@@ -36,13 +37,12 @@ __all__ = [
     "MATRIX_A",
     "MATRIX_B",
     "MATRIX_J",
-    # Resolvers
-    "CellResolver",
-    "EchoResolver",
     # Validation
     "FrameworkValidationError",
     "validate_matrix",
     "validate_cell",
     # Tracing
     "JSONLTracer",
+    # Note: Legacy resolvers (EchoResolver, etc.) have been quarantined
+    # Use CLI interface instead: python3 -m chirality.interfaces.cli
 ]

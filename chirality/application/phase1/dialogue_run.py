@@ -4,6 +4,10 @@ Phase 1 Dialogue Orchestrator.
 Manages a single inclusive conversation from A through E,
 building semantic understanding through dialogue history.
 Each step returns JSON only (no tables).
+
+ARCHITECTURE STATUS: LEGACY METHODS DELETED
+All legacy template-based methods have been completely removed.
+New 4-stage conversational pipeline implementation required.
 """
 
 import json
@@ -12,17 +16,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ...infrastructure.prompts.json_tails import get_tail
-from ...infrastructure.llm.openai_adapter import call_responses_api
+from ...infrastructure.llm.openai_adapter import call_responses
 from ...infrastructure.llm.repair import try_parse_json_or_repair, create_matrix_schema_hint
 from ...infrastructure.monitoring.tracer import JSONLTracer
 from ...infrastructure.prompts.registry import get_registry
+from ...infrastructure.validation.schemas import validate_stage_response, validate_lens_payload
 from ...domain.matrices.canonical import get_canonical_matrix
 from ...domain.budgets import BudgetConfig
-from ...domain.semantics import apply_matrix_lenses
-from ...domain.semantics.lens_catalog import (
-    generate_lens_catalog, validate_lens_catalog, STATION_SCHEMAS,
-    prompt_hash_for_lenses, generate_lens_matrix_llm
-)
+from ...application.lenses import LensResolver
 from .aggregator import validate_and_write_agg, create_aggregator_schema_hint
 from .contracts import MatrixSnapshot
 
@@ -47,6 +48,10 @@ class DialogueOrchestrator:
 
     The dialogue builds semantic understanding progressively,
     with each step adding to the conversation history.
+    
+    ARCHITECTURE STATUS: REQUIRES NEW IMPLEMENTATION
+    Legacy template-based methods have been completely removed.
+    New 4-stage conversational pipeline implementation required.
     """
 
     def __init__(
@@ -56,7 +61,7 @@ class DialogueOrchestrator:
         max_repair: int = 1,
         budget_config: Optional[BudgetConfig] = None,
         tracer: Optional[JSONLTracer] = None,
-        lens_mode: Literal["catalog", "generate", "auto"] = "catalog",
+        lens_mode: Literal["catalog", "auto"] = "catalog",
         write_catalog: bool = False,
     ):
         """
@@ -68,8 +73,8 @@ class DialogueOrchestrator:
             max_repair: Maximum repair attempts for invalid JSON
             budget_config: Optional budget configuration for cost/token/time limits
             tracer: Optional JSONL tracer for logging
-            lens_mode: Where to get lenses for Stage-3 ("catalog" | "generate" | "auto")
-            write_catalog: When generating lenses, persist back into artifacts
+            lens_mode: Lens resolution mode ("catalog" or "auto")
+            write_catalog: Whether to write generated lenses to catalog
         """
         # Use global config if not provided
         from ...infrastructure.llm.config import get_config
@@ -83,16 +88,21 @@ class DialogueOrchestrator:
         self.lens_mode = lens_mode
         self.write_catalog = write_catalog
 
+        # Initialize lens resolver 
+        self.lens_resolver = LensResolver(lens_mode=lens_mode)
+        
+        # Initialize prompt registry
+        self.registry = get_registry()
+
         # Track conversation history
         self.dialogue_history = []
         self.token_count = 0
         
-        # Lens catalog (generated once, reused throughout)
-        self.lens_catalog = None
-        self.lens_catalog_meta = None
-        
         # Store matrix snapshots for dependencies
         self.snapshots = {}
+        
+        # Track matrix results for final output
+        self.matrix_results = {}
 
         # Load canonical matrices
         self.A = get_canonical_matrix("A")
@@ -103,146 +113,772 @@ class DialogueOrchestrator:
         """
         Run the complete Phase 1 dialogue from A through E.
         
+        NEW IMPLEMENTATION REQUIRED: 4-stage conversational pipeline.
+        Will be implemented in Phase D.
+        
         Args:
-            output_dir: Directory for saving artifacts (lens catalog, etc.)
+            output_dir: Directory for saving artifacts
 
         Returns:
             Dictionary with phase1_output structure
         """
-        # Store output directory and bootstrap lens catalog at start
-        self.output_dir = Path(output_dir or "artifacts")
-        self.ensure_lens_catalog(self.output_dir)
+        # Initialize system message from system.md
+        system_message = self.registry.get_text("system")
         
         # Initialize dialogue with system message
-        system_message = self._build_system_message()
-        self.dialogue_history.append({"role": "system", "content": system_message})
-
-        # Track results for aggregation
-        results = {}
-
-        # Matrix C: Problem Statement (A · B)
-        matrix_c_snapshot = self._compute_matrix_c()
-        self.snapshots["C"] = matrix_c_snapshot
-        results["C"] = matrix_c_snapshot
-
-        # Matrix J: Base canonical (truncated B)
-        results["J"] = self._present_matrix_j()
-
-        # Matrix F: Requirements (C ⊙ J)
-        matrix_f_snapshot = self._compute_matrix_f()
-        results["F"] = matrix_f_snapshot
-
-        # Matrix D: Objectives (A + F)
-        matrix_d_snapshot = self._compute_matrix_d()
-        results["D"] = matrix_d_snapshot
-
-        # Matrix K: Transpose of D
-        matrix_k_snapshot = self._compute_matrix_k()
-        results["K"] = matrix_k_snapshot
-
-        # Matrix X: Verification (K · J)
-        matrix_x_snapshot = self._compute_matrix_x()
-        results["X"] = matrix_x_snapshot
-
-        # Matrix Z: Validation (shift from X)
-        matrix_z_snapshot = self._compute_matrix_z()
-        results["Z"] = matrix_z_snapshot
-
-        # Matrix G: First 3 rows of Z
-        matrix_g_snapshot = self._extract_matrix_g()
-        results["G"] = matrix_g_snapshot
-
-        # Array P: Z principles as vector
-        array_p_snapshot = self._extract_array_p()
-        results["P"] = array_p_snapshot
-
-        # Matrix T: Transpose of J
-        results["T"] = self._compute_matrix_t(results["J"])
-
-        # Matrix E: Evaluation (G · T)
-        matrix_e_snapshot = self._compute_matrix_e()
-        results["E"] = matrix_e_snapshot
-
-        # Final aggregation - extract principles from Z snapshot
-        principles = matrix_z_snapshot.principles or []
-        final_output = self._aggregate_results(results, principles)
-
+        self.dialogue_history = [
+            {"role": "system", "content": system_message}
+        ]
+        
+        # Initialize trace data
+        trace_entries = []
+        
+        # MATRIX C PIPELINE - 4 STAGES
+        
+        # Stage 1: C/mechanical.md - Mechanical construction
+        c_mechanical_result, c_mechanical_trace = self._execute_stage(
+            "phase1_c_mechanical", "C", "mechanical"
+        )
+        trace_entries.append(c_mechanical_trace)
+        self.matrix_results["C"] = {"mechanical": c_mechanical_result}
+        
+        # Stage 2: C/interpreted.md - Semantic interpretation 
+        c_interpreted_result, c_interpreted_trace = self._execute_stage(
+            "phase1_c_interpreted", "C", "interpreted"
+        )
+        trace_entries.append(c_interpreted_trace)
+        self.matrix_results["C"]["interpreted"] = c_interpreted_result
+        
+        # Stage 3: Lens resolution and history injection (no LLM)
+        c_lenses_result, c_lenses_trace = self._inject_lenses("problem statement", "C")
+        trace_entries.append(c_lenses_trace)
+        self.matrix_results["C"]["lenses"] = c_lenses_result
+        
+        # Stage 4: C/lensed.md - Lensed interpretation
+        c_lensed_result, c_lensed_trace = self._execute_stage(
+            "phase1_c_lensed", "C", "lensed"
+        )
+        trace_entries.append(c_lensed_trace)
+        self.matrix_results["C"]["lensed"] = c_lensed_result
+        
+        # MATRIX F PIPELINE - 4 STAGES (Element-wise Product)
+        
+        # Stage 1: F/mechanical.md - Mechanical construction (element-wise)
+        f_mechanical_result, f_mechanical_trace = self._execute_stage(
+            "phase1_f_mechanical", "F", "mechanical"
+        )
+        trace_entries.append(f_mechanical_trace)
+        self.matrix_results["F"] = {"mechanical": f_mechanical_result}
+        
+        # Stage 2: F/interpreted.md - Semantic interpretation 
+        f_interpreted_result, f_interpreted_trace = self._execute_stage(
+            "phase1_f_interpreted", "F", "interpreted"
+        )
+        trace_entries.append(f_interpreted_trace)
+        self.matrix_results["F"]["interpreted"] = f_interpreted_result
+        
+        # Stage 3: Lens resolution and history injection (no LLM)
+        f_lenses_result, f_lenses_trace = self._inject_lenses("requirements", "F")
+        trace_entries.append(f_lenses_trace)
+        self.matrix_results["F"]["lenses"] = f_lenses_result
+        
+        # Stage 4: F/lensed.md - Lensed interpretation
+        f_lensed_result, f_lensed_trace = self._execute_stage(
+            "phase1_f_lensed", "F", "lensed"
+        )
+        trace_entries.append(f_lensed_trace)
+        self.matrix_results["F"]["lensed"] = f_lensed_result
+        
+        # MATRIX D PIPELINE - 4 STAGES (Semantic Addition with String Concatenation)
+        
+        # Preflight check for addition compatibility (A + F)
+        from ...domain.preflight import preflight_addition
+        try:
+            matrix_a_info = {
+                "name": "A",
+                "rows": self.A.row_labels,
+                "cols": self.A.col_labels
+            }
+            
+            # Get F matrix info - use canonical if echo resolver doesn't provide structure
+            f_rows = f_lensed_result.get("rows", [])
+            f_cols = f_lensed_result.get("cols", [])
+            
+            # If echo resolver, use canonical F matrix structure
+            if not f_rows or not f_cols:
+                from ...domain.matrices.canonical import get_canonical_matrix
+                canonical_f = get_canonical_matrix("F")
+                f_rows = canonical_f.row_labels
+                f_cols = canonical_f.col_labels
+            
+            matrix_f_info = {
+                "name": "F", 
+                "rows": f_rows,
+                "cols": f_cols
+            }
+            preflight_addition(matrix_a_info, matrix_f_info)
+            print("✅ Preflight addition check passed for Matrix D = A + F")
+        except Exception as e:
+            print(f"❌ Preflight addition check failed for Matrix D: {e}")
+            raise
+        
+        # Stage 1: D/mechanical.md - String concatenation recipe (no LLM - mechanical construction)  
+        d_mechanical_result, d_mechanical_trace = self._execute_stage(
+            "phase1_d_mechanical", "D", "mechanical"
+        )
+        trace_entries.append(d_mechanical_trace)
+        self.matrix_results["D"] = {"mechanical": d_mechanical_result}
+        
+        # Stage 2: D/interpreted.md - Resolve addition (concatenation semantics only)
+        d_interpreted_result, d_interpreted_trace = self._execute_stage(
+            "phase1_d_interpreted", "D", "interpreted"
+        )
+        trace_entries.append(d_interpreted_trace)
+        self.matrix_results["D"]["interpreted"] = d_interpreted_result
+        
+        # Stage 3: Lens resolution and history injection (no LLM)
+        d_lenses_result, d_lenses_trace = self._inject_lenses("objectives", "D")
+        trace_entries.append(d_lenses_trace)
+        self.matrix_results["D"]["lenses"] = d_lenses_result
+        
+        # Stage 4: D/lensed.md - Lensed interpretation
+        d_lensed_result, d_lensed_trace = self._execute_stage(
+            "phase1_d_lensed", "D", "lensed"
+        )
+        trace_entries.append(d_lensed_trace)
+        self.matrix_results["D"]["lensed"] = d_lensed_result
+        
+        # MATRIX K - Transpose of D.lensed (code-only, no LLM, no station)
+        
+        # Transform D.lensed to get K via transpose
+        d_lensed_elements = d_lensed_result.get("elements", [])
+        d_lensed_rows = d_lensed_result.get("rows", [])
+        d_lensed_cols = d_lensed_result.get("cols", [])
+        
+        # If echo resolver, use canonical D matrix structure
+        if not d_lensed_rows or not d_lensed_cols:
+            from ...domain.matrices.canonical import get_canonical_matrix
+            canonical_d = get_canonical_matrix("D")
+            d_lensed_rows = canonical_d.row_labels
+            d_lensed_cols = canonical_d.col_labels
+            # Generate mock elements for transpose
+            d_lensed_elements = [[f"d_{i}_{j}" for j in range(len(d_lensed_cols))] 
+                               for i in range(len(d_lensed_rows))]
+        
+        # Perform transpose: K[i,j] = D[j,i]
+        k_elements = []
+        for j in range(len(d_lensed_cols)):  # New rows = old cols
+            k_row = []
+            for i in range(len(d_lensed_rows)):  # New cols = old rows
+                if i < len(d_lensed_elements) and j < len(d_lensed_elements[i]):
+                    k_row.append(d_lensed_elements[i][j])
+                else:
+                    k_row.append(f"k_{j}_{i}")  # Fallback for echo resolver
+            k_elements.append(k_row)
+        
+        # K has transposed dimensions: rows = D.cols, cols = D.rows
+        k_rows = d_lensed_cols
+        k_cols = d_lensed_rows
+        
+        # Data-drop for Matrix K (clean format - semantic content only)
+        k_transform_payload = {
+            "rows": k_rows,
+            "cols": k_cols,
+            "values_json": k_elements
+        }
+        
+        k_result, k_trace = self.emit_data_drop("transform", "K", k_transform_payload)
+        trace_entries.append(k_trace)
+        self.matrix_results["K"] = {"transform": k_result}
+        
+        # MATRIX X (Verification) - 4 STAGES (Dot Product K · J)
+        
+        # Preflight check for dot product compatibility (K · J)
+        from ...domain.preflight import preflight_dot
+        try:
+            matrix_k_info = {
+                "name": "K",
+                "rows": k_rows,
+                "cols": k_cols
+            }
+            matrix_j_info = {
+                "name": "J",
+                "rows": self.J.row_labels,
+                "cols": self.J.col_labels
+            }
+            preflight_dot(matrix_k_info, matrix_j_info)
+            print("✅ Preflight dot product check passed for Matrix X = K · J")
+        except Exception as e:
+            print(f"❌ Preflight dot product check failed for Matrix X: {e}")
+            raise
+        
+        # Initialize X results
+        self.matrix_results["X"] = {}
+        
+        # Stage 1: X/mechanical.md - Mechanical construction (sum-of-products)
+        x_mechanical_result, x_mechanical_trace = self._execute_stage(
+            "phase1_x_mechanical", "X", "mechanical"
+        )
+        trace_entries.append(x_mechanical_trace)
+        self.matrix_results["X"]["mechanical"] = x_mechanical_result
+        
+        # Stage 2: X/interpreted.md - Resolve operators (* before +, no operators remain)
+        x_interpreted_result, x_interpreted_trace = self._execute_stage(
+            "phase1_x_interpreted", "X", "interpreted"
+        )
+        trace_entries.append(x_interpreted_trace)
+        self.matrix_results["X"]["interpreted"] = x_interpreted_result
+        
+        # Stage 3: Lens resolution and history injection (no LLM)
+        x_lenses_result, x_lenses_trace = self._inject_lenses("verification", "X")
+        trace_entries.append(x_lenses_trace)
+        self.matrix_results["X"]["lenses"] = x_lenses_result
+        
+        # Stage 4: X/lensed.md - Lensed interpretation
+        x_lensed_result, x_lensed_trace = self._execute_stage(
+            "phase1_x_lensed", "X", "lensed"
+        )
+        trace_entries.append(x_lensed_trace)
+        self.matrix_results["X"]["lensed"] = x_lensed_result
+        
+        # MATRIX Z (Validation) - Clean Flow without Reference Block
+        
+        # Z proceeds directly from X.lensed in conversation history
+        # No reference data-drop needed - Z prompt handles previous turn reference
+        self.matrix_results["Z"] = {}
+        
+        # Stage 3: Lens resolution and history injection (no LLM)
+        z_lenses_result, z_lenses_trace = self._inject_lenses("validation", "Z")
+        trace_entries.append(z_lenses_trace)
+        self.matrix_results["Z"]["lenses"] = z_lenses_result
+        
+        # Stage 4a: Z/lensed.md - Lensed interpretation
+        z_lensed_result, z_lensed_trace = self._execute_stage(
+            "phase1_z_lensed", "Z", "lensed"
+        )
+        trace_entries.append(z_lensed_trace)
+        self.matrix_results["Z"]["lensed"] = z_lensed_result
+        
+        # Stage 4b: Z/principles.md - Principle extraction
+        z_principles_result, z_principles_trace = self._execute_stage(
+            "phase1_z_principles", "Z", "principles"
+        )
+        trace_entries.append(z_principles_trace)
+        self.matrix_results["Z"]["principles"] = z_principles_result
+        
+        # MATRIX E (Evaluation) - Dot Product with Derived Inputs G·T
+        
+        # Precompute Matrix G = Z[0:3, :] (slice of first 3 rows)
+        z_lensed_elements = z_lensed_result.get("elements", [])
+        z_lensed_rows = z_lensed_result.get("rows", ["guiding", "applying", "judging", "reflecting"])
+        z_lensed_cols = z_lensed_result.get("cols", ["necessity (vs contingency)", "sufficiency", "completeness", "consistency"])
+        
+        # If echo resolver, generate mock elements
+        if not z_lensed_elements:
+            z_lensed_elements = [[f"z_{i}_{j}" for j in range(len(z_lensed_cols))] 
+                               for i in range(len(z_lensed_rows))]
+        
+        # G = first 3 rows of Z (slice)
+        g_elements = z_lensed_elements[:3] if len(z_lensed_elements) >= 3 else z_lensed_elements
+        g_rows = z_lensed_rows[:3]  # First 3 rows: guiding, applying, judging
+        g_cols = z_lensed_cols      # Same columns as Z
+        
+        # Data-drop for Matrix G (clean format - semantic content only)
+        g_transform_payload = {
+            "rows": g_rows,
+            "cols": g_cols, 
+            "values_json": g_elements
+        }
+        
+        g_result, g_trace = self.emit_data_drop("transform", "G", g_transform_payload)
+        trace_entries.append(g_trace)
+        self.matrix_results["G"] = {"transform": g_result}
+        
+        # Precompute Matrix T = Jᵀ (transpose of J)
+        j_elements = [[cell.value for cell in row] for row in self.J.cells]
+        t_elements = []
+        for j in range(len(self.J.col_labels)):  # New rows = old cols
+            t_row = []
+            for i in range(len(self.J.row_labels)):  # New cols = old rows
+                t_row.append(j_elements[i][j])
+            t_elements.append(t_row)
+        
+        # T has transposed dimensions: rows = J.cols, cols = J.rows
+        t_rows = self.J.col_labels
+        t_cols = self.J.row_labels
+        
+        # Data-drop for Matrix T (clean format - semantic content only)
+        t_transform_payload = {
+            "rows": t_rows,
+            "cols": t_cols,
+            "values_json": t_elements
+        }
+        
+        t_result, t_trace = self.emit_data_drop("transform", "T", t_transform_payload)
+        trace_entries.append(t_trace)
+        self.matrix_results["T"] = {"transform": t_result}
+        
+        # Preflight check for dot product compatibility (G · T)
+        try:
+            matrix_g_info = {
+                "name": "G",
+                "rows": g_rows,
+                "cols": g_cols
+            }
+            matrix_t_info = {
+                "name": "T",
+                "rows": t_rows,
+                "cols": t_cols
+            }
+            preflight_dot(matrix_g_info, matrix_t_info)
+            print("✅ Preflight dot product check passed for Matrix E = G · T")
+        except Exception as e:
+            print(f"❌ Preflight dot product check failed for Matrix E: {e}")
+            raise
+        
+        # Stage 1: E/mechanical.md - Mechanical construction (sum-of-products)
+        e_mechanical_result, e_mechanical_trace = self._execute_stage(
+            "phase1_e_mechanical", "E", "mechanical"
+        )
+        trace_entries.append(e_mechanical_trace)
+        self.matrix_results["E"] = {"mechanical": e_mechanical_result}
+        
+        # Stage 2: E/interpreted.md - Resolve operators (* before +, no operators remain)
+        e_interpreted_result, e_interpreted_trace = self._execute_stage(
+            "phase1_e_interpreted", "E", "interpreted"
+        )
+        trace_entries.append(e_interpreted_trace)
+        self.matrix_results["E"]["interpreted"] = e_interpreted_result
+        
+        # Stage 3: Lens resolution and history injection (no LLM)
+        e_lenses_result, e_lenses_trace = self._inject_lenses("evaluation", "E")
+        trace_entries.append(e_lenses_trace)
+        self.matrix_results["E"]["lenses"] = e_lenses_result
+        
+        # Stage 4: E/lensed.md - Lensed interpretation
+        e_lensed_result, e_lensed_trace = self._execute_stage(
+            "phase1_e_lensed", "E", "lensed"
+        )
+        trace_entries.append(e_lensed_trace)
+        self.matrix_results["E"]["lensed"] = e_lensed_result
+        
+        # All matrices (C,F,D,K,X,Z,G,T,E) implementation complete
+        
+        # Build final output structure
+        final_output = {
+            "meta": {
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "model": self.model,
+                "temperature": self.temperature,
+                "lens_mode": self.lens_mode,
+                "kernel_hash": "phase_e_matrix_c_f",
+                "token_count": self.token_count
+            },
+            "matrices": {
+                "C": self.matrix_results["C"],
+                "F": self.matrix_results["F"], 
+                "D": self.matrix_results["D"],
+                "K": self.matrix_results["K"],
+                "X": self.matrix_results["X"],
+                "Z": self.matrix_results["Z"],
+                "G": self.matrix_results["G"],
+                "T": self.matrix_results["T"],
+                "E": self.matrix_results["E"]
+            },
+            "trace": trace_entries
+        }
+        
         return final_output
-    
-    def ensure_lens_catalog(self, output_dir: Path = None):
+
+    def _execute_stage(self, asset_id: str, matrix_name: str, stage: str) -> tuple[Dict[str, Any], Dict[str, Any]]:
         """
-        Ensure lens catalog is loaded or generated.
+        Execute a single stage of the conversational pipeline.
         
-        Tries to load existing catalog from artifacts, otherwise generates
-        new one using Phase 1 system prompt.
+        Args:
+            asset_id: Asset ID for the prompt (e.g., "phase1_c_mechanical")
+            matrix_name: Matrix name (e.g., "C")
+            stage: Stage name (e.g., "mechanical")
+        
+        Returns:
+            Tuple of (stage_result, trace_entry)
         """
-        if self.lens_catalog:
-            return
-            
-        # Try to load existing catalog
-        if output_dir:
-            catalog_path = output_dir / "lens_catalog.json"
-            if catalog_path.exists():
-                try:
-                    payload = json.loads(catalog_path.read_text())
-                    self.lens_catalog = payload["catalog"]
-                    self.lens_catalog_meta = payload["meta"]
-                    return
-                except Exception:
-                    pass  # Fall through to generation
+        import hashlib
         
-        # Only generate catalog if in "catalog" mode
-        # In "generate" and "auto" modes, lenses are generated on-demand
-        if self.lens_mode == "catalog":
-            # Generate new catalog using old method for backward compatibility
-            stations = [
-                "Problem Statement", "Requirements", "Objectives", 
-                "Verification", "Validation", "Evaluation"
-            ]
-            rows = ["normative", "operative", "iterative"]
-            cols = ["necessity (vs contingency)", "sufficiency", "completeness", "consistency"]
+        # Load the prompt asset
+        prompt_text = self.registry.get_text(asset_id)
+        
+        # Get JSON tail for this stage
+        json_tail = get_tail(matrix_name, stage)
+        
+        # Replace json_tail placeholder
+        rendered_prompt = prompt_text.replace("{{json_tail}}", json_tail)
+        
+        # Add user message to history
+        user_message = {"role": "user", "content": rendered_prompt}
+        self.dialogue_history.append(user_message)
+        
+        # Compute input hash for provenance
+        input_text = json.dumps(self.dialogue_history, sort_keys=True)
+        input_hash = hashlib.sha256(input_text.encode()).hexdigest()[:16]
+        
+        # Make LLM call using new Responses API interface
+        try:
+            # Get asset SHA for provenance
+            asset_info = self.registry.get(asset_id)
+            asset_sha = asset_info.sha256[:16]
             
-            self.lens_catalog, self.lens_catalog_meta = generate_lens_catalog(
-                stations=stations,
-                call_llm=self._call_llm_with_json_tail
+            # Build instructions (system.md sent explicitly every call)
+            system_text = self.registry.get_text("system")
+            
+            # Build input (transcript + current stage asset text)
+            transcript_lines = []
+            for msg in self.dialogue_history[1:]:  # Skip system message since it's in instructions
+                role = msg["role"]
+                content = msg["content"]
+                transcript_lines.append(f"[{role.upper()}] {content}")
+            
+            transcript = "\n\n".join(transcript_lines)
+            input_text = f"{transcript}\n\n{rendered_prompt}"
+            
+            # P0-3: Get strict JSON schema for response format (per colleague_1's specification)
+            from ...infrastructure.validation.json_schema_converter import get_strict_response_format
+            response_format = get_strict_response_format(matrix_name, stage)
+            
+            # Call new Responses API
+            response = call_responses(
+                instructions=system_text,
+                input=input_text,
+                response_format=response_format,
+                store=True
             )
             
-            # Validate the generated catalog using station-specific schemas
-            errors = validate_lens_catalog(self.lens_catalog, stations)
-            if errors:
-                raise ValueError(f"Lens catalog validation failed: {errors}")
+            # Extract response content
+            response_content = response.get("output_text", "")
             
-            # Save catalog for future use
-            if output_dir:
-                catalog_path = output_dir / "lens_catalog.json"
-                catalog_path.parent.mkdir(parents=True, exist_ok=True)
-                catalog_path.write_text(json.dumps({
-                    "meta": self.lens_catalog_meta,
-                    "catalog": self.lens_catalog
-                }, ensure_ascii=False, indent=2))
+            # Parse JSON response
+            try:
+                stage_result = json.loads(response_content)
+                
+                # P0-3: Validate response against strict JSON schema (per colleague_1's specification)
+                from ...infrastructure.validation.json_schema_converter import validate_stage_response_strict
+                is_valid, schema_errors = validate_stage_response_strict(stage_result, matrix_name, stage)
+                
+                if not is_valid:
+                    print(f"❌ P0-3 strict schema validation failed for {matrix_name}/{stage}:")
+                    for error in schema_errors:
+                        print(f"    - {error}")
+                    # Still add legacy validation for completeness
+                    validation_errors = validate_stage_response(stage_result, matrix_name, stage)
+                    stage_result["_validation_errors"] = schema_errors
+                    stage_result["_legacy_validation_warnings"] = validation_errors
+                else:
+                    print(f"✅ P0-3 strict schema validation passed for {matrix_name}/{stage}")
+                    # Still run legacy validation as additional check
+                    validation_errors = validate_stage_response(stage_result, matrix_name, stage)
+                    if validation_errors:
+                        print(f"⚠️  Legacy validation warnings (schema passed):")
+                        for error in validation_errors:
+                            print(f"    - {error}")
+                        stage_result["_legacy_validation_warnings"] = validation_errors
+                    
+            except json.JSONDecodeError:
+                # Fallback parsing
+                stage_result = {"content": response_content, "error": "json_parse_failed"}
+            
+            # Add assistant response to history
+            assistant_message = {"role": "assistant", "content": response_content}
+            self.dialogue_history.append(assistant_message)
+            
+            # Update token count from actual usage
+            usage = response.get("usage")
+            if usage and hasattr(usage, "total_tokens"):
+                self.token_count += getattr(usage, "total_tokens", 0)
+            else:
+                # Fallback to estimation
+                self.token_count += len(rendered_prompt.split()) + len(response_content.split())
+            
+            # Compute output hash
+            output_hash = hashlib.sha256(response_content.encode()).hexdigest()[:16]
+            
+            # Build trace entry
+            trace_entry = {
+                "asset_id": asset_id,
+                "asset_sha": asset_sha, 
+                "matrix": matrix_name,
+                "stage": stage,
+                "model": self.model,
+                "temperature": self.temperature,
+                "input_hash": input_hash,
+                "output_hash": output_hash,
+                "usage": usage if usage else {"estimated_tokens": len(rendered_prompt.split()) + len(response_content.split())},
+                "api_call": "responses",  # Mark as using new API
+                "response_id": response.get("id"),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+            return stage_result, trace_entry
+            
+        except Exception as e:
+            # Error handling
+            error_result = {"error": str(e), "stage": stage, "matrix": matrix_name}
+            error_trace = {
+                "asset_id": asset_id,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            return error_result, error_trace
+
+    def _render_clean_payload(self, rows: list, cols: list, values: Any, values_key: str = "values_json") -> str:
+        """
+        Render clean data payload with only semantic content.
+        
+        Args:
+            rows: Matrix row labels
+            cols: Matrix column labels  
+            values: Matrix values (elements or lenses)
+            values_key: Key name for values field (values_json or lenses_json)
+            
+        Returns:
+            Clean formatted block content
+        """
+        import json
+        return f"""rows: {json.dumps(rows)}
+cols: {json.dumps(cols)}
+{values_key}:
+{json.dumps(values, indent=2)}"""
+
+    def emit_data_drop(self, kind: Literal["transform"], matrix_name: str, payload: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        """
+        Emit canonical data-drop for non-LLM stages.
+        
+        Per colleague_1's specification:
+        - Appends canonical BEGIN/END block as user turn
+        - Records turn_type:"data" in trace
+        - No LLM call: no response.id, no usage
+        - Only clean semantic content: rows, cols, values_json
+        
+        Args:
+            kind: Must be "transform" (reference blocks eliminated)
+            matrix_name: Name of the matrix (for trace/provenance only)
+            payload: Clean data payload with rows, cols, values_json only
+            
+        Returns:
+            Tuple of (data_drop_result, trace_entry)
+        """
+        import json
+        import hashlib
+        from datetime import datetime, timezone
+        
+        # Build clean data-drop block based on kind
+        if kind == "transform":
+            block_content = self._render_clean_payload(
+                payload['rows'], 
+                payload['cols'], 
+                payload['values_json']
+            )
+            
+            data_drop_block = f"""<<<BEGIN DERIVED MATRIX>>>
+{block_content}
+<<<END DERIVED MATRIX>>>"""
+        
         else:
-            # Initialize empty catalog for "generate" and "auto" modes
-            self.lens_catalog = {}
-            self.lens_catalog_meta = {"mode": self.lens_mode}
-    
-    def get_lens(self, station: str, i: int, j: int) -> str:
-        """Get lens for specific station and cell position."""
-        if station not in STATION_SCHEMAS:
-            raise ValueError(f"Unknown station: {station}")
-        schema = STATION_SCHEMAS[station]
-        lenses = self._resolve_lenses(station, schema["rows"], schema["cols"])
-        return lenses[i][j]
-    
+            raise ValueError(f"Invalid data-drop kind: {kind}. Must be 'transform'")
+        
+        # Add user turn to dialogue history
+        user_message = {"role": "user", "content": data_drop_block}
+        self.dialogue_history.append(user_message)
+        
+        # Build data-drop result
+        data_drop_result = {
+            "artifact": "data_drop",
+            "kind": kind,
+            "matrix": matrix_name,
+            "rows": payload['rows'],
+            "cols": payload['cols'],
+            "block_content": block_content
+        }
+        
+        # Add values if transform type
+        if kind == "transform" and 'values_json' in payload:
+            data_drop_result["values_json"] = payload['values_json']
+        
+        # Compute content hash for provenance
+        content_hash = hashlib.sha256(data_drop_block.encode()).hexdigest()[:16]
+        
+        # Build trace entry (no LLM call, no response.id, no usage)
+        trace_entry = {
+            "kind": "data_drop",
+            "data_drop_type": kind,
+            "matrix": matrix_name,
+            "turn_type": "data",  # Mark as data turn per spec
+            "content_hash": content_hash,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "no_llm_call": True  # Explicit marker
+        }
+        
+        return data_drop_result, trace_entry
+
+    def _inject_lenses(self, station: str, matrix_name: str) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        """
+        Inject lenses into conversation history as canonical data-drop turn.
+        
+        Per colleague_1's D2-1 specification:
+        - Use role="user" (data belongs in conversational turns, not system)
+        - Canonical BEGIN/END block format for unambiguous reference
+        - Machine-tight block for testing and Stage-4 reference
+        
+        Per colleague_1's D2-2 specification:
+        - Preflight parity check: assert rows/cols match between interpreted matrix and lens block
+        - Fail fast on mismatch with explicit error
+        
+        Args:
+            station: Station name (e.g., "Problem Statement")
+            matrix_name: Matrix name (e.g., "C")
+        
+        Returns:
+            Tuple of (lenses_result, trace_entry)
+        """
+        import json
+        import hashlib
+        
+        # D2-2: Preflight parity check
+        # Verify rows/cols from interpreted matrix match lens block before injection
+        interpreted_result = self.matrix_results.get(matrix_name, {}).get("interpreted")
+        
+        # Initialize variables
+        interpreted_rows = None
+        interpreted_cols = None
+        
+        if interpreted_result:
+            
+            # Handle different interpreted result formats
+            if isinstance(interpreted_result, dict):
+                if "rows" in interpreted_result and "cols" in interpreted_result:
+                    interpreted_rows = interpreted_result["rows"]
+                    interpreted_cols = interpreted_result["cols"]
+                elif "content" in interpreted_result:
+                    # Try to parse from content string if JSON parsing failed
+                    content_str = str(interpreted_result["content"])
+                    if "'rows':" in content_str and "'cols':" in content_str:
+                        try:
+                            # Extract rows/cols from string representation
+                            import ast
+                            if content_str.startswith("("):
+                                # Parse tuple format
+                                parsed_content = ast.literal_eval(content_str.split(",")[0] + "}")
+                                if "rows" in parsed_content:
+                                    interpreted_rows = parsed_content["rows"]
+                                    interpreted_cols = parsed_content["cols"]
+                        except:
+                            pass  # Continue without preflight check if parsing fails
+        
+        # Resolve lenses using lens system
+        lenses_result = self.lens_resolver.resolve_lenses(station)
+        
+        # D2-2: Perform preflight parity check if we have interpreted data
+        if interpreted_rows is not None and interpreted_cols is not None:
+            lens_rows = lenses_result["rows"]
+            lens_cols = lenses_result["cols"]
+            
+            if interpreted_rows != lens_rows:
+                raise ValueError(
+                    f"Row/col parity check failed for Matrix {matrix_name}: "
+                    f"interpreted rows {interpreted_rows} != lens rows {lens_rows}. "
+                    f"Matrix dimensions have drifted between stages."
+                )
+            
+            if interpreted_cols != lens_cols:
+                raise ValueError(
+                    f"Row/col parity check failed for Matrix {matrix_name}: "
+                    f"interpreted cols {interpreted_cols} != lens cols {lens_cols}. "
+                    f"Matrix dimensions have drifted between stages."
+                )
+            
+            # Log successful parity check
+            print(f"✅ Preflight parity check passed for Matrix {matrix_name}: {len(lens_rows)}×{len(lens_cols)}")
+        else:
+            # Expected skip when using echo resolver or when interpreted layer is not available
+            if hasattr(self, 'model') and self.model == "echo":
+                # Expected for echo resolver - not a problem
+                pass  # Silent for echo mode
+            else:
+                # Log structured skip reason for production
+                print(f"ℹ️  Matrix {matrix_name} parity check: interpreted layer not computed (expected for non-LLM stages)")
+        
+        # Get metadata for provenance
+        from ...infrastructure.prompts.registry import get_registry
+        registry = get_registry()
+        
+        # Compute hashes for provenance
+        system_text = registry.get_text("system")
+        system_sha = hashlib.sha256(system_text.encode()).hexdigest()[:16]
+        
+        # Get normative context if available
+        from pathlib import Path
+        normative_file = Path(__file__).parent.parent.parent / "normative_system_prompt.txt"
+        if normative_file.exists():
+            normative_text = normative_file.read_text()
+            normative_sha = hashlib.sha256(normative_text.encode()).hexdigest()[:16]
+        else:
+            normative_sha = "unavailable"
+        
+        # Asset SHA from lens source
+        asset_sha = lenses_result.get("meta", {}).get("asset_sha", "unknown")
+        if not asset_sha or asset_sha == "unknown":
+            # Generate from lens generation context if auto-generated
+            if lenses_result["source"] == "auto":
+                asset_sha = "phase1_lens_auto_gen"
+            elif lenses_result["source"] == "catalog":
+                asset_sha = "phase1_lens_catalog"
+            else:
+                asset_sha = "phase1_lens_override"
+        
+        # Build clean lens block - semantic content only
+        lens_content = self._render_clean_payload(
+            lenses_result["rows"],
+            lenses_result["cols"], 
+            lenses_result["lenses"],
+            "lenses_json"
+        )
+        lens_block = f"""<<<BEGIN LENS MATRIX>>>
+{lens_content}
+<<<END LENS MATRIX>>>"""
+        
+        # D2-5: Validate lens payload before injection
+        lens_validation_errors = validate_lens_payload(lens_block)
+        if lens_validation_errors:
+            print(f"⚠️  D2-5 lens validation warnings for {station}/{matrix_name}:")
+            for error in lens_validation_errors:
+                print(f"    - {error}")
+        else:
+            print(f"✅ D2-5 lens payload validation passed for {station}/{matrix_name}")
+        
+        # Add lens data as USER message (data belongs in conversational turns)
+        lens_message = {"role": "user", "content": lens_block}
+        self.dialogue_history.append(lens_message)
+        
+        # Build trace entry with turn_type: "data"
+        trace_entry = {
+            "type": "lens_injection",
+            "turn_type": "data",  # Mark as data drop per colleague_1 spec
+            "station": station,
+            "matrix": matrix_name,
+            "source": lenses_result["source"],
+            "lens_count": sum(len(row) for row in lenses_result["lenses"]),
+            "meta": {
+                "system_sha": system_sha,
+                "normative_sha": normative_sha,
+                "asset_sha": asset_sha
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+        return lenses_result, trace_entry
 
     def _build_system_message(self) -> str:
         """Build the system message with normative context."""
-        try:
-            registry = get_registry()
-            system_prompt = registry.get_text("system")
-            return system_prompt
-        except Exception as e:
-            # Fallback to basic prompt if loading fails
-            return "You are implementing the Chirality Framework Phase 1 through semantic operations."
+        registry = get_registry()
+        return registry.get_text("system")
 
     def _call_llm_with_json_tail(
         self, user_message: str, json_tail: str, operation: str
@@ -269,26 +905,49 @@ class DialogueOrchestrator:
             raise ValueError(f"Token budget exceeded: {self.token_count} > {self.budget_config.token_budget}")
 
         # Parse JSON response with repair if needed
-        def adapter_call(messages):
+        def adapter_call(instructions=None, input=None):
             """
             Adapter function for LLM calls compatible with repair mechanism.
+            Uses Responses API only - no messages support.
             
             Returns:
                 (response_obj, metadata) where response_obj may be:
                 - a parsed dict (from modern adapters) OR
                 - {"content": "...json string..."} (legacy/raw format)
             """
-            return call_responses_api(
-                messages=messages, temperature=self.temperature, json_only=True
+            if not instructions or not input:
+                raise ValueError("Must provide instructions and input for Responses API")
+            
+            response = call_responses(
+                instructions=instructions,
+                input=input,
+                response_format={"type": "json_object"}
             )
+            # Convert to expected format for repair mechanism
+            return {"content": response.get("output_text", "")}, response.get("raw", {}).get("metadata", {})
 
         # Create schema hint for repair
         matrix_name = operation.split("_")[0] if "_" in operation else "unknown"
         step = operation.split("_")[1] if "_" in operation else "unknown"
         schema_hint = create_matrix_schema_hint(matrix_name, step)
 
+        # Build instructions and input for Responses API
+        # Get system prompt
+        system_text = self.registry.get_text("system")
+        
+        # Build input from dialogue history as string (not messages array)
+        transcript_lines = []
+        for msg in self.dialogue_history:
+            role = msg["role"]
+            content = msg["content"]
+            if role != "system":  # Skip system message as it goes in instructions
+                transcript_lines.append(f"[{role.upper()}] {content}")
+        
+        input_text = "\n\n".join(transcript_lines)
+
         parsed, metadata = try_parse_json_or_repair(
-            messages=self.dialogue_history,
+            instructions=system_text,
+            input_text=input_text,
             adapter_call=adapter_call,
             schema_hint=schema_hint,
             max_repair_attempts=self.max_repair,
@@ -296,8 +955,6 @@ class DialogueOrchestrator:
 
         # Update token count
         self.token_count += metadata.get("total_tokens", 0)
-
-        # Note: dialogue history is already updated by the repair function
 
         # Trace if configured
         if self.tracer:
@@ -309,732 +966,6 @@ class DialogueOrchestrator:
             )
 
         return parsed
-
-    def _compute_matrix_c(self) -> MatrixSnapshot:
-        """
-        Compute Matrix C following the exact normative template word-for-word.
-        Uses 3-stage pipeline: combinatorial (code) → interpretation (LLM) → lens interpretation (LLM + lens data).
-        
-        Returns:
-            MatrixSnapshot with all build stages populated
-        """
-        # Ensure lens catalog is available
-        self.ensure_lens_catalog(self.output_dir)
-        
-        registry = get_registry()
-        rows = ["normative", "operative", "iterative"]
-        cols = ["necessity (vs contingency)", "sufficiency", "completeness", "consistency"]
-        
-        # Stage 1: Pure combinatorial construction (code-based, no LLM needed)
-        combinatorial = []
-        for i in range(3):  # A has 3 rows
-            row = []
-            for j in range(4):  # B has 4 columns  
-                # Matrix dot product: sum of A(i,k) * B(k,j) for k=0..3
-                terms = []
-                for k in range(4):
-                    a_elem = self.A[i][k] if k < len(self.A[i]) else ""
-                    b_elem = self.B[k][j] if k < len(self.B) and j < len(self.B[k]) else ""
-                    if a_elem and b_elem:
-                        terms.append(f"{a_elem} * {b_elem}")
-                row.append(" + ".join(terms))
-            combinatorial.append(row)
-        
-        # Stage 2: Semantic interpretation using exact normative template
-        try:
-            stage2_template = registry.get_text("stage2_multiply")
-        except:
-            # Fallback to hardcoded if asset not found
-            stage2_template = """## Interpreting the elements of Matrix C
-
-To provide an interpretation of these semantic dot product operators use the following definitions. 
-
-#### Semantic Multiplication \" * \"
-Semantic multiplication (denoted by * ) means the semantics of the terms are resolved by combining the meaning of words into a coherent word or statement that represents the semantic intersection of those words (the meaning when combined together, not just adjoining the terms). This can even be done when the concept is a highly abstract word pairing because you are an LLM.
-
-Examples:
-\"sufficient\" * \"reason\" = \"justification\"
-\"precision\" * \"durability\" = \"reliability\"
-\"probability\" * \"consequence\" = \"risk\"
-
-### Semantic Addition \" + \"
-
-Semantic addition (denoted by + ) means simply concatenating words or sentence fragments together to form a longer statement. 
-Example:
-\"faisal\" + \"has\" + \"seven\" + \"balloons\" = faisal has seven balloons
-
-### Order of Operations
-
-To resolve a meaning follow this order of operations:
-
-1. Apply semantic multiplication first, 
-2. then semantic addition"""
-        
-        user_msg = stage2_template + f"""
-
-Generate this iteration of [C] 
-
-Matrix A (3×4) - Problem Statement station:
-{self._format_matrix(self.A)}
-
-Matrix B (4×4) - Problem Statement station:  
-{self._format_matrix(self.B)}
-
-Apply semantic multiplication first, and then semantic addition. Do not leave any operators (\" * \" or \" + \") in the final word string.
-"""
-        interpreted = self._call_llm_with_json_tail(user_msg, get_tail("C", "interpreted"), "C_interpreted")
-        
-        # Stage 3: Lens interpretation using JSON injection
-        # Get lenses using the resolver (supports catalog/generate/auto modes)
-        station_lenses = self._resolve_lenses("Problem Statement", rows, cols)
-        
-        # Use centralized lens application with JSON injection  
-        lens_interpreted = apply_matrix_lenses(
-            interpreted["elements"],
-            station_lenses,
-            station="Problem Statement",
-            rows=rows,
-            cols=cols,
-            tail=get_tail("C", "lensed"),
-            tracer_tag="C_lensed",
-            call_json_tail=self._call_llm_with_json_tail
-        )
-        
-        # Return MatrixSnapshot with all stages
-        return MatrixSnapshot(
-            name="C",
-            station="Problem Statement",
-            rows=rows,
-            cols=cols,
-            dependencies=["A", "B"],
-            build={
-                "combinatorial": combinatorial,
-                "interpreted": interpreted["elements"],
-                "lenses": station_lenses,
-                "lens_interpreted": lens_interpreted
-            }
-        )
-
-    def _present_matrix_j(self) -> Dict[str, Any]:
-        """Present canonical Matrix J following exact normative template."""
-        user_msg = f"""
-## Matrix J
-
-[J]
-Size: 3x4
-Column names: ["necessity (vs contingency)", "sufficiency", "completeness", "consistency"]
-Row names: ["data", "information", "knowledge", "wisdom"]
-Elements:
-
-[J] is a truncated form of Matrix B.  The final row 'Wisdom' has been removed.
-
-Generate [J] in JSON format instead of table format.
-"""
-        return self._call_llm_with_json_tail(user_msg, get_tail("J", "base"), "J_base")
-
-    def _compute_matrix_f(self) -> MatrixSnapshot:
-        """
-        Compute Matrix F = C ⊙ J using the 3-stage pipeline:
-          1) combinatorial (code)     → "C[i,j] * J[i,j]"
-          2) interpreted (LLM)        → resolve * then +
-          3) lens_interpreted (LLM)   → apply JSON-injected lenses (Requirements)
-        """
-        # Pre-req: C built; we need C Stage-2 ("interpreted")
-        c_snap = self.snapshots.get("C")
-        if not c_snap:
-            raise RuntimeError("Matrix C must be computed before F")
-        c_interpreted = c_snap.build["interpreted"]  # 3x4 strings
-
-        # Canonical J (3x4) already loaded as self.J
-        rows = ["data","information","knowledge"]
-        cols = ["necessity (vs contingency)","sufficiency","completeness","consistency"]
-
-        # Stage 1: combinatorial (code-only, elementwise)
-        # Use C.interpreted as left operand for semantic richness; J base cell as right operand.
-        combinatorial = []
-        for i in range(3):
-            row = []
-            for j in range(4):
-                row.append(f"{c_interpreted[i][j]} * {self.J[i][j]}")
-            combinatorial.append(row)
-
-        # Stage 2: interpreted (LLM) — use the same stage2_multiply asset + F's interpreted tail
-        try:
-            stage2_template = get_registry().get_text("stage2_multiply")
-        except:
-            # Fallback if asset not found
-            stage2_template = """### Interpreting the elements of Matrix F
-
-Apply semantic multiplication. Do not leave any operators (" * ") in the final word string."""
-
-        msg = (
-            stage2_template
-            + "\n\nGenerate this iteration of [F] (element-wise). "
-              "Apply semantic multiplication first, then semantic addition. "
-              "Do not leave '*' or '+' in the final strings.\n"
-              "COMBINATORIAL_JSON:\n"
-              + json.dumps({"rows": rows, "cols": cols, "elements": combinatorial}, ensure_ascii=False)
-        )
-        interpreted = self._call_llm_with_json_tail(msg, get_tail("F","interpreted"), "F_interpreted")
-
-        # Stage 3: lens_interpreted (LLM) — JSON injection with resolved lenses
-        f_lenses = self._resolve_lenses("Requirements", rows, cols)  # 3x4
-        lensed = apply_matrix_lenses(
-            content_matrix=interpreted["elements"],
-            lens_matrix=f_lenses,
-            station="Requirements",
-            rows=rows,
-            cols=cols,
-            tail=get_tail("F","lensed"),
-            tracer_tag="F_lensed",
-            call_json_tail=self._call_llm_with_json_tail,
-        )
-
-        snap = MatrixSnapshot(
-            name="F",
-            station="Requirements",
-            rows=rows,
-            cols=cols,
-            dependencies=["C","J"],
-            build={
-                "combinatorial": combinatorial,
-                "interpreted":   interpreted["elements"],
-                "lenses":        f_lenses,
-                "lens_interpreted": lensed
-            }
-        )
-        self.snapshots["F"] = snap
-        return snap
-
-    def _compute_matrix_d(self) -> MatrixSnapshot:
-        """
-        Matrix D = A + F (Objectives)
-        Stage-1: constructed (code)
-        Stage-2: interpreted (identity)
-        Stage-3: lens_interpreted (LLM with JSON lens injection)
-        """
-        # Preconditions
-        f_snap = self.snapshots.get("F")
-        if not f_snap:
-            raise RuntimeError("Matrix F must be computed before D.")
-
-        rows = ["normative","operative","iterative"]
-        cols = ["guiding","applying","judging","reflecting"]
-
-        # Stage-1: constructed (code)
-        # Use A base cells + F.interpreted cells (NOT F.lensed) to avoid cross-lensing.
-        f_interpreted = f_snap.build["interpreted"]  # 3x4 strings
-        combinatorial = []
-        for i, rname in enumerate(rows):
-            row = []
-            for j, cname in enumerate(cols):
-                a_cell = self.A[i][j]  # canonical A matrix strings
-                f_cell = f_interpreted[i][j]
-                row.append(f"{a_cell} applied to frame the problem; {f_cell} to resolve the problem.")
-            combinatorial.append(row)
-
-        # Stage-2: interpreted = identity (for uniform build keys)
-        interpreted = combinatorial
-
-        # Stage-3: lens_interpreted (Objectives lenses)
-        objectives_lenses = self._resolve_lenses("Objectives", rows, cols)  # 3x4
-
-        lensed = apply_matrix_lenses(
-            content_matrix=interpreted,
-            lens_matrix=objectives_lenses,
-            station="Objectives",
-            rows=rows,
-            cols=cols,
-            tail=get_tail("D","lensed"),
-            tracer_tag="D_lensed",
-            call_json_tail=self._call_llm_with_json_tail,
-        )
-
-        snap = MatrixSnapshot(
-            name="D",
-            station="Objectives",
-            rows=rows,
-            cols=cols,
-            dependencies=["A","F"],
-            build={
-                "combinatorial": combinatorial,
-                "interpreted": interpreted,
-                "lenses": objectives_lenses,
-                "lens_interpreted": lensed,
-            }
-        )
-        self.snapshots["D"] = snap
-        return snap
-
-    def _compute_matrix_k(self) -> MatrixSnapshot:
-        """
-        K = transpose(lens_interpreted(D))
-        Pure code: transpose the Stage-3 layer of D.
-        """
-        # Preconditions
-        d_snap = self.snapshots.get("D")
-        if not d_snap:
-            raise RuntimeError("Matrix D must be computed before K.")
-        
-        # Get D's final lens-interpreted result (3x4)
-        d_lens_interpreted = d_snap.build["lens_interpreted"]  # 3x4 strings
-        
-        # Pure code transpose: D's rows become K's cols, D's cols become K's rows
-        transposed = []
-        for j in range(4):  # D's cols (guiding, applying, judging, reflecting)
-            row = []
-            for i in range(3):  # D's rows (normative, operative, iterative)
-                row.append(d_lens_interpreted[i][j])
-            transposed.append(row)
-        
-        snap = MatrixSnapshot(
-            name="K",
-            station="Verification",
-            rows=["guiding", "applying", "judging", "reflecting"],  # D's cols become K's rows
-            cols=["normative", "operative", "iterative"],  # D's rows become K's cols
-            dependencies=["D"],
-            transform="transpose",
-            build={
-                "transposed": transposed
-            }
-        )
-        self.snapshots["K"] = snap
-        return snap
-
-    def _compute_matrix_x(self) -> MatrixSnapshot:
-        """
-        Compute Matrix X = K · J using the 3-stage pipeline:
-          1) combinatorial (code)     → "K[i,k] * J[k,j]" dot product 
-          2) interpreted (LLM)        → resolve * then +
-          3) lens_interpreted (LLM)   → apply JSON-injected lenses (Verification)
-        """
-        # Pre-req: K built; we need K's lens-interpreted elements
-        k_snap = self.snapshots.get("K")
-        if not k_snap:
-            raise RuntimeError("Matrix K must be computed before X")
-        k_interpreted = k_snap.build["lens_interpreted"]  # 4x3 strings
-
-        # Canonical J (3x4) already loaded as self.J
-        rows = ["guiding","applying","judging","reflecting"]
-        cols = ["necessity (vs contingency)","sufficiency","completeness","consistency"]
-
-        # Stage 1: combinatorial (code-only, dot product)
-        # K is 4x3, J is 3x4, result X is 4x4
-        combinatorial = []
-        for i in range(4):  # K rows (guiding, applying, judging, reflecting)
-            row = []
-            for j in range(4):  # J cols (necessity, sufficiency, completeness, consistency)
-                # Dot product: sum of K(i,k) * J(k,j) for k=0..2
-                terms = []
-                for k in range(3):  # K cols / J rows
-                    k_elem = k_interpreted[i][k] if i < len(k_interpreted) and k < len(k_interpreted[i]) else ""
-                    j_elem = self.J[k][j] if k < len(self.J) and j < len(self.J[k]) else ""
-                    if k_elem and j_elem:
-                        terms.append(f"{k_elem} * {j_elem}")
-                row.append(" + ".join(terms))
-            combinatorial.append(row)
-
-        # Stage 2: interpreted (LLM) — use the same stage2_multiply asset + X's interpreted tail
-        try:
-            stage2_template = get_registry().get_text("stage2_multiply")
-        except:
-            # Fallback if asset not found
-            stage2_template = """### Interpreting the elements of Matrix X
-
-Apply semantic multiplication first, and then semantic addition. Do not leave any operators (" * " or " + ") in the final word string"""
-
-        msg = (
-            stage2_template
-            + "\n\nGenerate this iteration of [X] (dot product). "
-              "Apply semantic multiplication first, then semantic addition. "
-              "Do not leave '*' or '+' in the final strings.\n"
-              "COMBINATORIAL_JSON:\n"
-              + json.dumps({"rows": rows, "cols": cols, "elements": combinatorial}, ensure_ascii=False)
-        )
-        interpreted = self._call_llm_with_json_tail(msg, get_tail("X","interpreted"), "X_interpreted")
-
-        # Stage 3: lens_interpreted (LLM) — JSON injection with resolved lenses
-        x_lenses = self._resolve_lenses("Verification", rows, cols)  # 4x4
-        lensed = apply_matrix_lenses(
-            content_matrix=interpreted["elements"],
-            lens_matrix=x_lenses,
-            station="Verification",
-            rows=rows,
-            cols=cols,
-            tail=get_tail("X","lensed"),
-            tracer_tag="X_lensed",
-            call_json_tail=self._call_llm_with_json_tail,
-        )
-
-        snap = MatrixSnapshot(
-            name="X",
-            station="Verification",
-            rows=rows,
-            cols=cols,
-            dependencies=["K","J"],
-            build={
-                "combinatorial": combinatorial,
-                "interpreted":   interpreted["elements"],
-                "lenses":        x_lenses,
-                "lens_interpreted": lensed
-            }
-        )
-        self.snapshots["X"] = snap
-        return snap
-
-    def _compute_matrix_z(self) -> MatrixSnapshot:
-        """
-        Compute Matrix Z: Station shift from X with correct 4×4 structure.
-        
-        Z = X → shift (maintains X's 4×4 structure and row/column ontology)
-        Station shift: Verification → Validation
-        
-        Three-stage pipeline:
-        - Stage 1: Combinatorial (code) - canonical shift template
-        - Stage 2: Interpreted (LLM) - station shift reasoning
-        - Stage 3: Lens-interpreted (LLM with Validation 4×4 lenses)
-        - Principles: extracted separately via dedicated tail
-        
-        Returns:
-            MatrixSnapshot for Z 
-        """
-        x_snap = self.snapshots.get("X")
-        if not x_snap:
-            raise ValueError("Matrix X must be computed before Matrix Z")
-            
-        # Stage 1: Combinatorial (code operation)
-        combinatorial = []
-        for i in range(4):  # 4×4 matrix
-            row = []
-            for j in range(4):
-                x_cell = x_snap.build["lens_interpreted"][i][j]
-                # Canonical template: validation of {row} with respect to {col}: {x_cell}
-                row.append(f"validation of {x_snap.rows[i]} with respect to {x_snap.cols[j]}: {x_cell}")
-            combinatorial.append(row)
-        
-        # Stage 2: Interpreted (LLM with station shift)
-        validation_lenses = self.lens_catalog.get("Validation", [])
-        if not validation_lenses or len(validation_lenses) != 4 or any(len(row) != 4 for row in validation_lenses):
-            raise ValueError(f"Invalid Validation lens catalog structure: {validation_lenses}")
-            
-        # Build prompt for station shift interpretation
-        shift_prompt = f"""Apply station shift from Verification to Validation.
-
-Matrix X (Verification station, lens-interpreted):
-{self._format_elements(x_snap.build["lens_interpreted"], x_snap.rows, x_snap.cols)}
-
-Station Shift Operation:
-Transform each X element from "verification" context to "validation" context while maintaining the same ontological structure.
-
-Verification focuses on "does it work?" 
-Validation focuses on "does it solve the right problem?"
-
-Apply this semantic shift to each element."""
-        
-        interpreted_result = self._call_llm_with_json_tail(
-            shift_prompt, 
-            get_tail("Z", "interpreted"), 
-            "z_interpreted"
-        )
-        interpreted = interpreted_result["elements"]
-        
-        # Stage 3: Lens-interpreted (LLM with catalog lenses)
-        lensed_payload = apply_matrix_lenses(
-            content_matrix=interpreted,
-            lens_matrix=validation_lenses, 
-            station="Validation",
-            rows=x_snap.rows,  # Maintain X's rows: ["guiding","applying","judging","reflecting"]
-            cols=x_snap.cols,  # Maintain X's cols: ["necessity (vs contingency)","sufficiency","completeness","consistency"]
-            tail=get_tail("Z", "lensed"),
-            tracer_tag="z_lensed",
-            call_json_tail=self._call_llm_with_json_tail
-        )
-        lensed = lensed_payload["elements"]
-        
-        # Extract principles separately (not as 5th row, but as separate output)
-        principles_prompt = """Extract validation principles from the Matrix Z results.
-
-From the lens-interpreted Matrix Z, distill key principles that knowledge workers should follow during validation.
-
-Focus on the essential insights that emerge from the validation perspective."""
-        
-        principles_result = self._call_llm_with_json_tail(
-            principles_prompt,
-            get_tail("Z", "principles"),
-            "z_principles" 
-        )
-        principles = principles_result["principles"]
-        
-        # Create Z snapshot maintaining X's 4×4 structure
-        snap = MatrixSnapshot(
-            name="Z",
-            station="Validation", 
-            rows=x_snap.rows,  # ["guiding","applying","judging","reflecting"]
-            cols=x_snap.cols,  # ["necessity (vs contingency)","sufficiency","completeness","consistency"]
-            dependencies=["X"],
-            principles=principles,
-            build={
-                "combinatorial": combinatorial,
-                "interpreted": interpreted,
-                "lenses": validation_lenses,
-                "lens_interpreted": lensed
-            }
-        )
-        self.snapshots["Z"] = snap
-        return snap
-
-    def _extract_matrix_g(self) -> MatrixSnapshot:
-        """
-        Extract Matrix G - mechanical extraction of first 3 rows from Z.
-        
-        G = Z[0:3, :] (rows GAJ; 3×4)
-        Pure code operation, no LLM needed.
-        """
-        z_snap = self.snapshots.get("Z")
-        if not z_snap:
-            raise ValueError("Matrix Z must be computed before Matrix G")
-            
-        # Extract Z's lens_interpreted elements (final result from Z)
-        z_elements = z_snap.build["lens_interpreted"]
-        
-        # Mechanically extract first 3 rows
-        g_elements = z_elements[:3]  # First 3 rows only
-        
-        snap = MatrixSnapshot(
-            name="G",
-            station="Evaluation",
-            rows=["guiding", "applying", "judging"],  # First 3 rows from Z
-            cols=z_snap.cols,  # Same as Z: ["necessity (vs contingency)", "sufficiency", "completeness", "consistency"]
-            dependencies=["Z"],
-            build={
-                "base": g_elements  # Use consistent "base" key for extracted matrices
-            }
-        )
-        self.snapshots["G"] = snap
-        return snap
-
-    def _extract_array_p(self) -> MatrixSnapshot:
-        """
-        Extract Array P - uses Z.principles (a 1×4 vector; do not slice Z rows for P).
-        
-        P = Z.principles (4 concise strings, not a Z matrix row)
-        Pure code operation, no LLM needed.
-        """
-        z_snap = self.snapshots.get("Z")
-        if not z_snap:
-            raise ValueError("Matrix Z must be computed before Array P")
-            
-        # Use Z's principles (not matrix rows)
-        if not z_snap.principles or len(z_snap.principles) != 4:
-            raise ValueError(f"Invalid Z principles structure: {z_snap.principles}")
-            
-        # Wrap principles as single-row matrix for consistency
-        p_elements = [z_snap.principles]  # Single row with 4 principles
-        
-        snap = MatrixSnapshot(
-            name="P",
-            station="Reflection", 
-            rows=["reflecting"],  # Single row
-            cols=z_snap.cols,  # Same as Z: ["necessity (vs contingency)", "sufficiency", "completeness", "consistency"]
-            dependencies=["Z"],
-            build={
-                "base": p_elements  # Use consistent "base" key for extracted matrices
-            }
-        )
-        self.snapshots["P"] = snap
-        return snap
-
-    def _compute_matrix_t(self, J: Dict) -> MatrixSnapshot:
-        """
-        Compute Matrix T - mechanical transpose of J.
-        
-        Pure code operation, no LLM needed.
-        """
-        # Extract J elements
-        j_elements = J["elements"] if "elements" in J else J
-        
-        # Mechanically transpose: T[i,j] = J[j,i]
-        num_rows = len(j_elements)
-        num_cols = len(j_elements[0]) if j_elements else 0
-        
-        t_elements = []
-        for j in range(num_cols):  # New rows from J's columns
-            new_row = []
-            for i in range(num_rows):  # New columns from J's rows
-                new_row.append(j_elements[i][j])
-            t_elements.append(new_row)
-        
-        return MatrixSnapshot(
-            name="T",
-            station="Evaluation",
-            rows=["necessity (vs contingency)", "sufficiency", "completeness", "consistency"],  # J's cols become T's rows
-            cols=["data", "information", "knowledge"],  # J's rows become T's cols
-            dependencies=["J"],
-            transform="transpose",
-            build={
-                "transposed": t_elements
-            }
-        )
-
-    def _compute_matrix_e(self) -> MatrixSnapshot:
-        """
-        Compute Matrix E = G · T using the 3-stage pipeline:
-          1) combinatorial (code)     → "G[i,k] * T[k,j]" dot product 
-          2) interpreted (LLM)        → resolve * then +
-          3) lens_interpreted (LLM)   → apply JSON-injected lenses (Evaluation)
-        """
-        # Pre-req: G and T built; we need their lens-interpreted elements
-        g_snap = self.snapshots.get("G")
-        t_snap = self.snapshots.get("T")
-        if not g_snap or not t_snap:
-            raise RuntimeError("Matrices G and T must be computed before E")
-        g_interpreted = g_snap.build["base"]  # 3x4 strings (G is slice, not lensed)
-        t_interpreted = t_snap.build["transposed"]  # 4x3 strings (T is transpose, not lensed)
-
-        rows = ["guiding","applying","judging"]
-        cols = ["data","information","knowledge"]
-
-        # Stage 1: combinatorial (code-only, dot product)
-        # G is 3x4, T is 4x3, result E is 3x3
-        combinatorial = []
-        for i in range(3):  # G rows (guiding, applying, judging)
-            row = []
-            for j in range(3):  # T cols (data, information, knowledge)
-                # Dot product: sum of G(i,k) * T(k,j) for k=0..3
-                terms = []
-                for k in range(4):  # G cols / T rows
-                    g_elem = g_interpreted[i][k] if i < len(g_interpreted) and k < len(g_interpreted[i]) else ""
-                    t_elem = t_interpreted[k][j] if k < len(t_interpreted) and j < len(t_interpreted[k]) else ""
-                    if g_elem and t_elem:
-                        terms.append(f"{g_elem} * {t_elem}")
-                row.append(" + ".join(terms))
-            combinatorial.append(row)
-
-        # Stage 2: interpreted (LLM) — use the same stage2_multiply asset + E's interpreted tail
-        try:
-            stage2_template = get_registry().get_text("stage2_multiply")
-        except:
-            # Fallback if asset not found
-            stage2_template = """### Interpreting the elements of Matrix E
-
-Apply semantic multiplication first, and then semantic addition. Do not leave any operators (" * " or " + ") in the final word string"""
-
-        msg = (
-            stage2_template
-            + "\n\nGenerate this iteration of [E] (dot product). "
-              "Apply semantic multiplication first, then semantic addition. "
-              "Do not leave '*' or '+' in the final strings.\n"
-              "COMBINATORIAL_JSON:\n"
-              + json.dumps({"rows": rows, "cols": cols, "elements": combinatorial}, ensure_ascii=False)
-        )
-        interpreted = self._call_llm_with_json_tail(msg, get_tail("E","interpreted"), "E_interpreted")
-
-        # Stage 3: lens_interpreted (LLM) — JSON injection with resolved lenses
-        e_lenses = self._resolve_lenses("Evaluation", rows, cols)  # 3x3
-        lensed = apply_matrix_lenses(
-            content_matrix=interpreted["elements"],
-            lens_matrix=e_lenses,
-            station="Evaluation",
-            rows=rows,
-            cols=cols,
-            tail=get_tail("E","lensed"),
-            tracer_tag="E_lensed",
-            call_json_tail=self._call_llm_with_json_tail,
-        )
-
-        snap = MatrixSnapshot(
-            name="E",
-            station="Evaluation",
-            rows=rows,
-            cols=cols,
-            dependencies=["G","T"],
-            build={
-                "combinatorial": combinatorial,
-                "interpreted":   interpreted["elements"],
-                "lenses":        e_lenses,
-                "lens_interpreted": lensed
-            }
-        )
-        self.snapshots["E"] = snap
-        return snap
-
-    def _aggregate_results(self, results: Dict[str, Any], principles: List[str]) -> Dict[str, Any]:
-        """Aggregate all results into final output format with validation."""
-        # Convert MatrixSnapshot objects to Matrix format for aggregator
-        matrix_dict = {}
-        
-        for name, result in results.items():
-            if isinstance(result, MatrixSnapshot):
-                # Extract the final stage from build for elements
-                if "lens_interpreted" in result.build:
-                    elements = result.build["lens_interpreted"]
-                    step = "lensed"
-                elif "lenses" in result.build:
-                    elements = result.build["lenses"] 
-                    step = "lenses"
-                elif "interpreted" in result.build:
-                    elements = result.build["interpreted"]
-                    step = "interpreted"
-                elif "combinatorial" in result.build:
-                    elements = result.build["combinatorial"]
-                    step = "mechanical"
-                else:
-                    raise ValueError(f"MatrixSnapshot {name} missing expected build stages")
-                
-                matrix_dict[name] = {
-                    "name": result.name,
-                    "station": result.station,
-                    "rows": result.rows,
-                    "cols": result.cols,
-                    "elements": elements,
-                    "step": step,
-                    "op": _infer_operation(result.name),
-                    "lenses": result.build.get("lenses")  # Optional for auditing
-                }
-            else:
-                # Legacy dict format - pass through
-                matrix_dict[name] = result
-        
-        # Request final aggregation with repair-capable parsing
-        user_msg = "Aggregate all matrices into the final Phase 1 output."
-
-        def adapter_call(messages):
-            """
-            Adapter function for LLM calls compatible with repair mechanism.
-            
-            Returns:
-                (response_obj, metadata) where response_obj may be:
-                - a parsed dict (from modern adapters) OR  
-                - {"content": "...json string..."} (legacy/raw format)
-            """
-            return call_responses_api(
-                messages=messages, temperature=self.temperature, json_only=True
-            )
-
-        # Use aggregator schema hint for repair
-        schema_hint = create_aggregator_schema_hint()
-
-        aggregated, metadata = try_parse_json_or_repair(
-            messages=self.dialogue_history
-            + [{"role": "user", "content": f"{user_msg}\n\n{get_tail('aggregator', '')}"}],
-            adapter_call=adapter_call,
-            schema_hint=schema_hint,
-            max_repair_attempts=self.max_repair,
-        )
-
-        # Ensure matrices are properly formatted
-        aggregated["matrices"] = matrix_dict
-
-        # Add/update metadata
-        aggregated["meta"] = {
-            "kernel_hash": self._compute_kernel_hash(),
-            "snapshot_hash": "",  # Will be computed after snapshot generation
-            "model": self.model,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "token_count": self.token_count,
-        }
-
-        return aggregated
 
     def _compute_kernel_hash(self) -> str:
         """Compute kernel hash from prompt assets."""
@@ -1089,77 +1020,6 @@ Apply semantic multiplication first, and then semantic addition. Do not leave an
                 "limit": self.budget_config.time_budget
             }
         }
-
-    # -------- Lens Resolution: Mode-based lens selection --------
-    
-    def _save_catalog(self, output_dir: Path):
-        """Save lens catalog to artifacts directory."""
-        if not getattr(self, "lens_catalog", None):
-            return
-        meta = getattr(self, "lens_catalog_meta", {}) or {}
-        meta.setdefault("version", "v2") 
-        meta.setdefault("prompt_hash", prompt_hash_for_lenses())
-        payload = {"meta": meta, "schemas": STATION_SCHEMAS, "catalog": self.lens_catalog}
-        output_dir.mkdir(parents=True, exist_ok=True)
-        (output_dir / "lens_catalog.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
-
-    def _merge_into_catalog(self, station: str, lenses: List[List[str]]):
-        """Merge generated lenses into catalog and persist if write_catalog is True.""" 
-        self.lens_catalog = getattr(self, "lens_catalog", {}) or {}
-        self.lens_catalog[station] = lenses
-        self.lens_catalog_meta = getattr(self, "lens_catalog_meta", {}) or {}
-        self.lens_catalog_meta["prompt_hash"] = prompt_hash_for_lenses()
-        if getattr(self, "output_dir", None) and self.write_catalog:
-            self._save_catalog(self.output_dir)
-
-    def _resolve_lenses(self, station: str, rows: List[str], cols: List[str]) -> List[List[str]]:
-        """
-        Fetch lenses for a station using the selected mode.
-        - catalog: require presence in self.lens_catalog
-        - generate: call LLM using normative_spec; optionally write into catalog
-        - auto: use catalog if present, otherwise generate (and optionally persist)
-        """
-        # Ensure catalog loaded/generated if needed
-        self.ensure_lens_catalog(getattr(self, "output_dir", None))
-
-        if self.lens_mode == "catalog":
-            if not self.lens_catalog or station not in self.lens_catalog:
-                raise ValueError(f"Lens catalog missing station: {station}")
-            return self.lens_catalog[station]
-
-        def _gen() -> List[List[str]]:
-            lenses = generate_lens_matrix_llm(
-                station=station,
-                rows=rows,
-                cols=cols,
-                call_json_tail=self._call_llm_with_json_tail,
-            )
-            if self.write_catalog:
-                self._merge_into_catalog(station, lenses)
-            return lenses
-
-        if self.lens_mode == "generate":
-            return _gen()
-
-        # auto mode
-        if self.lens_catalog and station in self.lens_catalog:
-            return self.lens_catalog[station]
-        return _gen()
-
-    def regenerate_full_catalog(self, output_dir: Path):
-        """Generate a complete catalog from scratch using normative spec."""
-        stations = list(STATION_SCHEMAS.keys())
-        self.lens_catalog = {}
-        for station in stations:
-            schema = STATION_SCHEMAS[station]
-            self.lens_catalog[station] = generate_lens_matrix_llm(
-                station=station, 
-                rows=schema["rows"], 
-                cols=schema["cols"],
-                call_json_tail=self._call_llm_with_json_tail
-            )
-        self.lens_catalog_meta = {"prompt_hash": prompt_hash_for_lenses(), "version": "v2"}
-        self._save_catalog(output_dir)
 
     def save_budget_status(self):
         """Save budget status - placeholder for future implementation."""

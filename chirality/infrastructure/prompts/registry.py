@@ -77,19 +77,19 @@ class PromptRegistry:
             with open(asset_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            # Validate SHA256
+            # Validate SHA256 (skip for pending assets during development)
             actual_sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
             expected_sha256 = asset_data["sha256"]
-            if actual_sha256 != expected_sha256:
+            if expected_sha256 != "pending_user_authoring" and actual_sha256 != expected_sha256:
                 raise ValueError(
                     f"SHA256 mismatch for {asset_id}: "
                     f"expected {expected_sha256}, got {actual_sha256}"
                 )
 
-            # Validate size
+            # Validate size (skip for pending assets)
             actual_size = len(content.encode("utf-8"))
-            expected_size = asset_data["size_bytes"]
-            if actual_size != expected_size:
+            expected_size = asset_data.get("size_bytes")
+            if expected_size is not None and actual_size != expected_size:
                 raise ValueError(
                     f"Size mismatch for {asset_id}: "
                     f"expected {expected_size} bytes, got {actual_size} bytes"
@@ -102,7 +102,7 @@ class PromptRegistry:
                 sha256=expected_sha256,
                 version=asset_data["version"],
                 size_bytes=expected_size,
-                last_modified=asset_data["last_modified"],
+                last_modified=asset_data.get("last_modified"),
                 text=content,
             )
 

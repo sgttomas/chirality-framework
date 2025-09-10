@@ -12,7 +12,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from pathlib import Path
 import itertools
 
-from ...infrastructure.llm.openai_adapter import call_responses_api
+from ...infrastructure.llm.openai_adapter import call_responses
 from ...infrastructure.llm.repair import try_parse_json_or_repair, create_tensor_cell_schema_hint
 from ...infrastructure.monitoring.tracer import JSONLTracer
 from ...infrastructure.caching import CellCache, ResumableRunner
@@ -400,22 +400,46 @@ class TensorEngine:
         full_message = f"{user_message}\n\n{json_contract}"
 
         # Parse response with repair if needed
-        def adapter_call(messages):
-            return call_responses_api(
-                messages=messages, temperature=self.temperature, top_p=self.top_p, json_only=True
+        def adapter_call(instructions=None, input=None):
+            """Responses API only - no messages support"""
+            if not instructions or not input:
+                raise ValueError("Must provide instructions and input for Responses API")
+            
+            # P0-3: Use strict JSON schema for tensor cell responses
+            response_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": f"{tensor_name}_cell_response",
+                    "description": f"Response schema for {tensor_name} tensor cell computation",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "result": {"type": "string", "description": "Computed cell value"},
+                            "reasoning": {"type": "string", "description": "Optional reasoning for the computation"},
+                            "hierarchical_path": {"type": "string", "description": "Cell location in tensor structure"}
+                        },
+                        "required": ["result"],
+                        "additionalProperties": False
+                    },
+                    "strict": True
+                }
+            }
+            
+            response = call_responses(
+                instructions=instructions,
+                input=input,
+                response_format=response_format
             )
+            # Convert to expected format for repair mechanism
+            return {"content": response.get("output_text", "")}, response.get("raw", {}).get("metadata", {})
 
         # Create schema hint
         schema_hint = create_tensor_cell_schema_hint(tensor_name)
 
-        # Initial messages
-        messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": full_message},
-        ]
-
+        # Use Responses API format - no messages array
         result, metadata = try_parse_json_or_repair(
-            messages=messages,
+            instructions=system_message,
+            input_text=full_message,
             adapter_call=adapter_call,
             schema_hint=schema_hint,
             max_repair_attempts=self.max_repair,

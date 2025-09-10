@@ -15,7 +15,7 @@ class RichResult:
     """
     Structured result object containing both text output and associated metadata.
 
-    Used by CellResolver methods to return comprehensive information about
+    Used by resolver methods to return comprehensive information about
     LLM operations, including the resolved text and all metadata needed
     for provenance tracking and Neo4j export.
 

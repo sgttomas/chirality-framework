@@ -8,61 +8,150 @@ assets:
   last_modified: '2025-09-09T05:15:45.000000+00:00'
 - id: system
   path: system.md
-  sha256: 2e78b74a9e479b051847d6439ccd5c79dc5e211a7821f7930c0cf4ae815ebb91
+  sha256: f9de7a6b0312eca3ddf45e30b3e94a03c3bf479383a1427a67176738cca5798f
   version: 1.0.0
-  size_bytes: 2750
-  last_modified: '2025-09-09T05:15:45.567318+00:00'
-- id: station_brief.requirements
-  path: station_briefs/requirements.md
-  sha256: 087c0ffd06b855553cfb574ed26b539e0efae1bbdb3b9a6df5213b5a356964f1
+  size_bytes: 32950
+  last_modified: '2025-09-09T20:59:05.878077+00:00'
+
+# Phase 1 Matrix C Assets
+- id: phase1_c_mechanical
+  path: phase1/C/mechanical.md
+  sha256: pending_user_authoring
   version: 1.0.0
-  size_bytes: 428
-  last_modified: '2025-09-09T05:15:45.567686+00:00'
-- id: station_brief.objectives
-  path: station_briefs/objectives.md
-  sha256: 74395c482b8554fc28b7bb3a9fecbb341de34d11cc133d671e0e2e1a32262d75
+  description: Stage 1 mechanical construction for Matrix C
+- id: phase1_c_interpreted
+  path: phase1/C/interpreted.md
+  sha256: pending_user_authoring
   version: 1.0.0
-  size_bytes: 412
-  last_modified: '2025-09-09T05:15:45.567854+00:00'
-- id: station_brief.verification
-  path: station_briefs/verification.md
-  sha256: d81add931e91020bfb50c3bf8a2598a24184a841390d8cdd548122256ac4dbc1
+  description: Stage 2 semantic interpretation for Matrix C
+- id: phase1_c_lensed
+  path: phase1/C/lensed.md
+  sha256: pending_user_authoring
   version: 1.0.0
-  size_bytes: 396
-  last_modified: '2025-09-09T05:15:45.568604+00:00'
-- id: station_brief.validation
-  path: station_briefs/validation.md
-  sha256: ba4a143e0102f1351bc67d06fae12edb040d735c340b1a3aea9afb39dacd39ad
+  description: Stage 3 lens application for Matrix C
+
+# Phase 1 Matrix F Assets
+- id: phase1_f_mechanical
+  path: phase1/F/mechanical.md
+  sha256: pending_user_authoring
   version: 1.0.0
-  size_bytes: 388
-  last_modified: '2025-09-09T05:15:45.568679+00:00'
-- id: station_brief.evaluation
-  path: station_briefs/evaluation.md
-  sha256: 0292dec89bec6ee29170f0b68e19cd2d0c9bb4723016bcbe9f135298c0f536ef
+  description: Stage 1 mechanical construction for Matrix F
+- id: phase1_f_interpreted
+  path: phase1/F/interpreted.md
+  sha256: pending_user_authoring
   version: 1.0.0
-  size_bytes: 390
-  last_modified: '2025-09-09T05:15:45.568742+00:00'
-- id: stage2_multiply
-  path: stage2_multiply.md
-  sha256: d323488b37e04e377cca15b59bfca74451c3720226ac12f96576f06fdcdd4075
+  description: Stage 2 semantic interpretation for Matrix F
+- id: phase1_f_lensed
+  path: phase1/F/lensed.md
+  sha256: pending_user_authoring
   version: 1.0.0
-  size_bytes: 2564
-  last_modified: '2025-09-09T05:15:45.568881+00:00'
-- id: stage2_elementwise
-  path: stage2_elementwise.md
-  sha256: b2d45aad29a4822ef980121b31755d53e3dd34cfa51af0ea4d5fcce9f5f7a023
+  description: Stage 3 lens application for Matrix F
+
+# Phase 1 Matrix D Assets
+- id: phase1_d_mechanical
+  path: phase1/D/mechanical.md
+  sha256: pending_user_authoring
   version: 1.0.0
-  size_bytes: 2045
-  last_modified: '2025-09-09T05:15:45.569039+00:00'
-- id: combined_lens
-  path: combined_lens.md
-  sha256: 07be3f2a0f944d12c15a37f4922081521ab2f103aa505ae3ffa1db90bb33e238
+  description: Stage 1 mechanical construction for Matrix D (concatenation recipe)
+- id: phase1_d_interpreted
+  path: phase1/D/interpreted.md
+  sha256: pending_user_authoring
   version: 1.0.0
-  size_bytes: 494
-  last_modified: '2025-09-09T05:15:45.569243+00:00'
-- id: station_shift
-  path: station_shift.md
-  sha256: 3db27fb0cbb5646d084a53a143034b7ad318cee903f98d422962cdad2053c70c
+  description: Stage 2 addition resolution for Matrix D (no multiplication)
+- id: phase1_d_lensed
+  path: phase1/D/lensed.md
+  sha256: pending_user_authoring
   version: 1.0.0
-  size_bytes: 1978
-  last_modified: '2025-09-09T05:15:45.569303+00:00'
+  description: Stage 3 lens application for Matrix D
+
+# Phase 1 Matrix X Assets
+- id: phase1_x_mechanical
+  path: phase1/X/mechanical.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: Stage 1 mechanical construction for Matrix X
+- id: phase1_x_interpreted
+  path: phase1/X/interpreted.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: Stage 2 semantic interpretation for Matrix X
+- id: phase1_x_lensed
+  path: phase1/X/lensed.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: Stage 3 lens application for Matrix X
+
+# Phase 1 Matrix E Assets
+- id: phase1_e_mechanical
+  path: phase1/E/mechanical.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: Stage 1 mechanical construction for Matrix E
+- id: phase1_e_interpreted
+  path: phase1/E/interpreted.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: Stage 2 semantic interpretation for Matrix E
+- id: phase1_e_lensed
+  path: phase1/E/lensed.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: Stage 3 lens application for Matrix E
+
+# Phase 1 Matrix Z Assets
+- id: phase1_z_lensed
+  path: phase1/Z/lensed.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: Station shift and lens application for Matrix Z (no interpreted stage)
+- id: phase1_z_principles
+  path: phase1/Z/principles.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: Principles extraction from Matrix Z
+
+# Phase 1 Lens Catalog Generation
+- id: phase1_lens_catalog_generation
+  path: phase1/lens_catalog_generation.md
+  sha256: 5ccbfe519bab6c501302c7e15be6472fb3c9c263f88bfc632f7b81348c379c4a
+  version: 1.1.0
+  size_bytes: 860
+  last_modified: '2025-09-09T12:00:00.000000+00:00'
+  description: Template for generating lens catalog for all stations
+
+# Phase 1 Per-Matrix Lens Generation Assets
+- id: phase1_c_generate_lenses
+  path: phase1/C/generate_lenses.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: On-the-fly lens generation for Matrix C (Problem Statement)
+
+- id: phase1_d_generate_lenses
+  path: phase1/D/generate_lenses.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: On-the-fly lens generation for Matrix D (Objectives)
+
+- id: phase1_f_generate_lenses
+  path: phase1/F/generate_lenses.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: On-the-fly lens generation for Matrix F (Requirements)
+
+- id: phase1_x_generate_lenses
+  path: phase1/X/generate_lenses.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: On-the-fly lens generation for Matrix X (Verification)
+
+- id: phase1_e_generate_lenses
+  path: phase1/E/generate_lenses.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: On-the-fly lens generation for Matrix E (Evaluation)
+
+- id: phase1_z_generate_lenses
+  path: phase1/Z/generate_lenses.md
+  sha256: pending_user_authoring
+  version: 1.0.0
+  description: On-the-fly lens generation for Matrix Z (Validation)

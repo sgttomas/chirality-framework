@@ -46,11 +46,6 @@ def create_aggregator_schema_hint() -> str:
         JSON schema hint string
     """
     return """{
-    "meta": {
-        "kernel_hash": "...",
-        "snapshot_hash": "...",
-        "model": "..."
-    },
     "matrices": {
         "C": {"name": "C", "station": "...", "rows": [...], "cols": [...], "elements": [[...]], "step": "lensed", "op": "dot"},
         "J": {"name": "J", "station": "...", "rows": [...], "cols": [...], "elements": [[...]], "step": "base"},
