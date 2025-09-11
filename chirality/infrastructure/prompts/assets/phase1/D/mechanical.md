@@ -18,6 +18,4 @@ D(i,j) = A(i,j) + " applied to frame the problem; “ + F(i,j) + " to resolve th
 Generate this purely mechanical construction of word strings and concatenations complete with the semantic operator in place ( + )
 
 ### Output format
-Return **only** valid JSON in this shape:
-
-{{json_tail}}
+Return final output in a table using markdown format.

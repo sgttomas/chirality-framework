@@ -66,7 +66,7 @@ def test_no_decoding_overrides_guard():
         no_decoding_overrides("test_function", 
                              model="gpt-4", 
                              max_tokens=100,
-                             response_format={"type": "json_object"})
+                             text={"format": "json_object"})
         print("✅ Allowed parameters correctly passed through")
         return True
     except Exception as e:

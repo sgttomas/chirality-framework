@@ -1,46 +1,122 @@
-# Release Notes: Version 20.0.0
+# Release Notes: Version 19.4.0
 
 **Release Date:** 2025-09-10
-**Codename:** Architectural Purity
+**Codename:** Support Matrix Integration
 
 ## Overview
 
-Version 20.0.0 represents a fundamental architectural rewrite of the Chirality Framework. This release moves the project from a conventional Python application to a true **"Conversation as Program"** model, where the core logic is expressed as a pure, auditable, and semantically-clean dialogue with a Large Language Model.
+Version 19.4.0 addresses critical gaps in the Phase 1 dialogue pipeline by integrating missing support matrix explanations and fixing model selection consistency issues. This release resolves the "empty_normalizer_output" problems that were causing Phase 1 runs to fail with GPT-5, ensuring the LLM properly understands where support matrices (J, K, G, P, T) come from in the conversation flow.
 
-The Python codebase has been refactored into a robust **Control-Plane** responsible only for orchestrating this conversation, while all semantic instructions and data reside in a version-controlled **Data-Plane**. This release introduces major improvements in architectural clarity, testability, provenance, and philosophical alignment.
+## Major Changes
 
-## Major Architectural Changes
+### ✅ **Support Matrix Integration**
 
-- **Adoption of the "Pure History" Model:** The framework now operates on a single, continuous conversational transcript. The LLM relies exclusively on the preceding dialogue for context, eliminating complex template injection and making the process more robust and transparent.
+- **Missing Matrix Explanations Added:** Five critical prompt stages have been integrated into the Phase 1 dialogue pipeline:
+  - **Matrix J Extraction** (`phase1/J/extract.md`) - Explains J is extracted from B (removing wisdom row)
+  - **Matrix K Transformation** (`phase1/K/transform.md`) - Explains K is the transpose of D  
+  - **Matrix G Extraction** (`phase1/G/extract.md`) - Explains G is extracted from first 3 rows of Z
+  - **Matrix P Extraction** (`phase1/P/extract.md`) - Explains P is extracted from 4th row of Z
+  - **Matrix T Transformation** (`phase1/T/transform.md`) - Explains T is the transpose of J
 
-- **Complete OpenAI Responses API Migration:** All calls to the legacy Chat Completions API (`client.chat.completions.create`) have been purged. The framework now exclusively uses the `client.responses.create` endpoint with the `instructions` and `input` contract, ensuring a clean separation of the system prompt from the conversational transcript.
+- **Correct Sequencing:** All support matrices are now introduced via LLM prompts before being used in subsequent operations, following the normative specification sequence exactly.
 
-- **Strict Metadata Purge from LLM Transcript:** All framework-level metadata (e.g., SHAs, timestamps, sources, modes) has been completely removed from the dialogue sent to the LLM. The LLM now sees only pure semantic content (instructions, matrices, lenses). All provenance data is captured exclusively in Python-side trace objects.
+- **Dialogue Flow Fixes:** Eliminates the "magic data-drop" problem where matrices appeared without explanation, causing LLM confusion and extraction failures.
 
-- **Canonical Data-Drop Pattern:** All non-LLM operations (e.g., matrix transpose, slicing) now leave a footprint in the conversation as a clean, metadata-free `<<<BEGIN DERIVED MATRIX>>>` block. This makes every step in the pipeline, whether code- or LLM-driven, a visible and auditable part of the dialogue.
+### ✅ **Model Selection SSOT Compliance**
 
-- **Formalized DDD Structure:** The architecture is now formally described using Domain-Driven Design (DDD) principles, including Bounded Contexts for Lens Management and Conversation Execution, and an Anti-Corruption Layer (ACL) for the OpenAI adapter. See the new `ARCHITECTURE.md` for full details.
+- **Eliminated Hardcoded Models:** Fixed multiple Single Source of Truth violations where different components ignored the global `CHIRALITY_MODEL` configuration:
+  - **CLI lens-derive:** No longer hardcoded to `gpt-4o-mini`
+  - **LensBuilder class:** Now respects global config instead of defaulting to `gpt-5`
+  - **build_lens_catalog function:** No longer defaults to `gpt-4o-mini`
+  - **Phase 2 CLI:** No longer defaults to `gpt-5-nano`
 
-## New Features & Systems
+- **Consistent Model Hierarchy:** All components now properly follow the hierarchy:
+  1. CLI argument `--model` (highest priority)
+  2. Environment variable `CHIRALITY_MODEL` (middle priority)  
+  3. Global config default (lowest priority)
 
-- **Comprehensive Lens Management System:** A complete, standalone system for managing semantic lenses has been implemented.
-    - **Lens Catalog:** A meta-pipeline can now pre-generate a full `lens_catalog.json` for all stations.
-    - **On-the-Fly Generation:** A new `lens_mode="auto"` allows the framework to generate missing lenses dynamically during a run.
-    - **Overrides & Caching:** On-the-fly generated lenses are cached in `lens_overrides.json` with full provenance, and this cache takes precedence over the main catalog, allowing for robust A/B testing.
-- **New CLI Commands:** The command-line interface has been expanded with a full suite of tools for managing the lens system: `chirality lenses ensure|refresh|show|meta|source|clear-overrides`.
+### ✅ **Infrastructure Updates**
 
-## Testing & Architectural Enforcement
+- **Prompt Asset Registry:** Added metadata entries for all new support matrix prompts
+- **Pipeline Integration:** Updated `dialogue_run.py` to call support matrix prompts at correct sequence points
+- **Metadata Validation:** Fixed normative_spec.txt hash and size validation after recent updates
+- **Test Organization:** Moved all test_*.py files from project root to `tests/` directory for better organization
 
-- **Architectural Guardrails:** The CI/CD pipeline is now protected by a new suite of blocking tests that programmatically enforce the architecture. These guards prevent the use of forbidden APIs, inline prompts, and metadata leaks into the transcript.
-- **Semantic Contract Tests:** A new layer of testing has been introduced to validate the *conversation itself*. These tests assert the correct turn order, check for the presence and resolution of semantic operators, and verify the structural integrity of data-drops.
+## Technical Details
 
-## Documentation Overhaul
+### Prompt Asset Structure
+Each support matrix prompt follows the established pattern:
+- Clear explanation of what the matrix is and how it's derived
+- Template variables for runtime replacement
+- Consistent output format requirements
+- No framework metadata in the semantic content
 
-- **New `ARCHITECTURE.md`:** A new, definitive document has been created that describes the "Conversation as Program" model and the full DDD-based design.
-- **Updated AI & Contributor Guides:** `GEMINI.md`, `CLAUDE.md`, and `CONTRIBUTING.md` have been completely rewritten to reflect the new architecture, API contracts, and testing philosophy.
-- **Refactored `README.md`:** The main README is now a clean, high-level entry point with an updated Quick Start guide.
+### Sequence Integration Points
+- **J extraction:** After C completion, before F (needed for F = C ⊙ J)
+- **K transformation:** After D completion, before X (needed for X = K · J)  
+- **G & P extraction:** After Z completion, before E (needed for E = G · T)
+- **T transformation:** After J extraction, before E (needed for E = G · T)
 
-## Deprecations & Removals
+## Impact & Benefits
 
-- All legacy components have been removed from the codebase, including `CellResolver`, `PromptBuilder`, `PromptStrategy`, and all `_compute_matrix_*` methods.
-- All old prompt assets that mixed instructions with metadata have been removed in favor of the new, clean, single-purpose assets.
+### For GPT-5 Users
+- **Resolves Empty Output Issues:** The missing matrix explanations were causing GPT-5 to produce "empty_normalizer_output" errors
+- **Consistent Model Usage:** GPT-5 selection via `CHIRALITY_MODEL=gpt-5` now works throughout the entire pipeline
+- **Improved Semantic Understanding:** LLM no longer confused about matrix origins in the conversation
+
+### For Framework Reliability  
+- **Architectural Purity:** Maintains the "Conversation as Program" model with proper semantic flow
+- **Auditable Dialogue:** Every matrix operation is now explained and visible in the conversation transcript
+- **Deterministic Execution:** Eliminates non-deterministic failures due to missing context
+
+## Breaking Changes
+
+**None** - This release is fully backward compatible. All changes are additive improvements to the existing pipeline.
+
+## Migration Guide
+
+**No migration required** - Existing scripts and configurations will work unchanged. The new support matrix prompts are automatically integrated into the dialogue flow.
+
+To take advantage of consistent model selection:
+```bash
+# Set your preferred model globally
+export CHIRALITY_MODEL=gpt-5
+
+# All components will now use GPT-5 consistently
+python -m chirality.interfaces.cli phase1-dialogue-run --lens-mode auto --out runs/latest
+```
+
+## Files Added/Modified
+
+### Added
+- `chirality/infrastructure/prompts/assets/phase1/J/extract.md`
+- `chirality/infrastructure/prompts/assets/phase1/K/transform.md` 
+- `chirality/infrastructure/prompts/assets/phase1/G/extract.md`
+- `chirality/infrastructure/prompts/assets/phase1/P/extract.md`
+- `chirality/infrastructure/prompts/assets/phase1/T/transform.md`
+
+### Modified
+- `chirality/application/phase1/dialogue_run.py` - Integrated new prompt stages
+- `chirality/infrastructure/prompts/assets/metadata.yml` - Added new asset entries
+- `chirality/interfaces/cli.py` - Fixed hardcoded model references
+- `chirality/infrastructure/lenses/build.py` - Respects global model config
+- `chirality/infrastructure/lenses/derive.py` - Uses global config for lens generation
+
+### Moved
+- All `test_*.py` files from project root → `tests/` directory for proper organization
+
+## Known Issues
+
+- **Pipeline Timeouts:** Some full runs may still experience timeouts, investigation ongoing
+- **Content Filtering:** LLM-generated "Note:" text may trigger transcript validation errors in some cases
+
+## Next Steps
+
+Future releases will focus on:
+- Performance optimization for full pipeline runs
+- Enhanced content filtering rules
+- End-to-end validation of the complete support matrix integration
+
+---
+
+This release represents a significant step toward robust, reliable Phase 1 execution with proper semantic flow and consistent model usage throughout the framework.

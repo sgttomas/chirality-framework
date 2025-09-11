@@ -11,9 +11,10 @@ import json
 import hashlib
 from datetime import datetime
 
+
 from ...domain.matrices.canonical import get_canonical_matrix, get_matrix_info
 from ...infrastructure.prompts.registry import get_registry
-from ...infrastructure.llm.mock_resolvers import EchoResolver
+from ...infrastructure.llm.openai_adapter import call_responses
 from ...lib.logging import log_info, log_progress, log_success
 
 
@@ -23,17 +24,31 @@ class LensCatalogGenerator:
     def __init__(self, model: str = "gpt-4o-mini"):
         self.model = model
         self.registry = get_registry()
-        self.resolver = EchoResolver()  # Replace with actual resolver in production
+        # No resolver instance here; we call the Responses API in the method that needs it.
         
         # Station to matrix mapping using canonical matrix definitions
         self.station_matrices = {
-            "problem statement": get_matrix_info("C"),
-            "requirements": get_matrix_info("F"), 
-            "objectives": get_matrix_info("D"),
-            "verification": get_matrix_info("X"),
-            "validation": get_matrix_info("Z"),
-            "evaluation": get_matrix_info("E")
+            "Problem Statement": get_matrix_info("C"),
+            "Requirements": get_matrix_info("F"), 
+            "Objectives": get_matrix_info("D"),
+            "Verification": get_matrix_info("X"),
+            "Validation": get_matrix_info("Z"),
+            "Evaluation": get_matrix_info("E")
         }
+
+    def _render_template_strict(self, template: str, variables: Dict[str, str]) -> str:
+        import re
+        rendered = template
+        for var_name, var_value in variables.items():
+            placeholder = f"{{{{{var_name}}}}}"
+            rendered = rendered.replace(placeholder, var_value)
+        leftover_matches = re.findall(r'\{\{[^}]+\}\}', rendered)
+        if leftover_matches:
+            raise ValueError(
+                f"Template rendering failed: unresolved placeholders {leftover_matches}. "
+                f"Available variables: {list(variables.keys())}"
+            )
+        return rendered
     
     def _load_normative_context(self) -> str:
         """Load the immutable Phase 1 normative system prompt."""
@@ -90,33 +105,50 @@ Generate interpretive lenses for all matrix positions that capture the semantic 
         asset_text = self.registry.get_text("phase1_lens_catalog_generation")
         
         # Replace placeholders
-        rendered_prompt = asset_text.replace("{{context}}", context)
-        rendered_prompt = rendered_prompt.replace("{{station}}", station)
-        rendered_prompt = rendered_prompt.replace("{{matrix_id}}", matrix_id)
-        rendered_prompt = rendered_prompt.replace("{{rows}}", str(matrix_info["rows"]))
-        rendered_prompt = rendered_prompt.replace("{{cols}}", str(matrix_info["cols"]))
-        rendered_prompt = rendered_prompt.replace("{{row_labels}}", str(matrix_info["row_labels"]))
-        rendered_prompt = rendered_prompt.replace("{{col_labels}}", str(matrix_info["col_labels"]))
+        template_vars = {
+            "context": context,
+            "station": station,
+            "matrix_id": matrix_id,
+            "n_rows": str(matrix_info["rows"]),
+            "n_cols": str(matrix_info["cols"]),
+            "rows_json": json.dumps(matrix_info["row_labels"]),
+            "cols_json": json.dumps(matrix_info["col_labels"]),
+        }
+
+        rendered_prompt = self._render_template_strict(asset_text, template_vars)
         
         log_progress(f"Generating lenses for {station} (Matrix {matrix_id})")
         
-        # Make LLM call (using echo resolver for now)
-        response = self.resolver.resolve(rendered_prompt)
-        
-        # Parse response (in production, this would be proper JSON from LLM)
-        # For now, generate placeholder structure
-        rows, cols = matrix_info["rows"], matrix_info["cols"]
-        placeholder_lenses = [
-            [f"{station.lower().replace(' ', '_')}_lens_{r}_{c}" for c in range(cols)]
-            for r in range(rows)
-        ]
+        # Call the Responses API (no model kwarg; respect adapter's contract)
+        resp = call_responses(
+            instructions=context,
+            input=rendered_prompt,
+            expects_json=True,
+            store=True,
+            metadata={"op": "lens_catalog_generate", "station": station, "matrix": matrix_id},
+        )
+        output_text = resp.get("output_text", "")
+        try:
+            parsed = json.loads(output_text) if output_text else {}
+        except json.JSONDecodeError:
+            parsed = {"error": "invalid_json", "raw_output": output_text}
+
+        # If parsed contains the definitive lenses list, use it; otherwise fall back to a stub.
+        lenses = parsed.get("lenses") if isinstance(parsed, dict) else None
+        if not isinstance(lenses, list):
+            # Fallback structure
+            rows, cols = matrix_info["rows"], matrix_info["cols"]
+            lenses = [
+                [f"{station.lower().replace(' ', '_')}_lens_{r}_{c}" for c in range(cols)]
+                for r in range(rows)
+            ]
         
         return {
             "station": station,
             "matrix_id": matrix_id,
             "rows": matrix_info["row_labels"],
             "cols": matrix_info["col_labels"],
-            "lenses": placeholder_lenses,
+            "lenses": lenses,
             "meta": {
                 "generated_at": datetime.utcnow().isoformat(),
                 "context_hash": self._compute_context_hash(context),

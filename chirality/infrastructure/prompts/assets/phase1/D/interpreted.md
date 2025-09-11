@@ -1,17 +1,11 @@
 ## Semantic Interpretation for Matrix {{matrix_id}}
 
-Now resolve the semantic operations from the previous mechanical construction in our conversation.
+Resolve only semantic addition (concatenation) for Matrix {{matrix_id}}. Do not apply multiplication at this stage.
 
-To resolve a meaning follow this order of operations:
-
-1. Apply semantic multiplication first, 
-2. then semantic addition 
-
-Generate this iteration of [{{matrix_id}}] 
-
-Apply semantic multiplication first, and then semantic addition. Do not leave any operators (" * " or " + ") in the final word string 
+Rules:
+- This is an addition‑only resolution (string concatenation of parts).
+- Explicitly: do not apply multiplication.
+- Remove all operators; return the final concatenated statements.
 
 ### Output format
-Return **only** valid JSON in this shape:
-
-{{json_tail}}
+Return final output in a table using markdown format.

@@ -23,20 +23,30 @@ class LensBuilder:
 
     def __init__(
         self,
-        model: str = "gpt-5",
-        temperature: float = 1.0,  # CRITICAL: Lenses must be able to interpret semantics from abstraction without direct grammatical connection
+        model: str = None,
+        temperature: Optional[float] = None,
         system_prompt: Optional[str] = None,
     ):
         """
         Initialize lens builder.
 
         Args:
-            model: LLM model identifier
+            model: LLM model identifier (uses global config if None)
             temperature: Sampling temperature
             system_prompt: Optional custom system prompt
         """
+        if model is None:
+            from ..llm.config import get_config
+            model = get_config().model
         self.model = model
-        self.temperature = temperature
+        if temperature is None:
+            try:
+                from ..llm.config import get_config
+                self.temperature = get_config().temperature
+            except Exception:
+                self.temperature = 1.0
+        else:
+            self.temperature = temperature
         self.system_prompt = system_prompt or self._load_system_prompt()
 
     def build_lens_catalog(self, lens_triples_path: Path, output_path: Path) -> int:
@@ -99,9 +109,12 @@ class LensBuilder:
 
         # Load lens generation prompt from registry and substitute variables
         registry = get_registry()
-        lens_prompt_template = registry.get_text("lens_generation")
+        # Use per-matrix generation asset (e.g., phase1_c_generate_lenses)
+        matrix_id = lens_spec.get("matrix_source", "").lower() or "c"
+        asset_id = f"phase1_{matrix_id}_generate_lenses"
+        lens_prompt_template = registry.get_text(asset_id)
         
-        # Get matrix_id from lens_spec or derive it
+        # Get matrix_id for template substitution
         matrix_id = lens_spec.get("matrix_source", "Unknown")
         
         # Substitute template variables
@@ -195,17 +208,21 @@ class LensBuilder:
             json.dump(output_data, f, indent=2)
 
 
-def build_lens_catalog(triples_path: Path, output_path: Path, model: str = "gpt-4o-mini") -> int:
+def build_lens_catalog(triples_path: Path, output_path: Path, model: str = None) -> int:
     """
     Convenience function to build lens catalog.
 
     Args:
         triples_path: Path to lenses_triples.json
         output_path: Path to write lens_catalog.jsonl
-        model: LLM model identifier
+        model: LLM model identifier (uses global config if None)
 
     Returns:
         Number of lenses generated
     """
+    if model is None:
+        from ..llm.config import get_config
+        model = get_config().model
+        
     builder = LensBuilder(model=model)
     return builder.build_lens_catalog(triples_path, output_path)

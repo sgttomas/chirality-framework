@@ -7,6 +7,4 @@ Using the lens matrix for the {{station}} station from above, for each element i
 Generate the final interpreted Matrix {{matrix_id}}.
 
 ### Output format
-Once the final lensing of Matrix {{matrix_id}} has been produced through normal text, then output **only** valid JSON in this shape:
-
-{{json_tail}}
+Once the final lensing of Matrix {{matrix_id}} has been produced then return final output in a table using markdown format.

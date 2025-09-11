@@ -2,10 +2,10 @@
 """
 Test D2-3: Adapter contract validation.
 
-Tests that _execute_stage calls the new adapter with:
+Tests that _execute_stage calls the adapter with:
 - instructions == bytes(system.md) (verify SHA)
 - input containing entire transcript + current asset text
-- response_format == stage tail schema
+- text.format configured to JSON (object or schema)
 """
 
 import json
@@ -147,8 +147,8 @@ def test_adapter_contract_input():
             print(f"❌ Input contract test failed: {e}")
             return False
 
-def test_adapter_contract_response_format():
-    """Test D2-3: Adapter receives correct response_format."""
+def test_adapter_contract_text_config():
+    """Test D2-3: Adapter receives correct text.format configuration."""
     
     print("🔄 Testing D2-3: Adapter contract - response_format parameter...")
     
@@ -181,14 +181,14 @@ def test_adapter_contract_response_format():
             
             call_args = captured_calls[0]
             
-            # Test 1: response_format parameter present
-            assert "response_format" in call_args, "Missing response_format parameter"
-            response_format = call_args["response_format"]
+            # Test 1: text parameter present
+            assert "text" in call_args, "Missing text parameter"
+            text_cfg = call_args["text"]
             
-            # Test 2: response_format should enforce JSON
-            assert response_format is not None, "response_format should not be None"
-            assert isinstance(response_format, dict), "response_format should be dict"
-            assert response_format.get("type") == "json_object", "response_format should enforce JSON"
+            # Test 2: text.format should enforce JSON (object or strict schema)
+            assert text_cfg is not None, "text should not be None"
+            assert isinstance(text_cfg, dict), "text should be dict"
+            assert text_cfg.get("format") in {"json_object", "json_schema"}, "text.format should enforce JSON"
             
             print("✅ Response format parameter correct (JSON enforcement)")
             
@@ -236,7 +236,7 @@ def test_adapter_contract_no_messages():
             assert "messages" not in call_args, "Adapter should not receive messages parameter"
             
             # Test: should have the new parameters
-            required_params = ["instructions", "input", "response_format"]
+            required_params = ["instructions", "input", "text"]
             for param in required_params:
                 assert param in call_args, f"Missing required parameter: {param}"
             
@@ -295,7 +295,7 @@ if __name__ == "__main__":
     # Run all adapter contract tests
     success &= test_adapter_contract_instructions()
     success &= test_adapter_contract_input()
-    success &= test_adapter_contract_response_format()
+    success &= test_adapter_contract_text_config()
     success &= test_adapter_contract_no_messages()
     success &= test_adapter_contract_api_call_marker()
     

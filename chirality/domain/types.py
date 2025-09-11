@@ -146,7 +146,7 @@ class Phase1Config:
 
     # LLM inference parameters (updated defaults for gpt-5-nano)
     model: str = "gpt-5-nano"
-    temperature: float = 0.7
+    temperature: float = 1.0
     top_p: float = 0.9  # Note: user requested "top-k 0.9" but OpenAI uses top_p
 
 
@@ -163,7 +163,7 @@ class Phase2Config:
 
     # LLM inference parameters (updated defaults for gpt-5-nano)
     model: str = "gpt-5-nano"
-    temperature: float = 0.7
+    temperature: float = 1.0
     top_p: float = 0.9  # Note: user requested "top-k 0.9" but OpenAI uses top_p
 
     # GPT-5 specific parameters

@@ -8,6 +8,13 @@ import argparse
 import sys
 from pathlib import Path
 
+# Load environment from .env if available (e.g., OPENAI_API_KEY)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
 from ..application.phase1.dialogue_run import DialogueOrchestrator
 from ..application.phase1.snapshotter import SnapshotGenerator
 from ..infrastructure.lenses.derive import derive_all_lenses
@@ -18,6 +25,8 @@ from ..infrastructure.prompts.registry import get_registry
 from ..domain.budgets import BudgetConfig
 from ..application.lenses import LensCatalogManager, LensResolver
 from ..lib.logging import log_info, log_error, log_success, log_progress, output_data
+from ..infrastructure.llm.openai_adapter import call_responses
+import os
 
 
 def cmd_assets_hash(args):
@@ -51,6 +60,11 @@ def cmd_phase1_dialogue_run(args):
         budget_config=budget_config,
         lens_mode=args.lens_mode,
         write_catalog=args.write_catalog,
+        model=args.model,
+        reasoning_effort=getattr(args, 'reasoning_effort', None),
+        relaxed_json=getattr(args, 'relaxed_json', False),
+        inband_c_normalize=getattr(args, 'inband_c_normalize', False),
+        stop_at=getattr(args, 'stop_at', None),
     )
 
     log_progress("Running Phase 1 dialogue...")
@@ -70,12 +84,46 @@ def cmd_phase1_dialogue_run(args):
     
     final_output = orchestrator.run_dialogue(output_dir)
     orchestrator.save_dialogue(output_dir / "phase1_dialogue.jsonl")
-    validated_output = orchestrator.save_output(final_output, output_dir)
+    if getattr(orchestrator, 'relaxed_json', False):
+        # In relaxed mode, persist the full relaxed output for later extraction
+        relaxed_path = output_dir / "phase1_relaxed_output.json"
+        try:
+            import json as _json
+            relaxed_path.write_text(_json.dumps(final_output, indent=2))
+        except Exception as e:
+            log_error(f"Failed to write relaxed output: {e}")
+        # Also write Matrix E lensed content for quick inspection
+        try:
+            e_lensed = orchestrator.matrix_results.get("E", {}).get("lensed")
+            e_text = e_lensed.get("content") if isinstance(e_lensed, dict) else str(e_lensed)
+        except Exception:
+            e_text = ""
+        outp = output_dir / "phase1_relaxed_e_lensed.txt"
+        outp.write_text(e_text or "")
+        log_success(f"Phase 1 (relaxed) complete. Saved relaxed JSON to {relaxed_path}")
 
-    log_success(f"Phase 1 complete: {output_dir}/phase1_output.json")
-    log_info(f"  - Kernel hash: {validated_output.meta.kernel_hash}")
-    log_info(f"  - Matrices: {len(validated_output.matrices)}")
-    log_info(f"  - Tokens: {validated_output.meta.token_count}")
+        # Optional: run post-processing extraction immediately if requested
+        if getattr(args, 'extract_structured', False):
+            try:
+                from ..postprocessing.markdown_extractor import extract_structured_from_relaxed
+                structured = extract_structured_from_relaxed(final_output)
+                struct_path = output_dir / "phase1_structured.json"
+                import json as _json
+                struct_path.write_text(_json.dumps(structured, indent=2))
+                log_success(f"Structured extraction complete: {struct_path}")
+                # Also write matrices-only JSON for DB ingest (omit validation)
+                mats_only = {"meta": structured.get("meta", {}), "matrices": structured.get("matrices", {})}
+                mats_path = output_dir / "phase1_structured_matrices.json"
+                mats_path.write_text(_json.dumps(mats_only, indent=2))
+                log_success(f"Matrices-only artifact for DB ingest: {mats_path}")
+            except Exception as e:
+                log_error(f"Structured extraction failed: {e}")
+    else:
+        validated_output = orchestrator.save_output(final_output, output_dir)
+        log_success(f"Phase 1 complete: {output_dir}/phase1_output.json")
+        log_info(f"  - Kernel hash: {validated_output.meta.kernel_hash}")
+        log_info(f"  - Matrices: {len(validated_output.matrices)}")
+        log_info(f"  - Tokens: {validated_output.meta.token_count}")
 
     # Print budget status if tracking was enabled
     if budget_config and hasattr(orchestrator, "get_budget_status"):
@@ -118,8 +166,12 @@ def cmd_lenses_derive(args):
     registry = get_registry()
     kernel_hash = registry.compute_kernel_hash()
 
+    # Use global config for model selection
+    from ..infrastructure.llm.config import get_config
+    config = get_config()
+    
     log_progress("Deriving lens triples...")
-    count = derive_all_lenses(phase1_path, spec_path, kernel_hash, "gpt-4o-mini", output_path)
+    count = derive_all_lenses(phase1_path, spec_path, kernel_hash, config.model, output_path)
 
     log_success(f"Lens triples derived: {output_path}")
     log_info(f"  - Unique lenses: {count}")
@@ -312,15 +364,22 @@ def cmd_phase2_run(args):
     if args.resume:
         log_info("  Resume mode: enabled")
     log_info(f"  Cache: {'enabled' if args.cache else 'disabled'}")
+    
+    # Use global config for model if not specified
+    model = args.model
+    if model is None:
+        from ..infrastructure.llm.config import get_config
+        model = get_config().model
+    
     log_info(
-        f"  Model: {args.model} (temp={args.temperature}, top_p={getattr(args, 'top_p', args.__dict__.get('top_p', 0.9))})"
+        f"  Model: {model} (temp={args.temperature}, top_p={getattr(args, 'top_p', args.__dict__.get('top_p', 0.9))})"
     )
 
     engine = TensorEngine(
         snapshot_path=snapshot_path,
         phase1_output=phase1_output,
         lens_catalog_path=lens_catalog_path if lens_catalog_path.exists() else None,
-        model=args.model,
+        model=model,
         temperature=args.temperature,
         top_p=getattr(args, "top_p", args.__dict__.get("top_p", 0.9)),
         budget_config=budget_config,
@@ -379,17 +438,27 @@ def cmd_export_neo4j(args):
 
 
 from dotenv import load_dotenv
+from ..infrastructure.api.guards import install_all_guards
 
 
 def main():
     """Main CLI entry point."""
     load_dotenv()
+    # Install architectural guards early
+    try:
+        install_all_guards()
+    except Exception:
+        pass
     parser = argparse.ArgumentParser(prog="chirality", description="Chirality Framework v19.3.0")
     subparsers = parser.add_subparsers(dest="cmd", required=True, help="Available commands")
 
     # Assets commands
     subparsers.add_parser("assets-hash", help="Print current kernel hash")
     subparsers.add_parser("assets-verify", help="Verify and create asset manifest")
+    subparsers.add_parser("responses-probe", help="Probe Responses contract support")
+    micro = subparsers.add_parser("responses-micro-repro", help="Minimal schema repro (matrix/step)")
+    micro.add_argument("--matrix", required=True, help="Matrix id (e.g., C,F,D,X,Z,E)")
+    micro.add_argument("--step", required=True, help="Step id (e.g., mechanical, interpreted, lensed, lenses)")
 
     # Phase 1 commands
     p1_run = subparsers.add_parser("phase1-dialogue-run", help="Run Phase 1 dialogue")
@@ -399,11 +468,18 @@ def main():
     p1_run.add_argument("--cost-budget", type=float, help="Maximum cost in USD")
     p1_run.add_argument("--time-budget", type=int, help="Maximum time in seconds")
     p1_run.add_argument("--lens-mode", choices=["catalog", "generate", "auto"], default="catalog",
-                       help="Where Stage-3 lenses come from (default: catalog)")
+                       help="Where Stage-3 lenses come from: catalog=use existing catalog, auto=in-transcript generation (default: catalog)")
     p1_run.add_argument("--write-catalog", action="store_true", 
                        help="Persist generated lenses into artifacts/lens_catalog.json")
     p1_run.add_argument("--regen-lenses", action="store_true",
                        help="Regenerate the full catalog from normative_spec before running")
+    p1_run.add_argument("--model", help="LLM model to use (uses global config if not specified)")
+    p1_run.add_argument("--reasoning-effort", choices=["low", "medium", "high"], 
+                       help="GPT-5 reasoning effort level")
+    p1_run.add_argument("--relaxed-json", action="store_true", help="Relax JSON enforcement and schema checks to let the model run free-form")
+    p1_run.add_argument("--extract-structured", action="store_true", help="After relaxed run, normalize transcript outputs to strict JSON for DB")
+    p1_run.add_argument("--inband-c-normalize", action="store_true", help="Enable in-band Stage-A→Stage-B for Matrix C (default: off)")
+    p1_run.add_argument("--stop-at", choices=["C", "C_interpreted", "E_lensed"], help="Stop early after a given stage (e.g., C_interpreted for Stage-A test)")
 
     p1_snap = subparsers.add_parser("phase1-snapshot", help="Generate Phase 1 snapshot")
     p1_snap.add_argument(
@@ -454,8 +530,8 @@ def main():
     p2_run.add_argument("--token-budget", type=int, help="Maximum tokens to use")
     p2_run.add_argument("--cost-budget", type=float, help="Maximum cost in USD")
     p2_run.add_argument("--time-budget", type=int, help="Maximum time in seconds")
-    p2_run.add_argument("--model", default="gpt-5-nano", help="LLM model to use")
-    p2_run.add_argument("--temperature", type=float, default=0.7, help="Sampling temperature")
+    p2_run.add_argument("--model", help="LLM model to use (uses global config if not specified)")
+    # Temperature is centrally configured; no CLI override by default
     p2_run.add_argument("--top-p", type=float, default=0.9, help="Nucleus sampling parameter")
     p2_run.add_argument(
         "--cache", action="store_true", default=True, help="Enable caching (default: True)"
@@ -469,6 +545,12 @@ def main():
     export_neo4j.add_argument("--pwd", required=True, help="Neo4j password")
     export_neo4j.add_argument("--artifacts", default="artifacts/", help="Artifacts directory")
 
+    # Decoupled extraction command
+    p1_extract = subparsers.add_parser("phase1-extract", help="Normalize a relaxed Phase 1 run to strict JSON")
+    p1_extract.add_argument("--from", dest="src", required=True, help="Path to phase1_relaxed_output.json")
+    p1_extract.add_argument("--out", dest="out", default="artifacts/phase1_structured.json", help="Output JSON path")
+    p1_extract.add_argument("--matrices-only", action="store_true", help="Write only the matrices object (omit validation) to the output path")
+
     # Parse and dispatch
     args = parser.parse_args()
 
@@ -476,6 +558,7 @@ def main():
     commands = {
         "assets-hash": cmd_assets_hash,
         "assets-verify": cmd_assets_verify,
+        "responses-probe": lambda a: _cmd_responses_probe_impl(),
         "phase1-dialogue-run": cmd_phase1_dialogue_run,
         "phase1-snapshot": cmd_phase1_snapshot,
         "lenses-derive": cmd_lenses_derive,
@@ -488,6 +571,9 @@ def main():
         "lenses-clear-overrides": cmd_lenses_clear_overrides,
         "phase2-run": cmd_phase2_run,
         "export-neo4j": cmd_export_neo4j,
+        "responses-micro-repro": cmd_responses_micro_repro,
+        # New: decoupled extraction pass
+        "phase1-extract": lambda a: _cmd_phase1_extract_impl(a),
     }
 
     if args.cmd in commands:
@@ -499,6 +585,120 @@ def main():
     else:
         parser.print_help()
         sys.exit(1)
+
+
+def _cmd_responses_probe_impl():
+    """Run minimal probes to decide contract shape."""
+    system = "You are a function that returns strict JSON only."
+    user = "Return {\"ok\": true}."
+
+    def run_probe(mode: str, with_schema: bool = False):
+        prev = os.environ.get("CHIRALITY_CONTRACT")
+        os.environ["CHIRALITY_CONTRACT"] = mode
+        try:
+            kwargs = {
+                "instructions": system,
+                "input": [{"role": "user", "content": [{"type": "input_text", "text": user}]}],
+                "expects_json": True,
+                "store": False,
+                "metadata": {"probe": mode, "schema": str(with_schema).lower()},
+            }
+            if with_schema:
+                kwargs["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "Test",
+                        "strict": True,
+                        "schema": {
+                            "type": "object",
+                            "properties": {"ok": {"type": "boolean"}},
+                            "required": ["ok"],
+                            "additionalProperties": False,
+                        },
+                    },
+                }
+            resp = call_responses(**kwargs)
+            text = resp.get("output_text") or ""
+            status = "OK" if text else "EMPTY"
+            output_data({"mode": mode, "schema": with_schema, "status": status, "preview": text[:120]})
+        except Exception as e:
+            output_data({"mode": mode, "schema": with_schema, "error": str(e)[:2000]})
+        finally:
+            if prev is not None:
+                os.environ["CHIRALITY_CONTRACT"] = prev
+            else:
+                os.environ.pop("CHIRALITY_CONTRACT", None)
+
+    log_progress("Probe A: TEXT_FORMAT without schema")
+    run_probe("TEXT_FORMAT", with_schema=False)
+    log_progress("Probe B: RESPONSE_FORMAT with tiny schema")
+    run_probe("RESPONSE_FORMAT", with_schema=True)
+
+
+def _cmd_phase1_extract_impl(args=None):
+    """Normalize a relaxed Phase 1 run into strict JSON using the normalizer."""
+    from ..postprocessing.markdown_extractor import extract_structured_from_relaxed
+    import json
+    import argparse as _argparse
+
+    if args is None:
+        # Lightweight arg parsing if invoked standalone
+        p = _argparse.ArgumentParser()
+        p.add_argument("--from", dest="src", required=True, help="Path to phase1_relaxed_output.json")
+        p.add_argument("--out", dest="out", default="artifacts/phase1_structured.json", help="Output JSON path")
+        args = p.parse_args()
+
+    src = Path(getattr(args, 'src', '')) if hasattr(args, 'src') else None
+    if src is None or not src.exists():
+        log_error("Provide --from path to phase1_relaxed_output.json")
+        sys.exit(1)
+    try:
+        data = json.loads(src.read_text())
+    except Exception as e:
+        log_error(f"Failed to read relaxed output: {e}")
+        sys.exit(1)
+
+    log_progress("Normalizing relaxed transcript to strict JSON...")
+    structured = extract_structured_from_relaxed(data)
+    outp = Path(getattr(args, 'out', 'artifacts/phase1_structured.json'))
+    outp.parent.mkdir(parents=True, exist_ok=True)
+    if getattr(args, 'matrices_only', False):
+        matrices_only = {"meta": structured.get("meta", {}), "matrices": structured.get("matrices", {})}
+        outp.write_text(json.dumps(matrices_only, indent=2))
+        log_success(f"Wrote matrices-only JSON: {outp}")
+    else:
+        outp.write_text(json.dumps(structured, indent=2))
+        log_success(f"Wrote structured JSON: {outp}")
+
+
+def cmd_responses_micro_repro(args):
+    """Minimal repro for a given matrix/step schema."""
+    from ..infrastructure.validation.json_schema_converter import get_strict_response_format
+    rf = get_strict_response_format(args.matrix, args.step)
+    js = rf.get("json_schema", {}) if isinstance(rf, dict) else {}
+    name = js.get("name")
+    root = js.get("schema", {}) if isinstance(js, dict) else {}
+    required = root.get("required", []) if isinstance(root, dict) else []
+    addl = root.get("additionalProperties", None)
+    output_data({"rf_type": rf.get("type"), "name": name, "required": required, "additionalProperties": addl})
+
+    instructions = "You are a function that returns a single JSON object that satisfies the provided schema exactly."
+    user = "Return a minimal valid object for this schema; no extra keys."
+    # Use typed parts for input
+    typed_input = [{"role": "user", "content": [{"type": "input_text", "text": user}]}]
+    try:
+        resp = call_responses(
+            instructions=instructions,
+            input=typed_input,
+            response_format=rf,
+            expects_json=True,
+            store=False,
+            metadata={"micro": "true", "matrix": str(args.matrix), "step": str(args.step)},
+        )
+        text = resp.get("output_text") or ""
+        output_data({"status": "OK" if text else "EMPTY", "preview": text[:160]})
+    except Exception as e:
+        output_data({"status": "ERROR", "error": str(e)[:160]})
 
 
 if __name__ == "__main__":

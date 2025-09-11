@@ -29,7 +29,7 @@ class LensResolver:
         self.lens_mode = lens_mode
         self.model = model
         self.registry = get_registry()
-        self.resolver = EchoResolver()  # Replace with actual resolver in production
+        self.resolver = None  # QUARANTINED: Was EchoResolver()
         
         # Initialize managers
         self.catalog_manager = LensCatalogManager(catalog_path)
@@ -37,12 +37,12 @@ class LensResolver:
         
         # Station to matrix mapping using canonical matrix definitions
         self.station_matrices = {
-            "problem statement": get_matrix_info("C"),
-            "requirements": get_matrix_info("F"), 
-            "objectives": get_matrix_info("D"),
-            "verification": get_matrix_info("X"),
-            "validation": get_matrix_info("Z"),
-            "evaluation": get_matrix_info("E")
+            "Problem Statement": get_matrix_info("C"),
+            "Requirements": get_matrix_info("F"), 
+            "Objectives": get_matrix_info("D"),
+            "Verification": get_matrix_info("X"),
+            "Validation": get_matrix_info("Z"),
+            "Evaluation": get_matrix_info("E")
         }
     
     def resolve_lenses(self, station: str) -> Dict[str, Any]:
@@ -128,7 +128,8 @@ class LensResolver:
         rendered_prompt = rendered_prompt.replace("{{col_labels}}", str(matrix_info["col_labels"]))
         
         # Make LLM call
-        response = self.resolver.resolve(rendered_prompt)
+        # response = self.resolver.resolve(rendered_prompt) # QUARANTINED
+        response = {} # Dummy response
         
         # Parse response (in production, this would be proper JSON from LLM)
         # For now, generate placeholder structure

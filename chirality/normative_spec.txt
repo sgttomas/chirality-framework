@@ -1,4 +1,4 @@
-# Normative Specification for the Chirality Framework v19.3.0
+# Normative Specification for the Chirality Framework v19.4.0
 
 
 ## What is the Chirality Framework?
@@ -492,7 +492,7 @@ Column names: [‘Necessity (vs Contingency)’, ‘Sufficiency’, ‘Completen
 Row names:  [‘Guiding’, ‘Applying’, ‘Judging’] 
 Elements:
 
-To construct [G] use only the top three rows of [Z] (‘Guidance’, ‘Application’, Decision’).  This will be a 3 x 4 matrix.  You will call this Matrix G, or [G] when used in semantic operations.  
+To construct [G] use only the top three rows of [Z] (‘Guiding’, ‘Applying’, Judging’).  This will be a 3 x 4 matrix.  You will call this Matrix G, or [G] when used in semantic operations.  
 
 Generate [G] in the table format
 
@@ -1034,3 +1034,9 @@ Proceed in the order of construction.
 
 
 ----
+
+
+
+
+
+

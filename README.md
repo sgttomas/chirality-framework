@@ -15,15 +15,14 @@ The framework employs two distinct phases with fundamentally different prompting
 - **Phase 1** (Matrices A-E): Uses conversational prompting to build semantic understanding
 - **Phase 2** (Tensors M-N): Uses Phase 1 implementation as system prompt for modular cell-by-cell construction
 
-## Core Architecture: Two-Phase Semantic Computation
+## Core Architecture: Two‑Phase Semantic Computation
 
 ### Phase 1: Conversational Semantic Pipeline (Matrices A-E)
 Phase 1 uses a conversational dialogue history as the system prompt to create semantic understanding. The dialogue builds the concept of semantic multiplication through examples, develops key concepts organically, and establishes modal ontologies through iterative refinement. This creates a "semantic state" in the LLM that enables proper interpretation.
 
-**Three-Stage Pipeline with Rolling Context:**
-1. **Mechanical Construction (Stage 1):** Framework mechanically constructs initial input (e.g., term pairs for semantic dot product)
-2. **Semantic Resolution (Stage 2):** LLM resolves concepts via operation-specific strategies
-3. **Combined Lensing (Stage 3):** Unified semantic operation combining row × column × station perspectives
+Semantic‑first transcript with out‑of‑band normalization:
+1. **Stage A — Mechanical/Interpreted (Markdown):** Prompts produce human‑readable, markdown‑formatted matrices; the transcript stays clean and creative.
+2. **Stage B — Normalization (Strict JSON):** A reusable normalizer prompt converts Stage‑A text into schema‑accurate JSON. Local validation + one diff‑driven retry ensures strict compliance. A small deterministic parser skips the LLM when markdown tables match canonical shapes.
 
 ### Phase 2: Modular Tensor Construction (Tensors M-N)
 Phase 2 uses the complete Phase 1 implementation (through Matrix E) as the system prompt, then constructs tensors cell-by-cell WITHOUT rolling context. The modular design of the tensors facilitates this approach, with each cell computed independently using semantic cross products to create hierarchical structures.
@@ -71,16 +70,71 @@ pip install -e ".[dev,openai]"
 python3 -m chirality.interfaces.cli lenses ensure
 ```
 
-### Step 2: Run the Phase 1 Pipeline
+### Step 2: Run Phase‑1 (semantic‑first) and extract structured JSON
 
-This command runs the entire semantic pipeline (Matrices A through E) using the on-the-fly lens generation fallback if the catalog is out of date.
+Recommended end‑to‑end (semantic transcript + strict JSON):
 
 ```bash
-# Run the full Phase 1 dialogue pipeline
-python3 -m chirality.interfaces.cli phase1-dialogue-run --lens-mode=auto --out=runs/latest_run
+# Use a stronger model if desired
+export CHIRALITY_MODEL=gpt-5
+export CHIRALITY_TEMPERATURE=1.0
+
+# Run Phase‑1 in relaxed (markdown) mode and extract strict JSON
+python -m chirality.interfaces.cli \
+  phase1-dialogue-run \
+  --lens-mode auto \
+  --relaxed-json \
+  --extract-structured \
+  --reasoning-effort low \
+  --out runs/latest_run
+
+# Artifacts
+# - runs/latest_run/phase1_dialogue.jsonl                (clean transcript)
+# - runs/latest_run/phase1_relaxed_output.json           (Stage‑A content)
+# - runs/latest_run/phase1_structured.json               (JSON + validation report)
+# - runs/latest_run/phase1_structured_matrices.json      (matrices‑only for DB ingest)
 ```
 
-This will create a `runs/latest_run` directory containing the final output and a full conversational trace.
+Stage‑A only through Matrix C (quick test):
+
+```bash
+python -m chirality.interfaces.cli \
+  phase1-dialogue-run \
+  --lens-mode auto \
+  --relaxed-json \
+  --stop-at C_interpreted \
+  --extract-structured \
+  --out runs/c_stageA
+```
+
+Run extraction later (CI/CD):
+
+```bash
+python -m chirality.interfaces.cli \
+  phase1-extract \
+  --from runs/latest_run/phase1_relaxed_output.json \
+  --out  runs/latest_run/phase1_structured.json \
+  --matrices-only  # optional: write only matrices
+```
+
+Print matrices (quick view):
+
+```bash
+python - <<'PY'
+import json, pathlib
+p = pathlib.Path('runs/latest_run/phase1_structured_matrices.json')
+data = json.loads(p.read_text())
+for m in ['C','F','D','K','X','Z','G','T','E']:
+  if m in data['matrices']:
+    print(f'== Matrix {m} ==')
+    for k,v in data['matrices'][m].items():
+      if isinstance(v, dict) and 'elements' in v:
+        print(f'[{k}]')
+        for row in v['elements']:
+          print(' | '.join(map(str,row)))
+        print()
+PY
+```
 
 
 ## Development
@@ -93,6 +147,7 @@ To set up the development environment and run tests, please refer to the instruc
 - **Single CLI Entry Point**: Use `chirality` command (via `chirality.interfaces.cli:main`)
 - **Output Channels**: Logs go to stderr, data goes to stdout (for CI/CD integration)
 - **Guard Scripts**: Run before commits to prevent legacy code drift
+- **Structured outputs & transport**: Adapter uses typed input parts; Stage‑B enforces JSON via `json_object` and validates locally (plus one retry). For reasoning models (e.g., GPT‑5), unsupported sampling params (like `top_p`) are omitted automatically.
 
 Additional docs:
 - `docs/INTERFACE.md`: Producer mirror of the chirality-app contract (app mode).
