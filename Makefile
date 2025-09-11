@@ -19,6 +19,7 @@ help:
 	@echo "  checksums        - Update prompt asset checksums"
 	@echo "  lint-boundaries  - Check architectural boundary violations"
 	@echo "  import-rewrite   - Fix imports after refactoring"
+	@echo "  reconcile-assets - Recompute prompt asset checksums and metadata"
 	@echo "  smoke            - Basic smoke test"
 	@echo "  clean            - Remove generated files and caches"
 	@echo "  install          - Install development dependencies"
@@ -61,6 +62,12 @@ import-rewrite:
 	@echo "🔄 Fixing imports after refactoring..."
 	python scripts/simple_import_fix.py
 
+reconcile-assets:
+	@echo "🧮 Reconciling prompt assets metadata..."
+	python scripts/reconcile_assets.py --write
+	@echo "🔍 Verifying manifest..."
+	python -m chirality.interfaces.cli assets-verify
+
 smoke:
 	@echo "🚀 Running smoke test..."
 	@python -c "import chirality; print('✅ Import works')"
@@ -79,4 +86,6 @@ clean:
 
 # Install development dependencies
 install:
-	pip install -e ".[dev]"
+	# Install pinned OpenAI SDK first, then project deps
+	pip install -r constraints/openai.txt
+	pip install -e ".[dev,openai]"

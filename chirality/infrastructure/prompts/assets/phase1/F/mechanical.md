@@ -23,6 +23,4 @@ So the Matrix level convention is [C] ⊙ [J] = [F] which means at the element l
 Generate this purely mechanical construction of word pairs with the semantic operator in place ( * )
 
 ### Output format
-Return **only** valid JSON in this shape:
-
-{{json_tail}}
+Return final output in a table using markdown format.

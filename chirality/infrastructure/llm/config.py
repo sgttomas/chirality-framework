@@ -15,7 +15,7 @@ class LLMConfig:
     """Global LLM configuration parameters."""
 
     model: str = "gpt-4o"
-    temperature: Optional[float] = None  # Default to None per semantic rule
+    temperature: Optional[float] = 1.0  # Single-source default (can be overridden via env/testing)
     top_p: Optional[float] = 0.9
     max_tokens: Optional[int] = None  # Let API determine from context
     seed: Optional[int] = None  # For deterministic testing
@@ -56,7 +56,7 @@ def create_default_config() -> LLMConfig:
 
     Environment variables:
         CHIRALITY_MODEL: Model name (default: gpt-4.1-nano)
-        CHIRALITY_TEMPERATURE: Temperature (default: None - unset)
+        CHIRALITY_TEMPERATURE: Temperature (default: 1.0)
         CHIRALITY_TOP_P: Top-p value (default: 0.9)
         CHIRALITY_MAX_TOKENS: Max tokens (default: None)
         CHIRALITY_SEED: Random seed (default: None)
@@ -66,7 +66,7 @@ def create_default_config() -> LLMConfig:
     """
     return LLMConfig(
         model=os.getenv("CHIRALITY_MODEL", "gpt-4.1-nano"),
-        temperature=float(os.getenv("CHIRALITY_TEMPERATURE")) if os.getenv("CHIRALITY_TEMPERATURE") else None,
+        temperature=float(os.getenv("CHIRALITY_TEMPERATURE", "1.0")),
         top_p=float(os.getenv("CHIRALITY_TOP_P", "0.9")),
         max_tokens=_parse_optional_int(os.getenv("CHIRALITY_MAX_TOKENS")),
         seed=_parse_optional_int(os.getenv("CHIRALITY_SEED")),

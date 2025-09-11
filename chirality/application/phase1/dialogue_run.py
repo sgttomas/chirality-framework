@@ -15,7 +15,7 @@ from typing import Dict, List, Any, Optional, Literal
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ...infrastructure.prompts.json_tails import get_tail
+# JSON tails removed from assets; enforcement via Responses API structured outputs
 from ...infrastructure.llm.openai_adapter import call_responses
 from ...infrastructure.llm.repair import try_parse_json_or_repair, create_matrix_schema_hint
 from ...infrastructure.monitoring.tracer import JSONLTracer
@@ -26,6 +26,16 @@ from ...domain.budgets import BudgetConfig
 from ...application.lenses import LensResolver
 from .aggregator import validate_and_write_agg, create_aggregator_schema_hint
 from .contracts import MatrixSnapshot
+
+
+STATION_MAP = {
+    "C": "problem statement",
+    "F": "requirements",
+    "D": "objectives",
+    "X": "verification",
+    "Z": "validation",
+    "E": "evaluation",
+}
 
 
 def _infer_operation(matrix_name: str) -> str:
@@ -64,6 +74,9 @@ class DialogueOrchestrator:
         lens_mode: Literal["catalog", "auto"] = "catalog",
         write_catalog: bool = False,
         reasoning_effort: Optional[str] = None,
+        relaxed_json: bool = False,
+        inband_c_normalize: bool = False,
+        stop_at: Optional[str] = None,
     ):
         """
         Initialize the dialogue orchestrator.
@@ -90,6 +103,9 @@ class DialogueOrchestrator:
         self.tracer = tracer
         self.lens_mode = lens_mode
         self.write_catalog = write_catalog
+        self.relaxed_json = relaxed_json
+        self.inband_c_normalize = inband_c_normalize
+        self.stop_at = stop_at
 
         # Initialize lens resolver 
         self.lens_resolver = LensResolver(lens_mode=lens_mode)
@@ -151,6 +167,26 @@ class DialogueOrchestrator:
         )
         trace_entries.append(c_interpreted_trace)
         self.matrix_results["C"]["interpreted"] = c_interpreted_result
+
+        # Optional early stop for quick Stage-A tests
+        if self.stop_at in ("C", "C_interpreted"):
+            final_output = {
+                "meta": {
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                    "model": self.model,
+                    "temperature": self.temperature,
+                    "lens_mode": self.lens_mode,
+                    "kernel_hash": self._compute_kernel_hash(),
+                    "token_count": self.token_count
+                },
+                "matrices": {
+                    "C": self.matrix_results["C"],
+                },
+                "trace": trace_entries
+            }
+            self._validate_clean_transcript()
+            self._validate_generate_lenses_only_in_auto()
+            return final_output
         
         # Stage 3: Lens resolution and history injection (no LLM)
         c_lenses_result, c_lenses_trace = self._inject_lenses("problem statement", "C")
@@ -163,6 +199,15 @@ class DialogueOrchestrator:
         )
         trace_entries.append(c_lensed_trace)
         self.matrix_results["C"]["lensed"] = c_lensed_result
+        
+        # MATRIX J EXTRACTION - Extract from B (remove wisdom row)
+        
+        # J/extract.md - Extract Matrix J from Matrix B
+        j_extract_result, j_extract_trace = self._execute_stage(
+            "phase1_j_extract", "J", "extract"
+        )
+        trace_entries.append(j_extract_trace)
+        self.matrix_results["J"] = {"extract": j_extract_result}
         
         # MATRIX F PIPELINE - 4 STAGES (Element-wise Product)
         
@@ -251,6 +296,15 @@ class DialogueOrchestrator:
         trace_entries.append(d_lensed_trace)
         self.matrix_results["D"]["lensed"] = d_lensed_result
         
+        # MATRIX K TRANSFORMATION - Explain transpose of D
+        
+        # K/transform.md - Introduce Matrix K transformation
+        k_transform_result, k_transform_trace = self._execute_stage(
+            "phase1_k_transform", "K", "transform"
+        )
+        trace_entries.append(k_transform_trace)
+        self.matrix_results["K"] = {"intro": k_transform_result}
+        
         # MATRIX K - Transpose of D.lensed (code-only, no LLM, no station)
         
         # Transform D.lensed to get K via transpose
@@ -292,7 +346,7 @@ class DialogueOrchestrator:
         
         k_result, k_trace = self.emit_data_drop("transform", "K", k_transform_payload)
         trace_entries.append(k_trace)
-        self.matrix_results["K"] = {"transform": k_result}
+        self.matrix_results["K"]["transform"] = k_result
         
         # MATRIX X (Verification) - 4 STAGES (Dot Product K · J)
         
@@ -369,6 +423,33 @@ class DialogueOrchestrator:
         trace_entries.append(z_principles_trace)
         self.matrix_results["Z"]["principles"] = z_principles_result
         
+        # MATRIX G EXTRACTION - Extract first 3 rows from Z
+        
+        # G/extract.md - Extract Matrix G from Matrix Z
+        g_extract_result, g_extract_trace = self._execute_stage(
+            "phase1_g_extract", "G", "extract"
+        )
+        trace_entries.append(g_extract_trace)
+        self.matrix_results["G"] = {"intro": g_extract_result}
+        
+        # MATRIX P EXTRACTION - Extract 4th row from Z
+        
+        # P/extract.md - Extract Matrix P from Matrix Z
+        p_extract_result, p_extract_trace = self._execute_stage(
+            "phase1_p_extract", "P", "extract"
+        )
+        trace_entries.append(p_extract_trace)
+        self.matrix_results["P"] = {"extract": p_extract_result}
+        
+        # MATRIX T TRANSFORMATION - Transpose of J
+        
+        # T/transform.md - Transform Matrix J to Matrix T
+        t_transform_result, t_transform_trace = self._execute_stage(
+            "phase1_t_transform", "T", "transform"
+        )
+        trace_entries.append(t_transform_trace)
+        self.matrix_results["T"] = {"intro": t_transform_result}
+        
         # MATRIX E (Evaluation) - Dot Product with Derived Inputs G·T
         
         # Precompute Matrix G = Z[0:3, :] (slice of first 3 rows)
@@ -395,7 +476,7 @@ class DialogueOrchestrator:
         
         g_result, g_trace = self.emit_data_drop("transform", "G", g_transform_payload)
         trace_entries.append(g_trace)
-        self.matrix_results["G"] = {"transform": g_result}
+        self.matrix_results["G"]["transform"] = g_result
         
         # Precompute Matrix T = Jᵀ (transpose of J)
         j_elements = [[cell.value for cell in row] for row in self.J.cells]
@@ -419,7 +500,7 @@ class DialogueOrchestrator:
         
         t_result, t_trace = self.emit_data_drop("transform", "T", t_transform_payload)
         trace_entries.append(t_trace)
-        self.matrix_results["T"] = {"transform": t_result}
+        self.matrix_results["T"]["transform"] = t_result
         
         # Preflight check for dot product compatibility (G · T)
         try:
@@ -543,13 +624,15 @@ class DialogueOrchestrator:
         template_vars = {
             "station": station,
             "matrix_id": matrix_name,
-            "n_rows": str(len(rows)),
-            "n_cols": str(len(cols)),
-            "rows_json": json.dumps(rows),
-            "cols_json": json.dumps(cols)
+            "rows": str(len(rows)),
+            "cols": str(len(cols)),
+            "row_labels": json.dumps(rows),
+            "col_labels": json.dumps(cols)
         }
         
         rendered_prompt = self._render_template_strict(asset_text, template_vars)
+        if not self.relaxed_json:
+            rendered_prompt += "\n\nReturn one JSON object that satisfies the provided schema exactly: fill every required field and do not include extra keys."
         
         # Add user turn to transcript with rendered prompt
         user_message = {"role": "user", "content": rendered_prompt}
@@ -559,41 +642,45 @@ class DialogueOrchestrator:
         system_text = self.registry.get_text("system")
         input_text = self._build_canonical_transcript()
         
-        # Build strict JSON schema for lenses response
-        response_format = {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "lenses_response",
-                "strict": True,
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "lenses": {
-                            "type": "array",
-                            "items": {
-                                "type": "array", 
-                                "items": {"type": "string"}
-                            }
-                        }
-                    },
-                    "required": ["lenses"],
-                    "additionalProperties": False
-                }
-            }
-        }
+        # Build strict JSON schema for lenses response from single source
+        from ...infrastructure.validation.json_schema_converter import get_strict_response_format
+        response_format = get_strict_response_format(matrix_name, "lenses")
+        # Log minimal schema info (no secrets)
+        try:
+            rf_type = response_format.get("type") if isinstance(response_format, dict) else None
+            js = response_format.get("json_schema", {}) if isinstance(response_format, dict) else {}
+            js_name = js.get("name")
+            root = js.get("schema", {}) if isinstance(js, dict) else {}
+            required = root.get("required", []) if isinstance(root, dict) else []
+            addl = root.get("additionalProperties", None)
+            print(f"ℹ️  Lenses RF:{rf_type} name:{js_name} required:{required} additionalProperties:{addl}")
+        except Exception:
+            pass
         
-        # Call Responses API with strict JSON schema (fail fast, no repair)
+        # Call Responses API (relaxed mode bypasses response_format)
         response = call_responses(
             instructions=system_text,
             input=input_text,
-            response_format=response_format,
             reasoning_effort=self.reasoning_effort,
-            model=self.model,
+            response_format=None if self.relaxed_json else response_format,
+            expects_json=not self.relaxed_json,
             store=True
         )
         
-        # Parse the assistant's JSON response
+        # Parse the assistant's JSON response, allow a single repair retry if missing 'lenses'
         response_content = response.get("output_text", "")
+        if not response_content:
+            raw = response.get("raw", {})
+            raise RuntimeError(f"Empty lenses JSON response for {matrix_name}/{station}. raw={str(raw)[:300]}")
+        if self.relaxed_json:
+            # Skip JSON enforcement; record raw content
+            self.dialogue_history.append({"role": "assistant", "content": response_content})
+            return {
+                "station": station,
+                "matrix_id": matrix_name,
+                "content": response_content,
+                "source": "auto",
+            }
         try:
             lenses_json = json.loads(response_content)
         except json.JSONDecodeError as e:
@@ -604,8 +691,28 @@ class DialogueOrchestrator:
         self.dialogue_history.append(assistant_message)
         
         # Validate lenses structure
-        if "lenses" not in lenses_json:
-            raise ValueError("Lenses response missing 'lenses' field")
+        if "lenses" not in lenses_json and not self.relaxed_json:
+            # One constrained retry with corrective note
+            note = (
+                "Previous output was invalid: missing key 'lenses'. "
+                "Re-emit a single JSON object that satisfies the provided schema exactly."
+            )
+            retry_input = f"{input_text}\n\nNOTE: {note}"
+            response_retry = call_responses(
+                instructions=system_text,
+                input=retry_input,
+                reasoning_effort=self.reasoning_effort,
+                response_format=response_format,
+                expects_json=True,
+                store=True
+            )
+            retry_text = response_retry.get("output_text", "")
+            try:
+                lenses_json = json.loads(retry_text)
+            except json.JSONDecodeError:
+                raise ValueError("Lenses response missing 'lenses' field")
+            if "lenses" not in lenses_json:
+                raise ValueError("Lenses response missing 'lenses' field")
             
         lenses_array = lenses_json["lenses"]
         if len(lenses_array) != len(rows):
@@ -793,12 +900,31 @@ class DialogueOrchestrator:
         
         # Load the prompt asset
         prompt_text = self.registry.get_text(asset_id)
-        
-        # Get JSON tail for this stage
-        json_tail = get_tail(matrix_name, stage)
-        
-        # Replace json_tail placeholder
-        rendered_prompt = prompt_text.replace("{{json_tail}}", json_tail)
+        # In relaxed/semantic mode, strip any JSON-only output directives from assets
+        if self.relaxed_json:
+            import re as _re
+            # Remove sections titled 'Output format' and trailing JSON-only instructions
+            prompt_text = _re.sub(r"(?is)\n+#+\s*Output\s*format.*\Z", "", prompt_text)
+
+        # JSON tails removed (server-enforced JSON); no tail guidance inserted
+
+        from ...domain.matrices.canonical import get_matrix_info
+        import json
+
+        matrix_info = get_matrix_info(matrix_name)
+        station = STATION_MAP.get(matrix_name, "")
+
+        template_vars = {
+            "matrix_id": matrix_name,
+            "station": station,
+            "n_rows": str(matrix_info["rows"]),
+            "n_cols": str(matrix_info["cols"]),
+            "rows_json": json.dumps(matrix_info["row_labels"]),
+            "cols_json": json.dumps(matrix_info["col_labels"]),
+        }
+
+        # Render prompt (no json_tail placeholder)
+        rendered_prompt = self._render_template_strict(prompt_text, template_vars)
         
         # Add user message to history
         user_message = {"role": "user", "content": rendered_prompt}
@@ -831,48 +957,109 @@ class DialogueOrchestrator:
             from ...infrastructure.validation.json_schema_converter import get_strict_response_format
             response_format = get_strict_response_format(matrix_name, stage)
             
-            # Call new Responses API
-            response = call_responses(
-                instructions=system_text,
-                input=input_text,
-                response_format=response_format,
-                reasoning_effort=self.reasoning_effort,
-                model=self.model,
-                store=True
-            )
-            
-            # Extract response content
-            response_content = response.get("output_text", "")
+            # Log minimal schema info for triage (no secrets)
+            try:
+                rf_type = response_format.get("type") if isinstance(response_format, dict) else None
+                js = response_format.get("json_schema", {}) if isinstance(response_format, dict) else {}
+                js_name = js.get("name")
+                root = js.get("schema", {}) if isinstance(js, dict) else {}
+                required = root.get("required", []) if isinstance(root, dict) else []
+                addl = root.get("additionalProperties", None)
+                print(f"ℹ️  {matrix_name}/{stage} RF:{rf_type} name:{js_name} required:{required} additionalProperties:{addl}")
+            except Exception:
+                pass
+
+            if matrix_name == "C" and (not self.relaxed_json) and getattr(self, 'inband_c_normalize', False):
+                # Stage A: creative
+                resp_a = call_responses(
+                    instructions=system_text,
+                    input=input_text,
+                    reasoning_effort=self.reasoning_effort,
+                    expects_json=False,
+                    store=True,
+                    temperature=self.temperature,
+                    top_p=1.0,
+                )
+                creative_text = resp_a.get("output_text", "")
+                # Stage B: normalize with strict schema
+                try:
+                    from pathlib import Path as _P
+                    norm_path = _P("chirality/infrastructure/prompts/assets/phase1/normalize_to_json.md")
+                    normalizer_instructions = norm_path.read_text(encoding="utf-8")
+                except Exception:
+                    normalizer_instructions = (
+                        "You convert the provided plain text into a single JSON object that matches the schema exactly. "
+                        "Extract only; do not add or infer; no extra keys."
+                    )
+                response = call_responses(
+                    instructions=normalizer_instructions,
+                    input=[{"role": "user", "content": [{"type": "input_text", "text": creative_text}]}],
+                    response_format=response_format,
+                    expects_json=True,
+                    store=True,
+                    temperature=0.2,
+                    top_p=1.0,
+                )
+                response_content = response.get("output_text", "")
+            else:
+                response = call_responses(
+                    instructions=system_text,
+                    input=input_text,
+                    reasoning_effort=self.reasoning_effort,
+                    response_format=None if self.relaxed_json else response_format,
+                    expects_json=not self.relaxed_json,
+                    store=True
+                )
+                # Extract response content
+                response_content = response.get("output_text", "")
             
             # Parse JSON response
-            try:
-                stage_result = json.loads(response_content)
-                
-                # P0-3: Validate response against strict JSON schema (per colleague_1's specification)
+            def _validate_and_report(payload: dict) -> tuple[bool, list[str]]:
                 from ...infrastructure.validation.json_schema_converter import validate_stage_response_strict
-                is_valid, schema_errors = validate_stage_response_strict(stage_result, matrix_name, stage)
-                
+                is_valid, schema_errors = validate_stage_response_strict(payload, matrix_name, stage)
                 if not is_valid:
                     print(f"❌ P0-3 strict schema validation failed for {matrix_name}/{stage}:")
                     for error in schema_errors:
                         print(f"    - {error}")
-                    # Still add legacy validation for completeness
-                    validation_errors = validate_stage_response(stage_result, matrix_name, stage)
-                    stage_result["_validation_errors"] = schema_errors
-                    stage_result["_legacy_validation_warnings"] = validation_errors
                 else:
                     print(f"✅ P0-3 strict schema validation passed for {matrix_name}/{stage}")
-                    # Still run legacy validation as additional check
-                    validation_errors = validate_stage_response(stage_result, matrix_name, stage)
-                    if validation_errors:
-                        print(f"⚠️  Legacy validation warnings (schema passed):")
-                        for error in validation_errors:
-                            print(f"    - {error}")
-                        stage_result["_legacy_validation_warnings"] = validation_errors
-                    
-            except json.JSONDecodeError:
-                # Fallback parsing
-                stage_result = {"content": response_content, "error": "json_parse_failed"}
+                return is_valid, schema_errors
+
+            # Parse JSON and validate unless relaxed
+            if self.relaxed_json:
+                stage_result = {"content": response_content}
+            else:
+                try:
+                    parsed_once = json.loads(response_content)
+                    ok, errs = _validate_and_report(parsed_once)
+                    if ok:
+                        stage_result = parsed_once
+                    else:
+                        correction = (
+                            "Previous output did not satisfy the schema. "
+                            "Re-emit a single JSON object matching the schema exactly."
+                        )
+                        retry_input = f"{input_text}\n\nNOTE: {correction}"
+                        response_retry = call_responses(
+                            instructions=system_text,
+                            input=retry_input,
+                            reasoning_effort=self.reasoning_effort,
+                            response_format=response_format,
+                            expects_json=True,
+                            store=True
+                        )
+                        retry_text = response_retry.get("output_text", "")
+                        try:
+                            parsed_retry = json.loads(retry_text)
+                            ok2, errs2 = _validate_and_report(parsed_retry)
+                            stage_result = parsed_retry if ok2 else parsed_once
+                            if not ok2:
+                                stage_result["_validation_errors"] = errs2
+                        except json.JSONDecodeError:
+                            stage_result = parsed_once
+                            stage_result["_validation_errors"] = errs
+                except json.JSONDecodeError:
+                    stage_result = {"content": response_content, "error": "json_parse_failed"}
             
             # Add assistant response to history
             assistant_message = {"role": "assistant", "content": response_content}
@@ -959,6 +1146,14 @@ cols: {json.dumps(cols)}
         from datetime import datetime, timezone
         
         # Build clean data-drop block based on kind
+        if getattr(self, 'relaxed_json', False):
+            # Do not silently default structural keys; surface empties and let extractor decide
+            if 'rows' not in payload:
+                payload['rows'] = []
+            if 'cols' not in payload:
+                payload['cols'] = []
+            if 'values_json' not in payload:
+                payload['values_json'] = []
         if kind == "transform":
             block_content = self._render_clean_payload(
                 payload['rows'], 
@@ -1069,6 +1264,18 @@ cols: {json.dumps(cols)}
             # Resolve lenses using lens system (catalog mode)
             lenses_result = self.lens_resolver.resolve_lenses(station)
         
+        # In relaxed mode, skip parity checks and injection block building
+        if getattr(self, 'relaxed_json', False):
+            trace_entry = {
+                "type": "lens_injection",
+                "turn_type": "data",
+                "station": station,
+                "matrix": matrix_name,
+                "source": lenses_result.get("source", "auto"),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            return lenses_result, trace_entry
+
         # D2-2: Perform preflight parity check if we have interpreted data
         if interpreted_rows is not None and interpreted_cols is not None:
             lens_rows = lenses_result["rows"]
@@ -1217,12 +1424,22 @@ cols: {json.dumps(cols)}
             if not instructions or not input:
                 raise ValueError("Must provide instructions and input for Responses API")
             
+            # Derive strict response_format from operation (matrix_step)
+            try:
+                matrix_name, step = operation.split("_", 1)
+            except Exception:
+                matrix_name, step = ("unknown", "unknown")
+            response_format = None
+            if matrix_name != "unknown" and step != "unknown":
+                from ...infrastructure.validation.json_schema_converter import get_strict_response_format
+                response_format = get_strict_response_format(matrix_name, step)
+
             response = call_responses(
                 instructions=instructions,
                 input=input,
-                response_format={"type": "json_object"},
                 reasoning_effort=self.reasoning_effort,
-                model=self.model
+                response_format=response_format,
+                expects_json=True
             )
             # Convert to expected format for repair mechanism
             return {"content": response.get("output_text", "")}, response.get("raw", {}).get("metadata", {})

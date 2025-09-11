@@ -12,7 +12,6 @@ from typing import Dict, List, Callable, Any
 from datetime import datetime, timezone
 
 from ...infrastructure.prompts.registry import get_registry
-from ...infrastructure.prompts.json_tails import TAIL_LENSES_GENERATE
 
 # Station-specific schemas (single source of truth)
 STATION_SCHEMAS = {

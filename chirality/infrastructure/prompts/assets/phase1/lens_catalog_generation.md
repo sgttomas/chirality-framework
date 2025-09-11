@@ -1,5 +1,3 @@
-{{context}}
-
 ## Matrix {{matrix_id}} Lens Construction
 Matrix {{matrix_id}}
 Dimensions: {{n_rows}} × {{n_cols}} 
@@ -21,6 +19,4 @@ For each cell (row_i, col_j):
 3) Output a concise, actionable lens phrase.
 
 ### Output format
-Return **only** valid JSON in this shape:
-
-{{json_tail}}
+Once the final lenses for Matrix {{matrix_id}}  have been generated then return final output in a table using markdown format.

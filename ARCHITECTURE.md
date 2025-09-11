@@ -79,3 +79,25 @@ The framework operates on a "Pure History" model to maintain semantic integrity.
 - **Metadata Placeholders are Allowed:** Prompts *can* contain placeholders for out-of-band data needed for an operation, such as `{{lens}}` (from the lens catalog) or `{{row_name}}` (metadata for the instruction).
 - **Data-Drops for Code Operations:** When a non-LLM operation occurs (e.g., transposing Matrix K), the orchestrator adds a new `role: user` turn to the conversation that presents the result in a clean, metadata-free block (`<<<BEGIN DERIVED MATRIX>>>...`). This makes the code-only step a visible and auditable part of the conversation.
 - **Provenance is External:** All metadata (SHAs, timestamps, lens sources, etc.) is captured exclusively in the Python trace objects and is never exposed to the LLM.
+
+## 4. Semantic‑First + Out‑of‑Band Normalization
+
+Phase‑1 now separates creative generation from structured extraction:
+
+- **Stage A (Semantic, Markdown)**: Prompts produce clean, human‑readable matrices. Transcript is free of framework metadata and JSON constraints.
+- **Stage B (Normalization, Strict JSON)**: A reusable normalizer prompt converts the Stage‑A text into a single JSON object that matches the strict schema exactly. Local validation is applied with one diff‑driven retry. A deterministic GitHub‑table parser is used as a first pass to reduce model calls.
+
+Provenance and failure behavior:
+- Each normalized object carries a `_provenance.stage_a_sha256` hash of the Stage‑A text to enable idempotent re‑normalization and audit.
+- Missing/invalid structure fails loudly and is reported in a per‑stage `validation` block emitted by the extractor (kept out of DB ingest).
+
+Transport & contracts:
+- Adapter uses OpenAI Responses API with typed message parts (`type: "input_text"`).
+- JSON is enabled only for JSON‑expecting calls; semantic stages run free‑form.
+- For reasoning models (e.g., GPT‑5), unsupported parameters like `top_p` are omitted automatically by the adapter.
+
+CLI support:
+- `--relaxed-json` keeps the transcript clean and saves `phase1_relaxed_output.json`.
+- `--extract-structured` runs the normalizer immediately to produce `phase1_structured.json` and `phase1_structured_matrices.json` for DB ingest.
+- `phase1-extract` normalizes a saved relaxed run later (e.g., in CI/CD).
+- `--stop-at C_interpreted` enables quick Stage‑A checks for Matrix C.

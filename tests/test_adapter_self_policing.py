@@ -41,7 +41,7 @@ def test_call_responses_rejects_chat_completions_params():
 def test_call_responses_rejects_unexpected_params():
     """Test that call_responses rejects unexpected parameters."""
     
-    with pytest.raises(ValueError, match="Unexpected parameters: {'unknown_param'}"):
+    with pytest.raises(ValueError, match=r"Unexpected parameters: \['unknown_param'\]"):
         call_responses(
             instructions="Test instructions",
             input="Test input",
@@ -73,7 +73,7 @@ def test_call_responses_allows_valid_responses_params():
         result = call_responses(
             instructions="Test instructions",
             input="Test input",
-            response_format={"type": "json_object"},
+            text={"format": "json_object"},
             store=True,
             metadata={"test": "metadata"}
         )
@@ -82,7 +82,7 @@ def test_call_responses_allows_valid_responses_params():
         mock_client.call_responses_new.assert_called_once_with(
             instructions="Test instructions",
             input="Test input",
-            response_format={"type": "json_object"},
+            text={"format": "json_object"},
             store=True,
             metadata={"test": "metadata"}
         )
@@ -140,7 +140,7 @@ def test_adapter_kwargs_never_contain_messages():
         call_responses(
             instructions="Test instructions",
             input="Test input",
-            response_format={"type": "json_object"}
+            text={"format": "json_object"}
         )
         
         # Assert no forbidden parameters were passed through
@@ -156,7 +156,7 @@ def test_adapter_kwargs_never_contain_messages():
             assert param not in kwargs, f"Forbidden parameter '{param}' found in adapter kwargs!"
         
         # Ensure only valid Responses API parameters
-        expected_params = {'instructions', 'input', 'response_format', 'store', 'metadata'}
+        expected_params = {'instructions', 'input', 'text', 'store', 'metadata'}
         for param in kwargs:
             assert param in expected_params, f"Unexpected parameter '{param}' in adapter kwargs!"
 

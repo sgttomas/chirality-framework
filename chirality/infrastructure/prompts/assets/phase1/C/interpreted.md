@@ -12,6 +12,4 @@ Generate this iteration of [{{matrix_id}}]
 Apply semantic multiplication first, and then semantic addition. Do not leave any operators (" * " or " + ") in the final word string 
 
 ### Output format
-Return **only** valid JSON in this shape:
-
-{{json_tail}}
+Return final output in a table using markdown format.

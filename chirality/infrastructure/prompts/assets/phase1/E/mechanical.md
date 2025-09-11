@@ -16,6 +16,4 @@ Follow the purely combinatorial first step of semantic dot product matrix operat
 Generate this purely mechanical construction of word pairs and concatenations complete with the semantic operators in place ( * , + )
 
 ### Output format
-Return **only** valid JSON in this shape:
-
-{{json_tail}}
+Return final output in a table using markdown format.

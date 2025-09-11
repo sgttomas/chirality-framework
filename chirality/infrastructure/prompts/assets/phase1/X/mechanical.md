@@ -16,6 +16,4 @@ This uses the " · " as a semantic matrix dot product operator.
 Generate this purely mechanical construction of word pairs and concatenations complete with the semantic operators in place ( * , + )
 
 ### Output format
-Return **only** valid JSON in this shape:
-
-{{json_tail}}
+Return final output in a table using markdown format.

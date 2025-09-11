@@ -33,9 +33,9 @@ class TensorEngine:
         snapshot_path: Path,
         phase1_output: Dict[str, Any],
         lens_catalog_path: Optional[Path] = None,
-        model: str = "gpt-5-nano",  # Updated default
-        temperature: float = 0.7,  # Updated default
-        top_p: float = 0.9,  # New parameter
+        model: str = "gpt-5-nano",
+        temperature: Optional[float] = None,
+        top_p: float = 0.9,
         max_repair: int = 1,
         budget_config: Optional[BudgetConfig] = None,
         parallel: int = 8,
@@ -67,7 +67,12 @@ class TensorEngine:
         self.lens_catalog = self._load_lens_catalog(lens_catalog_path) if lens_catalog_path else {}
 
         self.model = model
-        self.temperature = temperature
+        # Single-source temperature: use config when not provided
+        if temperature is None:
+            from ...infrastructure.llm.config import get_config
+            self.temperature = get_config().temperature
+        else:
+            self.temperature = temperature
         self.top_p = top_p
         self.max_repair = max_repair
         self.parallel = parallel

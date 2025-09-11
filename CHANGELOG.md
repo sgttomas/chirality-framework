@@ -5,6 +5,39 @@ All notable changes to the Chirality Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [19.4.0] - 2025-09-10
+
+### 🔧 SUPPORT MATRIX INTEGRATION & MODEL SELECTION FIXES
+
+**Support Matrix Integration**
+- **ADDED**: Five critical prompt stages for support matrix explanations:
+  - `phase1/J/extract.md` - Extract Matrix J from B (remove wisdom row)
+  - `phase1/K/transform.md` - Transform Matrix D to K via transpose
+  - `phase1/G/extract.md` - Extract Matrix G from Z (first 3 rows)
+  - `phase1/P/extract.md` - Extract Matrix P from Z (fourth row)  
+  - `phase1/T/transform.md` - Transform Matrix J to T via transpose
+- **INTEGRATED**: New prompt stages into `dialogue_run.py` sequence following normative specification
+- **FIXED**: "Magic data-drop" problem where matrices appeared without explanation, causing LLM confusion
+- **RESOLVED**: "empty_normalizer_output" errors in GPT-5 runs due to missing matrix context
+
+**Model Selection SSOT Compliance**
+- **FIXED**: CLI lens-derive hardcoded `gpt-4o-mini` → now uses global config
+- **FIXED**: LensBuilder inconsistent defaults → now respects `CHIRALITY_MODEL` environment variable
+- **FIXED**: build_lens_catalog hardcoded `gpt-4o-mini` → now uses global config when model=None
+- **FIXED**: Phase 2 CLI hardcoded `gpt-5-nano` → now uses global config fallback
+- **ENFORCED**: Consistent model hierarchy: CLI args > ENV vars > global config defaults
+
+**Infrastructure Updates**
+- **UPDATED**: `metadata.yml` with new prompt asset entries
+- **UPDATED**: Normative spec hash validation after recent modifications
+- **ORGANIZED**: Moved all test_*.py files from project root to `tests/` directory
+- **MAINTAINED**: Full backward compatibility with existing configurations
+
+### Fixed
+- **Pipeline Reliability**: Eliminated non-deterministic failures due to missing matrix context in dialogue
+- **Model Consistency**: All framework components now respect `CHIRALITY_MODEL=gpt-5` setting
+- **Semantic Flow**: Proper "Conversation as Program" adherence with explained matrix operations
+
 ## [19.3.0] - 2025-09-08
 
 ### 🏗️ REFACTOR-4 DOMAIN-DRIVEN DESIGN ALIGNMENT
@@ -329,3 +362,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual-write legacy snapshots for all computed matrices to `snapshots/<run_id>/` for viewer compatibility.
 - New `chirality/exporters/manifest_exporter.py` and tests.
 - New producer-side `docs/INTERFACE.md` and documentation updates (README, API_REFERENCE, TUTORIAL, AGENTS, CLAUDE).
+## [Unreleased]
+
+### Added
+- Semantic‑first Phase‑1 with out‑of‑band normalization: new extractor (`chirality/postprocessing/markdown_extractor.py`) that converts Stage‑A markdown into strict JSON with local validation and a single diff‑driven retry.
+- Deterministic GitHub‑table parser as a fast path before LLM normalization; falls back to model when shapes don’t match canonical dims.
+- Provenance hashing: `_provenance.stage_a_sha256` per stage for idempotent re‑normalization and auditing.
+- CLI flags: `--relaxed-json`, `--extract-structured`, `--inband-c-normalize` (off by default), `--stop-at` for early exits.
+- New command: `phase1-extract` (with `--matrices-only`) to normalize saved relaxed runs.
+
+### Changed
+- Prompt assets in relaxed mode automatically strip JSON‑only directives to keep transcripts clean.
+- No silent defaults in relaxed mode: data‑drop helpers no longer back‑fill rows/cols; extractor decides recovery vs fail.
+- Adapter omits unsupported sampling params (e.g., `top_p`) for reasoning models like GPT‑5.
+- Prompt assets manifest supports `pending_user_authoring` during active editing to avoid hash churn.
+
+### Fixed
+- Typed message parts (`type: "input_text"`) used consistently for Responses API calls, reducing transport variance.

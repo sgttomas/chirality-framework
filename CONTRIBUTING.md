@@ -70,6 +70,11 @@ The codebase follows Domain-Driven Design (DDD) with clear separation of concern
    python scripts/codemod_legacy_imports.py  # Checks for banned imports
    ```
 
+5. **Semantic‑first pipeline**:
+   - Phase‑1 Stage‑A prompts should emit markdown tables that match canonical labels/dimensions. Avoid heading lines that become stray keys. If row labels are present, they must be the canonical labels in a leftmost column; otherwise omit them.
+   - Do not include JSON directives in Stage‑A prompts; the transcript must remain clean. The orchestrator strips “Output format → only JSON” sections when running with `--relaxed-json`.
+   - Stage‑B normalization (strict JSON) happens out‑of‑band via the extractor. Don’t embed JSON tails in assets.
+
 ### Logging & Output Channels
 
 - **Logs → stderr**: All progress, status, and diagnostic messages  
@@ -137,6 +142,39 @@ pytest -v tests/test_architecture_guards.py tests/test_clean_transcript.py
 
 *   **Mocking**: All core logic is tested against mock objects and a deterministic `echo` resolver. No new tests should make live network calls unless they are specifically designed for integration testing and use a dedicated, low-cost model.
 *   **Adding Tests**: New tests for core domain logic should be added to the `tests/` directory with a clear and descriptive filename.
+
+### Prompt Assets & Manifest
+
+- Prompt files live under `chirality/infrastructure/prompts/assets/phase1/...`.
+- Asset integrity is tracked by `infrastructure/prompts/assets/metadata.yml`.
+- During active editing you may set `sha256: pending_user_authoring` and `size_bytes: null` for assets you’re changing to avoid hash churn; restore real hashes before releases.
+
+### Running the Semantic‑first Flow
+
+```bash
+export OPENAI_API_KEY=...
+export CHIRALITY_MODEL=gpt-5
+export CHIRALITY_TEMPERATURE=1.0
+
+python -m chirality.interfaces.cli phase1-dialogue-run \
+  --lens-mode auto --relaxed-json --extract-structured --reasoning-effort low \
+  --out runs/dev
+
+# Stage‑A only through C (quick iteration)
+python -m chirality.interfaces.cli phase1-dialogue-run \
+  --lens-mode auto --relaxed-json --stop-at C_interpreted --extract-structured \
+  --out runs/c_stageA
+
+# Normalize saved relaxed output later
+python -m chirality.interfaces.cli phase1-extract \
+  --from runs/dev/phase1_relaxed_output.json \
+  --out  runs/dev/phase1_structured.json
+```
+
+### Responses API Notes
+
+- Use typed input parts (`type: "input_text"`).
+- The adapter omits unsupported sampling params (like `top_p`) for reasoning‑capable models.
 
 ### Documentation Contributions
 

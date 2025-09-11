@@ -42,11 +42,23 @@ class LLMClient:
         if OpenAI is None:
             raise ImportError("OpenAI package required. Install with: pip install openai")
 
+        # Load .env if present to populate OPENAI_API_KEY (silent best-effort)
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except Exception:
+            pass
+
         api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OpenAI API key required")
 
         self.client = OpenAI(api_key=api_key)
+        self._rf_probed = False
+
+    def _probe_response_format_support(self) -> None:
+        # No-op: rely on pinned SDK in the environment; no runtime probing
+        self._rf_probed = True
 
     def _call_with_retry(self, api_params: Dict[str, Any], max_retries: int = 3) -> Any:
         """
@@ -104,6 +116,9 @@ class LLMClient:
                 
             except Exception as e:
                 last_exception = e
+                # Allow caller to handle signature-related issues (e.g., unexpected kwargs)
+                if isinstance(e, TypeError):
+                    raise
                 
                 # Check if it's a timeout or connection error by name/type
                 if "timeout" in str(e).lower() or "connection" in str(e).lower() or \
@@ -181,6 +196,12 @@ class LLMClient:
             "total_tokens": max(0, int(total_tokens)),
         }
 
+    def _get_contract_mode(self) -> str:
+        """Return contract mode: 'TEXT_FORMAT' (default) or 'RESPONSE_FORMAT'."""
+        mode = os.getenv("CHIRALITY_CONTRACT") or os.getenv("CONTRACT") or "TEXT_FORMAT"
+        mode = str(mode).strip().upper()
+        return mode if mode in ("TEXT_FORMAT", "RESPONSE_FORMAT") else "TEXT_FORMAT"
+
     def call_responses(
         self,
         messages: List[Dict[str, str]],
@@ -212,7 +233,7 @@ class LLMClient:
             ValueError: If response is not valid JSON
             Exception: For API errors
         """
-        # D2-4: Apply guards to prevent forbidden parameter overrides
+        # D2-4: Apply guards with updated allow-list per colleague_1's guidance
         guard_llm_call("call_responses", 
                       temperature=temperature, 
                       max_tokens=max_tokens,
@@ -332,14 +353,160 @@ class LLMClient:
             }
             raise Exception(f"LLM API call failed: {e}") from e
 
+    def _extract_response_content(self, response, response_format):
+        """
+        Centralized JSON extraction per colleague_1's guidance.
+        
+        Handles different response formats with clear error handling.
+        Logs raw output on parse failures for debugging.
+        """
+        import json
+        
+        # Extract raw text content
+        if hasattr(response, "output_text"):
+            output_text = response.output_text or ""
+        elif hasattr(response, "output") and response.output:
+            # Handle structured output format
+            if isinstance(response.output, list) and response.output:
+                first = response.output[0]
+                # If json_schema, some SDKs return parsed object; surface it
+                if response_format and response_format.get("type") == "json_schema":
+                    try:
+                        return str(first), first
+                    except Exception:
+                        pass
+                # Object-shaped path
+                if hasattr(first, "content") and first.content:
+                    first_content = first.content[0]
+                    if hasattr(first_content, "text") and first_content.text:
+                        output_text = first_content.text
+                    else:
+                        output_text = str(first)
+                # Dict-shaped path
+                elif isinstance(first, dict):
+                    output_text = first.get("content", {}).get("text", "")
+                else:
+                    output_text = str(first)
+            else:
+                output_text = str(response.output)
+        else:
+            output_text = ""
+        
+        # Parse JSON with clear error handling
+        if response_format and response_format.get("type") in ["json_object", "json_schema"]:
+            try:
+                response_dict = json.loads(output_text) if output_text else {}
+            except json.JSONDecodeError as e:
+                # Log raw payload for debugging per colleague_1's guidance
+                response_dict = {
+                    "error": "json_parse_failed", 
+                    "parse_error": str(e),
+                    "raw_output": output_text[:500] + "..." if len(output_text) > 500 else output_text
+                }
+        else:
+            # Non-JSON response format
+            response_dict = {"text": output_text}
+        
+        return output_text, response_dict
+
+    def _call_responses_raw(self, api_params: Dict[str, Any]):
+        """Raw HTTP call to /v1/responses using top-level response_format.
+        Minimal, documented fields only; small timeouts and one retry on 5xx.
+        """
+        import os
+        import time as _time
+        from types import SimpleNamespace
+
+        payload = {k: v for k, v in api_params.items() if v is not None}
+        # Raw path honors contract toggle
+        contract_mode = self._get_contract_mode()
+        rf = payload.pop("response_format", None)
+        if contract_mode == "RESPONSE_FORMAT":
+            if rf is not None:
+                payload["response_format"] = rf
+            else:
+                payload.setdefault("response_format", {"type": "json_object"})
+        else:
+            payload.setdefault("text", {"format": "json_object"})
+        headers = {
+            "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY','')}",
+            "Content-Type": "application/json",
+        }
+
+        def _do_post():
+            try:
+                import httpx
+                with httpx.Client(timeout=httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0)) as client:
+                    return client.post("https://api.openai.com/v1/responses", headers=headers, json=payload)
+            except ModuleNotFoundError:
+                # Fallback to stdlib
+                import json as _json
+                import urllib.request
+                req = urllib.request.Request(
+                    url="https://api.openai.com/v1/responses",
+                    data=_json.dumps(payload).encode("utf-8"),
+                    headers=headers,
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=70) as resp:
+                    class _Resp:
+                        status_code = resp.status
+                        text = resp.read().decode("utf-8")
+                        def json(self):
+                            return _json.loads(self.text)
+                    return _Resp()
+
+        # One retry on 5xx with jitter
+        r = _do_post()
+        if getattr(r, "status_code", 200) >= 500:
+            _time.sleep(0.5 + random.uniform(0, 0.5))
+            r = _do_post()
+
+        if getattr(r, "status_code", 200) >= 400:
+            raise RuntimeError(f"Responses API error {r.status_code}: {str(getattr(r, 'text', ''))[:300]}")
+
+        data = r.json()
+        output_text = ""
+        if isinstance(data, dict):
+            if isinstance(data.get("output_text"), str) and data.get("output_text"):
+                output_text = data.get("output_text")
+            else:
+                out = data.get("output")
+                if isinstance(out, list) and out:
+                    first = out[0]
+                    if isinstance(first, dict):
+                        content = first.get("content")
+                        if isinstance(content, list) and content:
+                            text = content[0].get("text")
+                            if isinstance(text, str):
+                                output_text = text
+        return SimpleNamespace(output_text=output_text, usage=None, model=data.get("model"))
+
+    def _check_reasoning_capability(self, model: str) -> bool:
+        """
+        Check if model supports reasoning parameter.
+        
+        Per colleague_1's guidance: adapter handles capability checks.
+        """
+        reasoning_models = {'gpt-5', 'gpt-5-nano', 'o1', 'o1-mini', 'o1-preview'}
+        return any(rm in str(model).lower() for rm in reasoning_models)
+
     def call_responses_new(
         self,
         *,
         instructions: str,
         input: str,
-        response_format: Optional[Dict[str, Any]] = None,
         store: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
+        response_format: Optional[Dict[str, Any]] = None,
+        text: Optional[Dict[str, Any]] = None,
+        expects_json: bool = False,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+        max_output_tokens: Optional[int] = None,
+        seed: Optional[int] = None,
+        verbosity: Optional[str] = None,
+        reasoning: Optional[Dict[str, str]] = None,
         **kwargs
     ) -> Dict[str, Any]:
         """
@@ -381,70 +548,135 @@ class LLMClient:
             # Any unexpected parameters should be flagged
             raise ValueError(
                 f"Unexpected parameters: {list(kwargs.keys())}. "
-                f"LLMClient.call_responses_new only accepts: instructions, input, response_format, store, metadata."
+                f"LLMClient.call_responses_new only accepts documented Responses API parameters."
             )
-        # D2-4: Apply guards (responses method gets parameters from config)
-        guard_llm_call("call_responses_new", 
-                      response_format=response_format,
-                      store=store,
-                      metadata=metadata)
-        
         config = get_config()
         start_time = time.time()
         
+        # D2-4: Apply guards - purely syntactic validation per colleague_1's refinement
+        # Pass only non-None values into guard to avoid spurious unknowns
+        _gk = {
+            k: v for k, v in {
+                "response_format": response_format,
+                "text": text,
+                "expects_json": expects_json,
+                "store": store,
+                "metadata": metadata,
+                "temperature": temperature,
+                "top_p": top_p,
+                "max_output_tokens": max_output_tokens,
+                "seed": seed,
+                "verbosity": verbosity,
+                "reasoning": reasoning,
+            }.items() if v is not None
+        }
+        guarded_kwargs = guard_llm_call("call_responses_new", **_gk)
+        
+        # Use validated parameters from guard
+        response_format = guarded_kwargs.get('response_format', response_format)
+        text = guarded_kwargs.get('text', text)
+        expects_json = guarded_kwargs.get('expects_json', expects_json)
+        store = guarded_kwargs.get('store', store)
+        metadata = guarded_kwargs.get('metadata', metadata)
+        temperature = guarded_kwargs.get('temperature', temperature)
+        top_p = guarded_kwargs.get('top_p', top_p)
+        max_output_tokens = guarded_kwargs.get('max_output_tokens', max_output_tokens)
+        seed = guarded_kwargs.get('seed', seed)
+        reasoning = guarded_kwargs.get('reasoning', reasoning)
+        
+        # Reasoning capability check - adapter handles business logic per colleague_1's refinement
+        supports_reasoning = self._check_reasoning_capability(config.model)
+        if reasoning and not supports_reasoning:
+            # Drop reasoning and log to metadata per colleague_1's guidance
+            if not isinstance(metadata, dict):
+                metadata = {}
+            metadata['reasoning_dropped'] = f"Model {config.model} does not support reasoning parameter"
+            reasoning = None
+        
         try:
-            # PROPER: Use Responses API directly per colleague_1's specification
-            # This is the canonical interface - instructions + input format
+            # PROPER: Use Responses API with instructions + typed message parts input
             api_params = {
                 "model": config.model,
                 "instructions": instructions,
-                "input": input,
             }
             
-            # Only include temperature if non-None
-            if config.temperature is not None:
-                api_params["temperature"] = config.temperature
+            # Use provided temperature or config default
+            temp = temperature if temperature is not None else config.temperature
+            if temp is not None:
+                api_params["temperature"] = temp
             
-            # Only include top_p if non-None
-            if config.top_p is not None:
-                api_params["top_p"] = config.top_p
+            # Use provided top_p or config default (omit for reasoning-capable models that don't support it)
+            top_p_val = top_p if top_p is not None else config.top_p
+            # Defer supports_reasoning until after model is known
             
-            # Use max_output_tokens for Responses API
-            if config.max_tokens is not None:
-                api_params["max_output_tokens"] = config.max_tokens
+            # Handle max_tokens parameter canonicalization per colleague_1's guidance
+            # Accept max_tokens for legacy compatibility but translate to max_output_tokens
+            max_tok = max_output_tokens if max_output_tokens is not None else config.max_tokens
+            if max_tok is not None:
+                api_params["max_output_tokens"] = max_tok
             
-            # Add response format if provided
-            if response_format:
-                api_params["response_format"] = response_format
+            # Configure structured outputs per contract toggle
+            contract_mode = self._get_contract_mode()
+            if contract_mode == "RESPONSE_FORMAT":
+                if isinstance(response_format, dict):
+                    api_params["response_format"] = response_format
+                elif expects_json:
+                    api_params["response_format"] = {"type": "json_object"}
+            else:
+                if expects_json or response_format is not None:
+                    api_params["text"] = {"format": "json_object"}
             
             # Add seed if provided
-            if config.seed is not None:
-                api_params["seed"] = config.seed
+            seed_val = seed if seed is not None else config.seed
+            if seed_val is not None:
+                api_params["seed"] = seed_val
             
-            # P0-5: Call Responses API with resilient retry logic (per colleague_1's specification)
-            response = self._call_with_retry(api_params)
+            # Note: verbosity is allowed for internal tracing but not forwarded to SDK
+            # per colleague_1's guidance - strip non-SDK params before API call
             
-            # Extract content using Responses API format
-            if hasattr(response, "output_text"):
-                output_text = response.output_text or ""
-            elif hasattr(response, "output") and response.output:
-                # Handle structured output format
-                if isinstance(response.output, list) and response.output:
-                    output_text = response.output[0].get("content", {}).get("text", "")
+            # Add reasoning if provided (nested structure per OpenAI docs)
+            if reasoning:
+                api_params["reasoning"] = reasoning
+            
+            # Add store and metadata for traceability per colleague_1's guidance
+            if store:
+                api_params["store"] = store
+            
+            if metadata:
+                api_params["metadata"] = metadata
+            
+            # For reasoning-capable models, drop unsupported sampling params (e.g., top_p)
+            try:
+                supports_reasoning = self._check_reasoning_capability(config.model)
+            except Exception:
+                supports_reasoning = False
+            if supports_reasoning:
+                # Some reasoning models reject top_p; remove if present
+                api_params.pop("top_p", None)
+
+            # Assemble typed input
+            # - If caller passes a pre-built typed message list, forward as-is
+            # - Otherwise, wrap the provided string as a single user turn
+            if isinstance(input, (list, tuple)):
+                api_params["input"] = input  # already typed parts
+            else:
+                api_params["input"] = [{
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": input}]
+                }]
+
+            # P0-5: Call Responses API with resilient retry logic
+            try:
+                response = self._call_with_retry(api_params)
+            except TypeError as e:
+                # Minimal raw-POST fallback for parameter mismatches (disabled by default)
+                if str(os.getenv("CHIRALITY_RAW_FALLBACK", "")).strip().lower() in ("1", "true", "yes"):
+                    response = self._call_responses_raw(api_params)
                 else:
-                    output_text = str(response.output)
-            else:
-                output_text = ""
+                    raise
             
-            # Parse as JSON if response_format was provided
-            if response_format:
-                import json
-                try:
-                    response_dict = json.loads(output_text)
-                except json.JSONDecodeError:
-                    response_dict = {"error": "Invalid JSON response", "raw_output": output_text}
-            else:
-                response_dict = {"content": output_text}
+            # Extract content using centralized method per colleague_1's guidance
+            output_text, response_dict = self._extract_response_content(response, response_format)
             
             # Build metadata for Responses API
             latency_ms = int((time.time() - start_time) * 1000)
@@ -464,13 +696,13 @@ class LLMClient:
                         "max_output_tokens": config.max_tokens,
                         "latency_ms": latency_ms,
                         "created_at": int(time.time()),
-                        "response_format": response_format,
+                        # "response_format": response_format,
                         **usage_fields
                     },
                     "request": {
                         "instructions": instructions[:100] + "..." if len(instructions) > 100 else instructions,
-                        "input": input[:100] + "..." if len(input) > 100 else input,
-                        "response_format": response_format,
+                    "input": "[role:user, content:text]",
+                        # "response_format": response_format,
                         "store": store
                     }
                 }
@@ -530,9 +762,9 @@ def call_responses(
     *,
     instructions: str,
     input: str, 
-    response_format: Optional[Dict[str, Any]] = None,
     store: bool = True,
     metadata: Optional[Dict[str, Any]] = None,
+    expects_json: bool = False,
     **kwargs
 ) -> Dict[str, Any]:
     """
@@ -574,20 +806,56 @@ def call_responses(
                 f"Use instructions=... and input=... instead of messages array."
             )
     
+    # Extract and validate optional parameters from kwargs
+    temperature = kwargs.pop('temperature', None)
+    top_p = kwargs.pop('top_p', None) 
+    max_output_tokens = kwargs.pop('max_output_tokens', None)
+    seed = kwargs.pop('seed', None)
+    verbosity = kwargs.pop('verbosity', None)
+    reasoning_effort = kwargs.pop('reasoning_effort', None)
+    response_format = kwargs.pop('response_format', None)
+    text = kwargs.pop('text', None)
+    
     if kwargs:
         # Log any unexpected parameters for debugging
-        unexpected = set(kwargs.keys()) - {'temperature', 'top_p', 'max_output_tokens', 'seed', 'verbosity', 'reasoning_effort'}
-        if unexpected:
-            raise ValueError(
-                f"Unexpected parameters: {unexpected}. "
-                f"Only Responses API parameters are allowed: instructions, input, response_format, store, metadata."
-            )
+        raise ValueError(
+            f"Unexpected parameters: {list(kwargs.keys())}. "
+            f"Only Responses API parameters are allowed: instructions, input, response_format, store, metadata, "
+            f"temperature, top_p, max_output_tokens, seed, verbosity, reasoning_effort."
+        )
+    
+    # Build reasoning object if effort is provided
+    reasoning = None
+    if reasoning_effort:
+        reasoning = {"effort": reasoning_effort}
     
     client = get_client()
-    return client.call_responses_new(
-        instructions=instructions,
-        input=input,
-        response_format=response_format,
-        store=store,
-        metadata=metadata
-    )
+    # Probe response_format support (no-op if already checked)
+    client._probe_response_format_support()
+    # Build minimal, SDK-aligned kwargs and only include known, non-None values
+    kwargs_out = {
+        "instructions": instructions,
+        "input": input,
+        "store": store,
+    }
+    if metadata is not None:
+        kwargs_out["metadata"] = metadata
+    # Map strict outputs: prefer new text=; map legacy response_format if present
+        # Set text.format=json_object for structured outputs
+    if expects_json or isinstance(response_format, dict):
+        kwargs_out["text"] = {"format": "json_object"}
+    # Forward optional tuning only when set
+    if temperature is not None:
+        kwargs_out["temperature"] = temperature
+    if top_p is not None:
+        kwargs_out["top_p"] = top_p
+    if max_output_tokens is not None:
+        kwargs_out["max_output_tokens"] = max_output_tokens
+    if seed is not None:
+        kwargs_out["seed"] = seed
+    if verbosity is not None:
+        kwargs_out["verbosity"] = verbosity
+    if reasoning is not None:
+        kwargs_out["reasoning"] = reasoning
+
+    return client.call_responses_new(**kwargs_out)

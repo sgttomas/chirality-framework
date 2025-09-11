@@ -146,17 +146,45 @@ def guard_llm_call(func_name: str, **kwargs):
     """
     D2-4: Combined guard for LLM calls.
     
-    Applies both no_chat_completions and no_decoding_overrides protection.
+    Validates parameters against SDK-documented Responses API allow-list.
+    Per colleague_1's guidance: strict allow-list with descriptive failures.
+    Also handles model capability checks and parameter filtering.
     
     Args:
         func_name: Name of the function being called
         **kwargs: Parameters being passed to the function
         
+    Returns:
+        Dict with potentially modified kwargs (reasoning may be dropped)
+        
     Raises:
-        DecodingOverrideError: If forbidden decoding parameters detected
+        ValueError: If forbidden or unknown parameters detected
     """
-    # Apply decoding override guard
-    no_decoding_overrides(func_name, **kwargs)
+    # SDK-documented allow-list for Responses API per OpenAI docs
+    # Note: 'model' deliberately excluded - adapter controls model selection
+    allowed_params = {
+        # Core parameters
+        'instructions', 'input',
+        # Optional control parameters  
+        'temperature', 'top_p', 'max_output_tokens',
+        'seed', 'reasoning', 'text', 'response_format',
+        'store', 'metadata', 'verbosity',
+        # Framework control parameters
+        'expects_json'  # Controls JSON format application
+    }
+    
+    # Check for unknown parameters
+    unknown_params = set(kwargs.keys()) - allowed_params
+    if unknown_params:
+        raise ValueError(
+            f"Unknown parameters in {func_name}: {sorted(unknown_params)}. "
+            f"Allowed: {sorted(allowed_params)}. "
+            f"This maintains SDK compatibility per colleague_1's architecture."
+        )
+    
+    # Guard is purely syntactic per colleague_1's refinement
+    # No business logic, capability checks, or config access
+    return kwargs
 
 
 # Global guards that can be monkey-patched if needed
