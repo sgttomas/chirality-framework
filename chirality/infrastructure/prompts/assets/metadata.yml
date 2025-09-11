@@ -6,10 +6,17 @@ assets:
   size_bytes: 35315
   version: 1.0.0
 - id: system
-  last_modified: '2025-09-09T20:59:05.878077+00:00'
+  last_modified: '2025-09-11T02:48:00.000000+00:00'
   path: system.md
-  sha256: f03798651fafdea094e3774d9491c9806074c9f61e05fdf5690f7b774378aba5
-  size_bytes: 32925
+  sha256: d248b822c70e32a3be0a0cfde66d1ce38f726a8eb3c3521748047238595fbbf5
+  size_bytes: 373
+  version: 1.0.0
+- description: Stage 0 initialization for Matrix C semantic operations
+  id: phase1_c_initialize
+  last_modified: '2025-09-11T02:48:00.000000+00:00'
+  path: phase1/C/initialize.md
+  sha256: d689cab33e8322210b8c7eba317e0c28e27b65e71dce3ff5de8707ab0f92ad20
+  size_bytes: 32924
   version: 1.0.0
 - description: Stage 1 mechanical construction for Matrix C
   id: phase1_c_mechanical

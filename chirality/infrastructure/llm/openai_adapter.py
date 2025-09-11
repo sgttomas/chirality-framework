@@ -82,13 +82,28 @@ class LLMClient:
         for attempt in range(max_retries + 1):
             try:
                 # Set timeout for this attempt (progressively longer)
-                timeout = 30.0 + (attempt * 10.0)  # 30s, 40s, 50s, 60s
+                # Use extended timeouts for reasoning-capable models (GPT-5, o1 series)
+                model_name = api_params.get("model", "")
+                is_reasoning_model = self._check_reasoning_capability(model_name)
+                
+                if is_reasoning_model:
+                    # Extended timeouts for reasoning models: 240s, 300s, 360s, 420s
+                    timeout = 240.0 + (attempt * 60.0)
+                else:
+                    # Standard timeouts for other models: 30s, 40s, 50s, 60s
+                    timeout = 30.0 + (attempt * 10.0)
                 
                 # Temporarily set timeout on client
                 original_timeout = getattr(self.client, 'timeout', None)
                 self.client.timeout = timeout
                 
                 try:
+                    # Log timeout info for reasoning models
+                    if attempt == 0 and is_reasoning_model:
+                        print(f"🧠 Reasoning model {model_name} using extended timeout: {timeout}s", file=__import__('sys').stderr)
+                    elif attempt == 0:
+                        print(f"⚡ Standard model {model_name} using timeout: {timeout}s", file=__import__('sys').stderr)
+                    
                     # Make the API call
                     response = self.client.responses.create(**api_params)
                     
@@ -651,8 +666,9 @@ class LLMClient:
             except Exception:
                 supports_reasoning = False
             if supports_reasoning:
-                # Some reasoning models reject top_p; remove if present
+                # Some reasoning models reject temperature and top_p; remove if present
                 api_params.pop("top_p", None)
+                api_params.pop("temperature", None)
 
             # Assemble typed input
             # - If caller passes a pre-built typed message list, forward as-is
