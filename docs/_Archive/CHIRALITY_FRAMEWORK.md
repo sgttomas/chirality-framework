@@ -1,3 +1,4 @@
+
 # The Chirality Framework
 
 ## What is the Chirality Framework?
@@ -12,11 +13,11 @@ The name "Chirality" reflects the framework's core insight: meaning has handedne
 
 The Chirality Framework guides the generation of knowledge artifacts through structured semantic transformation. It is used for:
 
-- **Problem decomposition**: Breaking complex domains into navigable semantic regions
-- **Requirements derivation**: Transforming problem understanding into actionable constraints
-- **Objective formulation**: Combining activity frames with requirement seeds
-- **Verification structuring**: Reorienting objectives to examine them from multiple angles
-- **Evaluation focusing**: Reducing dimensionality to produce actionable assessment surfaces
+- **Formulation**: Breaking complex domains into navigable semantic regions
+- **Requirements**: Transforming problem understanding into actionable constraints
+- **Objectives**: Combining activity frames with requirement seeds
+- **Verification**: Reorienting objectives to examine them from multiple angles
+- **Evaluation**: Reducing dimensionality to produce actionable assessment surfaces
 
 The framework does not prescribe what to think. It provides coordinates for where to think from.
 
@@ -144,7 +145,7 @@ Matrix B defines the knowledge structure across the DIKW hierarchy and the knowl
 
 |               | ontology     | praxeology | epistemology | axiology  |
 |---------------|--------------|------------|--------------|-----------|
-| **data**      | fact         | signal     | evidence     | hook      |
+| **data**      | fact         | signal     | evidence     | significance      |
 | **information**| taxonomy    | protocol   | provenance   | relevance |
 | **knowledge** | architecture | principle  | framework    | meaning   |
 | **wisdom**    | ground       | measure    | penetration  | telos     |
@@ -170,7 +171,7 @@ Matrix B defines the knowledge structure across the DIKW hierarchy and the knowl
 ```
 [C]
 Size: 3×4
-Station: Problem Statement
+Station: Formulation
 Column names: [ontology, praxeology, epistemology, axiology]
 Row names: [normative, operative, descriptive]
 ```
@@ -214,12 +215,12 @@ For each cell, provide a brief interpretation that:
 
 ## Lens Interpretation of Matrix C
 
-The station "Problem Statement" acts as a singular contextual lens.
+The station "Formulation" acts as a singular contextual lens.
 
 **Instructions:**
 
-1. Hold the station name "Problem Statement" as context
-2. For each cell, ask: "Viewed as a problem statement, what does this seed-cluster point toward?"
+1. Hold the station name "Formulation" as context
+2. For each cell, ask: "Viewed as a the formulation of a knowledge work task, what does this seed-cluster point toward?"
 3. Generate an interpretation that honors both the cell's semantic content and the station's orientation
 4. Present the lensed Matrix C as a table
 
@@ -596,3 +597,5 @@ Wisdom remains outside the operational flow. The human holds the alethic functio
 7. **Truncate for focus.** Removing dimensions is not loss—it's scope reduction appropriate to the station's purpose.
 
 8. **Transform unlensed; lens only at terminals.** Every transformative operation (·, ⊙, +, transpose, truncation) works with unlensed matrices. Lensing is applied only when a matrix becomes a working surface for generation. Once lensed, a matrix exits the computational flow. This prevents semantic drift from compounding interpretations.
+
+----
