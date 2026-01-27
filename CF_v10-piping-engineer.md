@@ -150,18 +150,20 @@ Examples:
 
 To find the semantic intersection between two terms such that a matrix of meaning can be formed from the products.
 
+Complete Matrix A and Matrix B below.
+
 ### Matrix A 
 [A]
 Phase: orientation
 Size: 3×4  
-Columns: [guiding, applying, judging, reflecting] 
+Columns: [guiding, applying, judging, reviewing] 
 Rows: [normative, operative, evaluative]   
 
-| | **guiding** | **applying** | **judging** | **reflecting** |
+| | **guiding** | **applying** | **judging** | **reviewing** |
 |---|---|---|---|---|
 | **normative** | | | | |
 | **operative** | | | | |
-| **descriptive** | | | | |
+| **evaluative** | | | | |
 
 
 ### Matrix B 
@@ -219,7 +221,7 @@ Rows: [normative, operative, evaluative]
 [D]
 Phase: objectives
 Size: 3×4  
-Columns: [guiding, applying, judging, reflecting] 
+Columns: [guiding, applying, judging, reviewing] 
 Rows: [normative, operative, evaluative]  
 
 ### Construction
@@ -236,7 +238,7 @@ Rows: [normative, operative, evaluative]
 [K]
 Size: 4×3  
 Columns: [normative, operative, evaluative]
-Rows: [guiding, applying, judging, reflecting] 
+Rows: [guiding, applying, judging, reviewing] 
 
 Construction:
 - `K(i,j) = D(j,i)`  
@@ -248,7 +250,7 @@ Construction:
 Phase: verification
 Size: 4×4  
 Columns: [necessity, sufficiency, completeness, consistency]  
-Rows: [guiding, applying, judging, reflecting] 
+Rows: [guiding, applying, judging, reviewing] 
 
 ### Construction
 1) Build intermediate collections:
@@ -264,7 +266,7 @@ Rows: [guiding, applying, judging, reflecting]
 [E] 
 Phase: evaluation
 Size: 3×4  
-Columns: [guiding, applying, judging, reviewing] 
+Columns: [necessity, sufficiency, completeness, consistency]  
 Rows: [normative, operative, evaluative]    
 
 ### Construction
