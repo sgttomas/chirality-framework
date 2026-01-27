@@ -1,0 +1,156 @@
+Can we come to terms here? Consider a set of terms that may suffice. You may select any matrix as-is or propose new terms if warranted from your perspective.
+
+## Option A
+
+### Matrix 1
+
+| | **event** | **pattern** | **structure** | **paradigm** |
+|---|---|---|---|---|
+| **normative** | Compliance | Policy | Governance | Mission |
+| **operative** | Incident | Habit | Workflow | Culture |
+| **descriptive** | Log | Metric | Map | Narrative |
+
+---
+
+### Matrix 2
+
+| | **ontology** | **epistemology** | **praxeology** | **axiology** |
+|---|---|---|---|---|
+| **data** | Artifact | Observation | Ingestion | Accuracy |
+| **information** | Relation | Definition | Processing | Relevance |
+| **knowledge** | Model | Reasoning | Synthesis | Utility |
+| **wisdom** | Principle | Judgment | Counsel | Ethics |
+
+---
+
+## Option B
+
+### Matrix 1
+
+| | **event** | **pattern** | **structure** | **paradigm** |
+|---|---|---|---|---|
+| **normative** | verdict | standard | policy | ethos |
+| **operative** | response | routine | process | methodology |
+| **descriptive** | report | trend | model | worldview |
+
+### Matrix 2
+
+| | **ontology** | **epistemology** | **praxeology** | **axiology** |
+|---|---|---|---|---|
+| **data** | observations | evidence | metrics | indicators |
+| **information** | descriptions | explanations | procedures | assessments |
+| **knowledge** | models | theories | competencies | principles |
+| **wisdom** | discernment | judgment | phronesis | integrity |
+
+
+---
+
+## Option C
+
+### Matrix 1
+
+| | **event** | **pattern** | **structure** | **paradigm** |
+|---|---|---|---|---|
+| **normative** | judgment | standard | principle | ethos |
+| **operative** | action | routine | architecture | reframing |
+| **descriptive** | account | trend | model | frame |
+
+### Matrix 2
+
+| | **ontology** | **epistemology** | **praxeology** | **axiology** |
+|---|---|---|---|---|
+| **data** | registry | observations | telemetry | preferences |
+| **information** | taxonomy | evidence | process | metrics |
+| **knowledge** | model | methodology | playbook | rubric |
+| **wisdom** | constraints | rigor | strategy | charter |
+
+
+
+---
+---
+---
+
+Are we converging?  Can you see a set of terms that might converge between the three agents performing this task?
+
+## Option A
+
+### Matrix 1
+
+| | **event** | **pattern** | **structure** | **paradigm** |
+|---|---|---|---|---|
+| **normative** | Verdict | Standard | Policy | Ethos |
+| **operative** | Response | Routine | Process | Methodology |
+| **descriptive** | Report | Trend | Model | Worldview |
+
+### Matrix 2
+
+| | **ontology** | **epistemology** | **praxeology** | **axiology** |
+|---|---|---|---|---|
+| **data** | Registry | Observation | Telemetry | Indicator |
+| **information** | Taxonomy | Explanation | Procedure | Metric |
+| **knowledge** | Model | Methodology | Playbook | Rubric |
+| **wisdom** | Doctrine | Warrant | Strategy | Charter |
+
+---
+
+## Option B
+
+### Matrix 1
+
+| | **event** | **pattern** | **structure** | **paradigm** |
+|---|---|---|---|---|
+| **normative** | verdict | standard | policy | ethos |
+| **operative** | response | routine | process | methodology |
+| **descriptive** | report | trend | model | worldview |
+
+### Matrix 2
+
+| | **ontology** | **epistemology** | **praxeology** | **axiology** |
+|---|---|---|---|---|
+| **data** | registry | observation | telemetry | indicator |
+| **information** | taxonomy | evidence | procedure | metric |
+| **knowledge** | model | methodology | playbook | rubric |
+| **wisdom** | doctrine | warrant | strategy | charter |
+
+---
+
+## Option C
+
+### Matrix 1 
+
+| | **event** | **pattern** | **structure** | **paradigm** |
+|---|---|---|---|---|
+| **normative** | verdict | standard | policy | ethos |
+| **operative** | response | routine | process | methodology |
+| **descriptive** | report | trend | model | worldview |
+
+### Matrix 2 
+
+| | **ontology** | **epistemology** | **praxeology** | **axiology** |
+|---|---|---|---|---|
+| **data** | registry | observation | telemetry | indicator |
+| **information** | taxonomy | evidence | procedure | criteria |
+| **knowledge** | model | methodology | playbook | rubric |
+| **wisdom** | archetype | judgment | strategy | charter |
+
+
+---
+---
+---
+
+## Harmonized
+
+### Matrix 1
+| | **event** | **pattern** | **structure** | **paradigm** |
+|---|---|---|---|---|
+| **normative** | directive | standard | policy | ethos |
+| **operative** | response | routine | process | methodology |
+| **descriptive** | report | trend | model | worldview |
+
+### Matrix 2
+| | **ontology** | **epistemology** | **praxeology** | **axiology** |
+|---|---|---|---|---|
+| **data** | registry | observation | telemetry | indicator |
+| **information** | taxonomy | evidence | procedure | criteria |
+| **knowledge** | model | methodology | playbook | rubric |
+| **wisdom** | doctrine | warrant | strategy | charter |

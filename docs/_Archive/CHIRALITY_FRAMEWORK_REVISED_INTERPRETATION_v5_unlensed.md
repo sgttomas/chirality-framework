@@ -57,7 +57,9 @@ Semantic addition groups terms into a collection.
 - `u`: a **single semantic unit** (words / phrase; may be sentence-length but should be compact and encapsulate the combined meaning)
 
 ### Precise Definition (procedural)
-Let `L` be treated as a **set** (order-insensitive; duplicates removed).
+Let `L` be treated as a **set** .  Interpret one cell at a time, following each of these three steps in sequence.  
+
+Show all three steps. Then assemble the matrix from verified cells.
 
 1. **Axis anchor (latent coordinate frame):**  
    `a := r * c`  
@@ -66,22 +68,46 @@ Let `L` be treated as a **set** (order-insensitive; duplicates removed).
 2. **Coordinate-conditioned projection of contributors:**  
    For every contributor `t ∈ L`, compute a projected contributor:  
    `p_t := a * t`  
-   (Each contributor is “pulled” into the axis-defined intersection.)
-
+   
+   The projection step must appear explicitly in the working. For each contributor t, the product a * t must be written out.
+   
 3. **Centroid attractor selection (non-enumerative synthesis):**  
-   Choose an atomic unit `u` such that, in embedding space, `u` is the **closest stable attractor** to the centroid of the set `{a} ∪ {p_t : t ∈ L}` **under the constraints imposed by** `a`.  
-   Operationally, produce the **shortest** phrase that best captures the **shared semantic core** of all `p_t` while remaining consistent with `a`.
+   Choose an atomic unit `u` such that the meaning of `u` is the  **closest stable attractor** to the centroid of the set `{p_t}` . 
+   Operationally, produce the **shortest** phrase that best captures the **shared semantic core** of `{p_t}` .
 
 4. **Output constraints (hard):**
    - Output **one** unit only (no lists).
    - **Do not** repeat or enumerate all contributors.
    - **Do not** include the literal axis tokens `r` or `c` (axes are latent).
-   - **Do not** include lens names.
-   - Prefer a compact **noun phrase** (target 2–9 words) unless unavoidable.
+   - Produce the most integrally complete phrase that captures the intersection of all contributors. 
+   - Prioritize semantic density over brevity.
+   - Each member of the set {p_t} := {a*t}  must have its semantic result determined before centroid selection occurs. Interpretations that skip this step are invalid.
 
-### Identity case
-If the cell is already atomic (`L` is a single unit), then:
-- `I(r, c, L) = L`
+   
+### Example of how to properly perform the I(r,c,L) procedure
+
+L = {bounded truth, traced proof, conformance indicator, adherence precision}
+a = r * c = mandate * data = authoritative fact
+
+Projections:
+  p_1 := authoritative fact * bounded truth = grounded authoritative truth
+  p_2 := authoritative fact * traced proof = substantiated authority
+  p_3 := authoritative fact * conformance indicator = authoritative compliance signal
+  p_4 := authoritative fact * adherence precision = precise authoritative adherence
+
+Semantic Multiplications: 
+a * p_1 = "Binding Reality"
+a * p_2 = "Verified Authority"
+a * p_3 = "Compliance Status"
+a * p_4 = "Strict Liability"
+
+Centroid of {p_1, p_2, p_3, p_4} → u [output]
+
+### Example of how NOT to perform the I(r,c,L) procedure
+
+L = {bounded truth, traced proof, conformance indicator, adherence precision}
+Axis anchor: mandate * data = authoritative fact
+Centroid attractor: [jumps straight to output]
 
 ---
 
