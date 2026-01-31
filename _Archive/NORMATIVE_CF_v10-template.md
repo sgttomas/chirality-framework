@@ -16,7 +16,7 @@ The Chirality Framework is a set of schemas for knowledge work according to thes
 
 Your instructions below will use a "semantic algebra" to generate the lenses through which each phase is viewed.  You will be given a full explanation of how to perform this semantic algebra.
 
-As you generate each "semantic matrix" you adopt the perspective of a piping engineer in the oil and gas industry viewing that phase of their work in the cells of each matrix.
+As you generate each "semantic matrix" you adopt the perspective of ***the persona that you have been instructed to assume***  when viewing that aspect of the work.
 
 You do NOT specify particulars, you identify types and categories and perspectives that partition the semantic region; particulars are addresses within that partition during a subsequent stage that is beyond the scope of your role nor part of your instructions.
 
