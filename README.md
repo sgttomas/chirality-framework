@@ -102,7 +102,7 @@ Semantic addition groups terms into a collection.
 - `L`: a **collection** of contributor terms (order-insensitive; treat as a set)
 
 ### Output
-- `u`: a **single semantic unit** (words / phrase; may be sentence-length but should be compact and encapsulate the combined meaning)
+- `u`: a **single semantic unit** expressed as a **2-5 word phrase** (no lists)
 
 ### Precise Definition (procedural)
 Let `L` be treated as a **set** .  Interpret one cell at a time, following each of these three steps in sequence.  
@@ -129,9 +129,9 @@ Show all three steps. Then assemble the matrix from verified cells.
    - Output **one** unit only (no lists).
    - **Do not** repeat or enumerate all contributors.
    - **Do not** include the literal axis tokens `r` or `c` (axes are latent).
-   - Produce the most integrally complete phrase that captures the intersection of all contributors. 
-   - Prioritize semantic density over brevity.
-   - Each member of the set {p_t} := {a*t}  must have its semantic result determined before centroid selection occurs. Interpretations that skip this step are invalid.
+   - Produce the most integrally complete phrase that captures the intersection of all contributors.
+   - Prioritize semantic density over verbosity **in the final 2-5 word cell phrase**.
+   - Each member of the set `{p_t} := {a*t}` must have its semantic result determined before centroid selection occurs. Interpretations that skip this step are invalid.
 
    
 ### Example of how to properly perform the I(r,c,L) procedure
@@ -177,6 +177,9 @@ Dot products yield a **collection** of semantic products, not a single term. Thi
 This is purely structural transform that preserves cell content but changes orientation.  
 It operates only on the final version of the matrices.
 
+### truncation
+This is a purely structural transform that removes an entire row or column from a matrix to reduce its size.
+
 ---
 
 ### Semantic Multiplication `*`
@@ -192,8 +195,6 @@ Examples:
 
 To find the semantic intersection between two terms such that a matrix of meaning can be formed from the products.
 
-Complete Matrix A and Matrix B below.
-
 ### Matrix A 
 [A]
 Phase: orientation
@@ -201,11 +202,13 @@ Size: 3×4
 Columns: [guiding, applying, judging, reviewing] 
 Rows: [normative, operative, evaluative]   
 
+**Construction:** Canonical (v2 — 2026-02-14) — use the following fixed values directly. Do not re-derive.
+
 | | **guiding** | **applying** | **judging** | **reviewing** |
 |---|---|---|---|---|
-| **normative** | | | | |
-| **operative** | | | | |
-| **evaluative** | | | | |
+| **normative** | prescriptive direction | mandatory practice | compliance determination | regulatory audit |
+| **operative** | procedural direction | practical execution | performance assessment | process audit |
+| **evaluative** | value orientation | merit application | worth determination | quality appraisal |
 
 
 ### Matrix B 
@@ -215,12 +218,14 @@ Size: 4×4
 Columns: [necessity, sufficiency, completeness, consistency]  
 Rows: [data, information, knowledge, wisdom]  
 
+**Construction:** Canonical (v2 — 2026-02-14) — use the following fixed values directly. Do not re-derive.
+
 | | **necessity** | **sufficiency** | **completeness** | **consistency** |
 |---|---|---|---|---|
-| **data** | | | | |
-| **information** | | | | |
-| **knowledge** | | | | |
-| **wisdom** | | | | |
+| **data** | essential fact | adequate evidence | comprehensive record | reliable measurement |
+| **information** | essential signal | adequate context | comprehensive account | coherent message |
+| **knowledge** | fundamental understanding | competent expertise | thorough mastery | coherent understanding |
+| **wisdom** | essential discernment | adequate judgment | holistic insight | principled reasoning |
 
 
 ---
@@ -287,6 +292,23 @@ Construction:
 
 ---
 
+## Matrix G (truncation of B)
+[G]
+Phase: truncation
+Size: 3×4  
+Columns: [necessity, sufficiency, completeness, consistency]  
+Rows: [data, information, knowledge]  
+
+Construction: Remove the `wisdom` row from canonical Matrix B.
+
+| | **necessity** | **sufficiency** | **completeness** | **consistency** |
+|---|---|---|---|---|
+| **data** | essential fact | adequate evidence | comprehensive record | reliable measurement |
+| **information** | essential signal | adequate context | comprehensive account | coherent message |
+| **knowledge** | fundamental understanding | competent expertise | thorough mastery | coherent understanding |
+
+---
+
 ## Matrix X 
 [X] 
 Phase: verification
@@ -296,7 +318,7 @@ Rows: [guiding, applying, judging, reviewing]
 
 ### Construction
 1) Build intermediate collections:
-- `L_X(i,j) = Σ_k (K(i,k) * C(k,j))`  
+- `L_X(i,j) = Σ_k (K(i,k) * G(k,j))`  
 
 2) Interpret:
 - `X(i,j) = I(row_i, col_j, L_X(i,j))`
@@ -304,16 +326,27 @@ Rows: [guiding, applying, judging, reviewing]
 
 ---
 
+## Matrix T (transpose of B)
+[T]
+Size: 4×4  
+Columns: [data, information, knowledge, wisdom]  
+Rows: [necessity, sufficiency, completeness, consistency]  
+
+Construction:
+- `T(i,j) = B(j,i)`
+
+---
+
 ## Matrix E 
 [E] 
 Phase: evaluation
-Size: 3×4  
-Columns: [necessity, sufficiency, completeness, consistency]  
-Rows: [normative, operative, evaluative]    
+Size: 4×4  
+Columns: [data, information, knowledge, wisdom]  
+Rows: [guiding, applying, judging, reviewing]    
 
 ### Construction
 1) Build intermediate collections:
-- `L_E(i,j) = Σ_k (D(i,k) * X(k,j))` 
+- `L_E(i,j) = Σ_k (X(i,k) * T(k,j))` 
 
 2) Interpret:
 - `E(i,j) = I(row_i, col_j, L_E(i,j))`
